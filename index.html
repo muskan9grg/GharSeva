@@ -1,0 +1,3279 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GharSeva — Staff Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <!-- pinned versions on jsDelivr for reliability; no crossorigin attr for file:// compat -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase v9-compat SDK — global window.firebase.* API, no build step needed -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      /* Soft sage-white backgrounds */
+      --bg:#EDF2EE; --surface:#FFFFFF; --surface2:#E5EDE6;
+      --border:#C4D4C6; --muted:#7A998C;
+      /* Deep forest charcoal text */
+      --ink:#1A2E2A; --ink2:#3D5E55;
+      /* Forest teal actions */
+      --accent:#1A6E5E; --accent2:#3EA08A;
+      /* Status */
+      --ok:#1C7A48; --danger:#C0393B; --warn:#B45309; --purple:#5B4A9B;
+    }
+    html{font-size:16px;}
+    html,body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--ink);font-size:1rem;font-weight:600;}
+    #root{background:var(--bg);}
+    *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
+    body{margin:0;}
+    input,select,textarea{font-size:1.0625rem!important;font-weight:600;}
+    #root{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+    .scroll-area{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+    .fade-in{animation:fi .2s ease;}
+    @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .mic-pulse::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:3px solid rgba(26,110,94,0.4);animation:pulse-ring 1.2s ease-out infinite;}
+    .mic-pulse-danger::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:3px solid rgba(192,57,59,0.5);animation:pulse-ring 0.8s ease-out infinite;}
+    @keyframes pulse-ring{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.35);opacity:0}}
+    .cal-btn{min-height:44px;min-width:44px;}
+    ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(26,46,42,.06);}
+    .inp{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-family:'Nunito',sans-serif;font-size:1.0625rem!important;font-weight:600;outline:none;width:100%;color:var(--ink);}
+    .inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,110,94,.15);}
+    .sel{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-family:'Nunito',sans-serif;font-size:1.0625rem!important;font-weight:600;outline:none;width:100%;color:var(--ink);appearance:none;-webkit-appearance:none;}
+    .sel:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,110,94,.15);}
+    .ta{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-family:'Nunito',sans-serif;font-size:1.0625rem!important;font-weight:600;outline:none;width:100%;color:var(--ink);resize:none;}
+    .ta:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,110,94,.15);}
+    .btn{border-radius:12px;font-weight:800;font-family:'Nunito',sans-serif;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;font-size:1rem;transition:all .15s;line-height:1.2;}
+    .btn:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px);}
+    .btn:not(:disabled):active{transform:translateY(0);filter:brightness(.96);}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-accent{background:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(26,110,94,.30);}
+    .btn-ok{background:var(--ok);color:#fff;box-shadow:0 2px 6px rgba(28,122,72,.28);}
+    .btn-danger{background:var(--danger);color:#fff;}
+    .btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--ink2);}
+    .btn-sm{padding:9px 14px;font-size:0.875rem;min-height:44px;}
+    .btn-full{width:100%;}
+    .pill{border-radius:20px;font-size:0.8125rem;font-weight:800;padding:5px 13px;display:inline-block;}
+    .pill-warn{background:#F5E8CC;color:#8B5E08;}
+    .pill-ok{background:#CCEADC;color:#1A5E35;}
+    .pill-accent{background:#D0EBE5;color:#1A5045;}
+    .pill-purple{background:#E0D8F0;color:#3A2E7A;}
+    .pill-muted{background:var(--surface2);color:var(--ink2);}
+  </style>
+</head>
+<body>
+
+<!-- Shown while Babel/React initialise; React replaces it -->
+<div id="root">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:12px;">
+    <div style="font-size:3rem;">🏠</div>
+    <div style="font-size:1.4rem;font-weight:800;color:#1A2E2A;font-family:'Nunito',sans-serif;">GharSeva</div>
+    <div style="font-size:.95rem;color:#7A998C;font-family:'Nunito',sans-serif;">Loading… / लोड हो रहा है…</div>
+    <div style="width:40px;height:4px;background:#C4D4C6;border-radius:4px;overflow:hidden;margin-top:8px;">
+      <div style="width:40%;height:100%;background:#1A6E5E;border-radius:4px;animation:lb 1s ease-in-out infinite alternate;"></div>
+    </div>
+    <style>@keyframes lb{from{transform:translateX(0)}to{transform:translateX(150%)}}</style>
+  </div>
+</div>
+
+<!-- Error display (hidden unless window.onerror fires before React mounts) -->
+<div id="err" style="display:none;padding:20px;color:#dc2626;font-size:14px;background:#fef2f2;border:1px solid #fca5a5;margin:16px;border-radius:12px;"></div>
+
+<script>
+window.onerror = function(msg,_,line){
+  var el=document.getElementById('err');
+  if(el){el.style.display='block';el.textContent='JS Error at line '+line+': '+msg;}
+};
+</script>
+
+<script type="text/babel">
+const {useState,useEffect,useRef,useMemo} = React;
+
+/* ── FIREBASE INIT ──────────────────────────────────────────── */
+/* Replace the values below with your Firebase project config.
+   Get it from: console.firebase.google.com → Project settings → Your apps → Web app
+   Leave as-is to run in local/guest mode (no cloud sync). */
+const FIREBASE_CONFIG = {
+ apiKey: "AIzaSyCrq4DdyctHGnElJI8EX_U5MfX0VyJcbxo",
+  authDomain: "seva-74ffb.firebaseapp.com",
+  projectId: "seva-74ffb",
+  storageBucket: "seva-74ffb.firebasestorage.app",
+  messagingSenderId: "107908814833",
+  appId: "1:107908814833:web:c6616ffbce70a8c1035650"
+};
+var fbAuth = null, fbDb = null, FIREBASE_ENABLED = false;
+(function(){
+  try {
+    if (typeof firebase === 'undefined') return;
+    if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') return; // placeholder — skip
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fbAuth = firebase.auth();
+    fbDb   = firebase.firestore();
+    fbDb.enablePersistence({synchronizeTabs:true}).catch(function(){});
+    FIREBASE_ENABLED = true;
+  } catch(e){ console.warn('Firebase init skipped:', e.message); }
+})();
+
+/* Shared sync counter — tabs subscribe via React.useContext(SyncCtx)
+   and add it to their useEffect deps so remote writes trigger re-fetch. */
+var SyncCtx = React.createContext(0);
+
+/* Current home for write helpers that don't receive homeId in scope */
+var _activeHomeId = '';
+
+/* ── FONT SCALE HELPER ──────────────────────────────────────── */
+/* fsr(px): convert a design-px value to a rem string so all text
+   scales when html font-size changes (Normal 16→Large 20→XL 24). */
+function fsr(n){ return (n/16).toFixed(4)+'rem'; }
+function applyFontSz(sz){
+  document.documentElement.style.fontSize=sz==='xlarge'?'24px':sz==='large'?'20px':'16px';
+}
+
+/* ── ROLES & COLORS ─────────────────────────────────────────── */
+const ROLE_AVATAR = {
+  maid:'#2E6E8E', cook:'#3A6E50', driver:'#3A4E8E', watchman:'#2E4E6E',
+  sweeper:'#4E6030', gardener:'#1A6050', nanny:'#6E3A8E', other:'#3E6060',
+};
+function avatarBg(role){ return ROLE_AVATAR[role]||'#3E6060'; }
+
+const DEFAULT_ROLES = [
+  {key:'maid',    en:'Bai / Maid',   hi:'बाई / मेड',  isDefault:true},
+  {key:'cook',    en:'Cook',         hi:'रसोइया',     isDefault:true},
+  {key:'driver',  en:'Driver',       hi:'ड्राइवर',    isDefault:true},
+  {key:'watchman',en:'Watchman',     hi:'चौकीदार',    isDefault:true},
+  {key:'gardener',en:'Gardener',     hi:'माली',       isDefault:true},
+  {key:'sweeper', en:'Sweeper',      hi:'झाड़ूवाला',  isDefault:false},
+  {key:'nanny',   en:'Nanny / Ayah', hi:'नैनी / आया', isDefault:false},
+];
+function getRoles(){ return DEFAULT_ROLES.concat(lsGet('gs_roles',[])); }
+function getCustomRoles(){ return lsGet('gs_roles',[]); }
+function saveCustomRoles(r){ lsSet('gs_roles',r); }
+
+const TC={
+  advance:   {icon:'💸',pillCls:'pill-warn',  bg:'#FDF3DC'},
+  loan:      {icon:'🏦',pillCls:'pill-purple',bg:'#EAE4F5'},
+  expense:   {icon:'🛒',pillCls:'pill-accent',bg:'#D8EEE8'},
+  bonus:     {icon:'🎉',pillCls:'pill-ok',    bg:'#D8EEE2'},
+  loan_repay: {icon:'💰',pillCls:'pill-ok',   bg:'#D8EEE2'},
+  extra_work: {icon:'⏰',pillCls:'pill-ok',   bg:'#D8EEE2'},
+  short_hours:{icon:'⏱️',pillCls:'pill-warn', bg:'#FDF3DC'},
+};
+
+/* ── TRANSLATIONS ───────────────────────────────────────────── */
+const T={
+en:{
+  app:'GharSeva',tag:'Household Staff Manager',
+  addHome:'+ Add Home',homeName:'Home Name',homeEx:'e.g. Nagpur — Main House',
+  noHomes:'No homes added.',manageHomes:'Manage Homes',
+  navStaff:'Staff',navSalary:'Pay',navLeaves:'Attend',navAdv:'Records',navAnn:'Annual',navVoice:'Voice',
+  navSettings:'Settings',navSettingsTitle:'App Settings',
+  hmMenu:'Menu',hmReports:'Reports',hmTools:'Tools',hmConfig:'Configuration',
+  hmAnnual:'Annual Summary',hmVoice:'Voice Entry',hmSettings:'App Settings',hmHomes:'Manage Homes',hmRoles:'Manage Roles',
+  hmData:'Data',hmExportMonth:'Export This Month (CSV)',hmExportYear:'Export Full Year (CSV)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
+  hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'✅ Restored! Reloading…',hmRestoreErr:'Invalid backup file.',
+  addStaff:'+ Add Staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
+  fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly Salary (₹)',
+  fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
+  fphoto:'Photo',fnotes:'Notes / Duties',fnotesPh:'e.g. Cleans all rooms, washes utensils',
+  addPhoto:'📷 Add Photo',changePhoto:'Change',
+  nickname:'Nickname',nicknamePh:'e.g. Kamla, Ramu',
+  hintPayDay:'Day of month (1 = 1st, 15 = 15th)',hintIFSC:'11-character bank code (e.g. SBIN0001234)',
+  hintEMI:'Amount deducted from salary each month',hintTotInst:'How many months to repay',
+  typeDeductions:'Deductions',typeAdditions:'Additions',
+  confYes:'Yes, Save',confCancel:'Cancel',
+  vault:'📁 Documents (optional)',vaadhaar:'Aadhaar No.',vaadhaarH:'Only last 4 digits are shown',
+  vbank:'Bank Name',vbankPh:'e.g. State Bank of India',vaccount:'Account No.',vifsc:'IFSC Code',
+  viewDoc:'View Documents',hideDoc:'Hide',
+  selStaff:'Select Staff',selMonth:'Month',selYear:'Year',calcBtn:'Calculate',
+  rBase:'Base Salary',rLeave:'Leave Deduction',rAdv:'Advances (this month)',
+  rLoan:'Loan Installment',rExp:'Expenses (this month)',rBonus:'Bonus (this month)',
+  rNet:'Net Payable',markPaid:'Mark as Paid ✓',paidOn:'✓ Paid on',
+  noCalc:'Select a staff member and month above to see the salary breakdown.',
+  wdays:'Working days base:',
+  markToday:'Mark Today',markTodayDone:'Marked!',
+  calTitle:'Leave Calendar',calHint:'Tap any date to change its status',
+  days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  tlLeave:'Leave Days',tlDed:'Deduction',
+  Ps:'P',Ls:'L',Hs:'H',
+  addEntry:'+ Add Entry',filterAll:'All',
+  tAdv:'Advance',tLoan:'Loan',tExp:'Expense',tBonus:'Bonus',
+  famount:'Amount (₹)',fdate:'Date',freason:'Reason / Note',freasonPh:'e.g. Medical emergency',
+  finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
+  noEntries:'No entries. Tap "+ Add Entry".',
+  tLoanRepay:'Loan Repayment',fApplyLoan:'Apply Against Loan',noActiveLoans:'No active loans for this staff',
+  tExtraWork:'Overtime',tShortHours:'Half Day',fhours:'Hours',frate:'Rate / Hour (₹)',
+  rExtraWork:'Overtime Pay',rShortHours:'Half Day Deduction',aTotExtra:'Overtime',aTotShort:'Half Days',
+  voiceCompleteEntry:'Complete This Entry',voiceRerecord:'Re-record',voiceStaffIs:'Detected:',voiceStaffChange:'Change',voiceSaveEntry:'Save Entry',
+  tDays:'days',tType:'Type',tAction:'Action',loanDue:'due',perMonth:'/month',perDayCost:'1 day cost:',tLeave:'Leave',tPresent:'Present',tHoliday:'Holiday',
+  loanActive:'Active',loanClosed:'Closed',loanBal:'Remaining Balance',rLoanBal:'Total Loan Outstanding',
+  annTitle:'Annual Report',annYear:'Year',annTotal:'Total Household Spend',annPer:'Per Staff Summary',
+  aTotSal:'Salary',aTotAdv:'Advances',aTotExp:'Expenses',aTotBon:'Bonuses',aTotLoan:'Loan Balance',
+  months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  mFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  micSpeak:'Speak',micStop:'Stop',micListening:'Listening…',micFillDone:'Form filled from voice — please review',
+  voiceTitle:'Voice Input 🎤',voiceHint:'Tap the mic and speak. Hindi & English both work!',
+  voiceEx:'Examples:',startListen:'🎤 Tap to Speak',stopListen:'■ Stop',
+  voiceListening:'🔴 Listening…',voiceHeard:'You said:',voiceUnderstood:'Saving this:',voiceShowEx:'💡 Show examples',voiceHideEx:'Hide examples',
+  voiceConfirm:'Confirm & Save',voiceNoSupport:'Voice not supported. Use Chrome.',
+  voiceNoStaff:'No staff found in this home.',
+  waTitle:'WhatsApp Message',waCopy:'Copy',waOpen:'Open WhatsApp',waCopied:'Copied!',
+  save:'Save',cancel:'Cancel',del:'Delete',edit:'Edit',
+  delStaff:'Delete this staff member and all their data?',delEntry:'Delete this entry?',
+  savedOk:'Entry saved!',paidOk:'Salary marked as paid!',
+  errName:'Please enter the staff name',errAmount:'Please enter an amount',errStaff:'Please select a staff member',
+  tPaidBadge:'✓ Paid',tDueBadge:'Due this month',
+  dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',
+  dashPay:'Upcoming Pay Days',dashRecent:'Recent Entries',dashSpend:'This Month',
+  dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet — go to Staff tab',
+  dashPayBtn:'Pay →',dashNoRecent:'No entries yet',dashTomorrow:'Tomorrow',dashToday:'Today',
+  voiceExamples:['say: "Kamla took leave today"','say: "Give Ramu 500 advance"','say: "Santosh 2000 bonus"','say: "Ramu ko 1000 loan"'],
+  roleManagement:'Staff Roles',addRole:'Add new role…',addRolePh:'e.g. Ironing Maid',addRoleBtn:'Add',
+  defaultRole:'Default (locked)',
+  workingDaysLabel:'Working Days / Month',workingDaysHint:'Used for leave deduction calculation',
+  langLabel:'Language',
+  profBack:'Back',profViewProfile:'View Profile',
+  profJoined:'Joined',profPayDay:'Pay Day',
+  profFinancials:'This Month',profGross:'Gross',
+  profAlreadyPaid:'Salary Paid ✓',profConfirmPay:'Confirm & Pay',
+  profNoAdv:'No advances this month',profLoans:'Active Loans',profLoanEMI:'EMI',
+  profAttend:'Attendance',profQA:'Quick Actions',
+  profPaySalary:'Pay Salary',profRecAdv:'Record Advance',
+  profRecLoan:'Loan Payment',profMarkLeave:'Mark Leave',profNoLoans:'No active loans',
+  signIn:'Sign in to GharSeva',phoneNum:'Phone Number',sendOtp:'Send OTP',otpSent:'OTP sent! Enter the 6-digit code.',
+  verifyOtp:'Verify Code',googleSignIn:'Continue with Google',
+  guestMode:'Use on this device only (no sharing)',guestWarning:'Data stays on this device. You can connect to cloud later.',
+  createHome:'Create New Household',joinHome:'Join a Household',
+  inviteCode:'Household Code',inviteCodeHint:'Share this 6-letter code with family members',
+  copyCode:'Copy Code',shareWA:'Share on WhatsApp',newCode:'Generate New Code',
+  enterCode:'Enter 6-letter household code',codeNotFound:'Code not found. Check and try again.',
+  migrateTitle:'Import Existing Data',
+  migratePrompt:'We found existing data on this device. Import it into your cloud household?',
+  migrateYes:'Yes, Import',migrateSkip:'Start Fresh',
+  signOut:'Sign Out',members:'members',syncLive:'● Live',
+  authError:'Authentication failed. Please try again.',
+  joining:'Joining…',creating:'Creating…',setupTitle:'Set Up Your Household',
+  createDesc:'Start fresh with a new household code',joinDesc:'Enter the code shared by a family member',
+},
+hi:{
+  app:'घरसेवा',tag:'घरेलू स्टाफ मैनेजर',
+  addHome:'+ घर जोड़ें',homeName:'घर का नाम',homeEx:'जैसे: नागपुर — मुख्य घर',
+  noHomes:'कोई घर नहीं।',manageHomes:'घर प्रबंधन',
+  navStaff:'स्टाफ',navSalary:'भुगतान',navLeaves:'उपस्थिति',navAdv:'रिकॉर्ड',navAnn:'वार्षिक',navVoice:'आवाज़',
+  navSettings:'सेटिंग',navSettingsTitle:'एप्प सेटिंग्स',
+  hmMenu:'मेनू',hmReports:'रिपोर्ट',hmTools:'टूल्स',hmConfig:'सेटिंग्स',
+  hmAnnual:'वार्षिक सारांश',hmVoice:'आवाज़ एंट्री',hmSettings:'एप्प सेटिंग्स',hmHomes:'घर प्रबंधन',hmRoles:'भूमिकाएं',
+  hmData:'डेटा',hmExportMonth:'इस महीने का CSV',hmExportYear:'पूरे साल का CSV',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
+  hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'✅ रिस्टोर हो गया! लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
+  addStaff:'+ स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
+  fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन (₹)',
+  fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
+  fphoto:'फोटो',fnotes:'नोट्स / काम',fnotesPh:'जैसे: सभी कमरे साफ, बर्तन',
+  addPhoto:'📷 फोटो जोड़ें',changePhoto:'बदलें',
+  nickname:'उपनाम',nicknamePh:'जैसे: कमला, रामू',
+  hintPayDay:'महीने की तारीख (1 = पहली, 15 = पंद्रहवीं)',hintIFSC:'11 अक्षर का बैंक कोड (जैसे SBIN0001234)',
+  hintEMI:'हर महीने वेतन से कटने वाली राशि',hintTotInst:'कितने महीनों में चुकाना है',
+  typeDeductions:'कटौतियाँ',typeAdditions:'जोड़',
+  confYes:'हाँ, सहेजें',confCancel:'रद्द करें',
+  vault:'📁 दस्तावेज़ (वैकल्पिक)',vaadhaar:'आधार नंबर',vaadhaarH:'केवल अंतिम 4 अंक दिखेंगे',
+  vbank:'बैंक का नाम',vbankPh:'जैसे: भारतीय स्टेट बैंक',vaccount:'खाता नंबर',vifsc:'IFSC कोड',
+  viewDoc:'दस्तावेज़ देखें',hideDoc:'छुपाएं',
+  selStaff:'स्टाफ चुनें',selMonth:'महीना',selYear:'साल',calcBtn:'गणना करें',
+  rBase:'मूल वेतन',rLeave:'छुट्टी कटौती',rAdv:'अग्रिम (इस महीने)',
+  rLoan:'लोन किस्त',rExp:'खर्च (इस महीने)',rBonus:'बोनस (इस महीने)',
+  rNet:'कुल देय',markPaid:'भुगतान किया ✓',paidOn:'✓ भुगतान हुआ',
+  noCalc:'वेतन देखने के लिए स्टाफ और महीना चुनें।',
+  wdays:'कार्य दिवस आधार:',
+  markToday:'आज मार्क करें',markTodayDone:'हो गया!',
+  calTitle:'छुट्टी कैलेंडर',calHint:'किसी भी तारीख को दबाकर स्थिति बदलें',
+  days:['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'],
+  tlLeave:'छुट्टी के दिन',tlDed:'कटौती',
+  Ps:'उ',Ls:'छ',Hs:'अ',
+  addEntry:'+ एंट्री जोड़ें',filterAll:'सभी',
+  tAdv:'अग्रिम',tLoan:'लोन',tExp:'खर्च',tBonus:'बोनस',
+  famount:'राशि (₹)',fdate:'तारीख',freason:'कारण / नोट',freasonPh:'जैसे: चिकित्सा आपात',
+  finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
+  noEntries:'कोई एंट्री नहीं।',
+  tLoanRepay:'लोन चुकाना',fApplyLoan:'लोन में लगाएं',noActiveLoans:'इस स्टाफ का कोई सक्रिय लोन नहीं',
+  tExtraWork:'ओवरटाइम',tShortHours:'आधा दिन',fhours:'घंटे',frate:'दर / घंटा (₹)',
+  rExtraWork:'ओवरटाइम भत्ता',rShortHours:'आधे दिन की कटौती',aTotExtra:'ओवरटाइम',aTotShort:'आधे दिन',
+  voiceCompleteEntry:'एंट्री पूरी करें',voiceRerecord:'फिर से बोलें',voiceStaffIs:'मिला:',voiceStaffChange:'बदलें',voiceSaveEntry:'एंट्री सहेजें',
+  tDays:'दिन',tType:'प्रकार',tAction:'क्रिया',loanDue:'बकाया',perMonth:'/महीना',perDayCost:'1 दिन का वेतन:',tLeave:'छुट्टी',tPresent:'उपस्थित',tHoliday:'अवकाश',
+  loanActive:'सक्रिय',loanClosed:'बंद',loanBal:'बकाया',rLoanBal:'कुल लोन बकाया',
+  annTitle:'वार्षिक रिपोर्ट',annYear:'साल',annTotal:'कुल वार्षिक खर्च',annPer:'स्टाफ-वार सारांश',
+  aTotSal:'वेतन',aTotAdv:'अग्रिम',aTotExp:'खर्च',aTotBon:'बोनस',aTotLoan:'लोन बकाया',
+  months:['जन','फर','मार','अप्र','मई','जून','जुल','अग','सित','अक्त','नव','दिस'],
+  mFull:['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्तूबर','नवंबर','दिसंबर'],
+  micSpeak:'बोलें',micStop:'रोकें',micListening:'सुन रहे हैं…',micFillDone:'आवाज़ से फॉर्म भरा — कृपया जांचें',
+  voiceTitle:'आवाज़ से एंट्री 🎤',voiceHint:'माइक्रोफोन दबाएं और बोलें!',
+  voiceEx:'उदाहरण:',startListen:'🎤 बोलने के लिए दबाएं',stopListen:'■ रोकें',
+  voiceListening:'🔴 सुन रहे हैं…',voiceHeard:'आपने कहा:',voiceUnderstood:'यह सहेजा जाएगा:',voiceShowEx:'💡 उदाहरण दिखाएं',voiceHideEx:'छुपाएं',
+  voiceConfirm:'पुष्टि करें और सहेजें',voiceNoSupport:'आवाज़ काम नहीं करता। Chrome उपयोग करें।',
+  voiceNoStaff:'इस घर में स्टाफ नहीं है।',
+  waTitle:'WhatsApp संदेश',waCopy:'कॉपी',waOpen:'WhatsApp खोलें',waCopied:'कॉपी!',
+  save:'सहेजें',cancel:'रद्द करें',del:'हटाएं',edit:'संपादित करें',
+  delStaff:'इस स्टाफ सदस्य का सारा डेटा हटाएं?',delEntry:'यह एंट्री हटाएं?',
+  savedOk:'एंट्री सहेजी गई!',paidOk:'वेतन भुगतान दर्ज हो गया!',
+  errName:'कृपया स्टाफ का नाम डालें',errAmount:'कृपया राशि डालें',errStaff:'कृपया स्टाफ चुनें',
+  tPaidBadge:'✓ भुगतान',tDueBadge:'बाकी है',
+  dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',
+  dashPay:'इस महीने वेतन तारीखें',dashRecent:'हाल की एंट्री',dashSpend:'इस महीने',
+  dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं — स्टाफ टैब पर जाएं',
+  dashPayBtn:'दें →',dashNoRecent:'कोई एंट्री नहीं',dashTomorrow:'कल',dashToday:'आज',
+  voiceExamples:['"कमला ने आज छुट्टी ली"','"रामू को 500 रुपये अग्रिम दिए"','"संतोष को 2000 बोनस मिला"','"रामू को 1000 का लोन दिया"'],
+  roleManagement:'स्टाफ भूमिकाएं',addRole:'नई भूमिका जोड़ें…',addRolePh:'जैसे: प्रेस वाली',addRoleBtn:'जोड़ें',
+  defaultRole:'डिफ़ॉल्ट (लॉक)',
+  workingDaysLabel:'कार्य दिवस / माह',workingDaysHint:'छुट्टी कटौती के लिए उपयोग होता है',
+  langLabel:'भाषा',
+  profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
+  profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
+  profFinancials:'इस महीने',profGross:'सकल',
+  profAlreadyPaid:'वेतन दिया ✓',profConfirmPay:'भुगतान करें',
+  profNoAdv:'इस महीने कोई अग्रिम नहीं',profLoans:'सक्रिय लोन',profLoanEMI:'किस्त',
+  profAttend:'उपस्थिति',profQA:'त्वरित क्रिया',
+  profPaySalary:'वेतन दें',profRecAdv:'अग्रिम दर्ज',
+  profRecLoan:'लोन भुगतान',profMarkLeave:'छुट्टी दर्ज',profNoLoans:'कोई सक्रिय लोन नहीं',
+  signIn:'घरसेवा में साइन इन करें',phoneNum:'फोन नंबर',sendOtp:'OTP भेजें',otpSent:'OTP भेज दिया! 6 अंकों का कोड डालें।',
+  verifyOtp:'कोड वेरीफाई करें',googleSignIn:'Google से जारी रखें',
+  guestMode:'केवल इस डिवाइस पर (शेयरिंग नहीं)',guestWarning:'डेटा इस डिवाइस पर रहेगा। बाद में क्लाउड से जोड़ सकते हैं।',
+  createHome:'नया घर बनाएं',joinHome:'घर से जुड़ें',
+  inviteCode:'घर का कोड',inviteCodeHint:'यह 6-अक्षर कोड परिवार के सदस्यों के साथ शेयर करें',
+  copyCode:'कोड कॉपी करें',shareWA:'WhatsApp पर शेयर करें',newCode:'नया कोड बनाएं',
+  enterCode:'6-अक्षर का घर कोड डालें',codeNotFound:'कोड नहीं मिला। फिर से जांचें।',
+  migrateTitle:'पुराना डेटा इम्पोर्ट करें',
+  migratePrompt:'इस डिवाइस पर पुराना डेटा मिला। इसे आपके क्लाउड घर में इम्पोर्ट करें?',
+  migrateYes:'हाँ, इम्पोर्ट करें',migrateSkip:'नया शुरू करें',
+  signOut:'साइन आउट',members:'सदस्य',syncLive:'● लाइव',
+  authError:'साइन इन नहीं हो सका। फिर कोशिश करें।',
+  joining:'जुड़ रहे हैं…',creating:'बना रहे हैं…',setupTitle:'अपना घर सेट करें',
+  createDesc:'नया घर और कोड बनाएं',joinDesc:'परिवार के सदस्य का दिया कोड डालें',
+},
+};
+
+/* ── STORAGE ────────────────────────────────────────────────── */
+const SK={
+  homes:'gs_homes',settings:'gs_settings',
+  staff:h=>'gs_staff_'+h,
+  ledger:h=>'gs_ledger_'+h,
+  payments:h=>'gs_pay_'+h,
+  leaves:(s,ym)=>'gs_lv_'+s+'_'+ym,
+};
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function lsKeys(){try{return Object.keys(localStorage);}catch(e){return [];}}
+
+function downloadBlob(content,mime,filename){
+  var blob=new Blob([content],{type:mime});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+  document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},200);
+}
+function exportCSV(homeId,period){
+  var staff=getStaff(homeId);
+  var ledger=getLedger(homeId);
+  var now=new Date();
+  var entries=ledger.filter(function(e){
+    if(!e.date) return false;
+    if(period==='month') return e.date.startsWith(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+    if(period==='year')  return e.date.startsWith(String(now.getFullYear()));
+    return true;
+  });
+  var rows=[['Date','Staff','Type','Amount','Reason']];
+  entries.forEach(function(e){
+    var name=(staff.find(function(s){return s.id===e.staffId;})||{name:''}).name;
+    var cell=function(v){var s=String(v||'');return (s.includes(',')||s.includes('"'))?'"'+s.replace(/"/g,'""')+'"':s;};
+    rows.push([cell(e.date),cell(name),cell(e.type),cell(e.amount||0),cell(e.reason)]);
+  });
+  var label=period==='month'?(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')):String(now.getFullYear());
+  downloadBlob(rows.map(function(r){return r.join(',');}).join('\n'),'text/csv','GharSeva_'+label+'.csv');
+}
+function downloadBackup(){
+  var data={};
+  lsKeys().forEach(function(k){if(k.startsWith('gs_'))data[k]=lsGet(k,null);});
+  downloadBlob(JSON.stringify(data,null,2),'application/json','GharSeva_Backup_'+todayStr()+'.json');
+}
+function applyBackup(json){
+  var data=JSON.parse(json);
+  Object.keys(data).forEach(function(k){if(k.startsWith('gs_'))lsSet(k,data[k]);});
+}
+
+const getHomes=()=>lsGet(SK.homes,[]);
+const saveHomes=h=>lsSet(SK.homes,h);
+const getSettings=()=>lsGet(SK.settings,{lang:'en',lastHomeId:''});
+const saveSettings=s=>lsSet(SK.settings,s);
+const getStaff=h=>lsGet(SK.staff(h),[]);
+const saveStaff=(h,s)=>lsSet(SK.staff(h),s);
+const getLedger=h=>lsGet(SK.ledger(h),[]);
+const saveLedger=(h,l)=>lsSet(SK.ledger(h),l);
+const getPayments=h=>lsGet(SK.payments(h),[]);
+const savePayments=(h,p)=>lsSet(SK.payments(h),p);
+const getLeaves=(s,ym)=>lsGet(SK.leaves(s,ym),{});
+const saveLeaves=(s,ym,l)=>lsSet(SK.leaves(s,ym),l);
+
+/* ── FIRESTORE WRITE WRAPPERS ─────────────────────────────────
+   Each wrapper writes to localStorage first (instant UI update),
+   then syncs to Firestore. Guest mode (FIREBASE_ENABLED=false)
+   just does the localStorage write — no Firestore calls.         */
+function fbSaveStaff(homeId, newStaff){
+  var old=getStaff(homeId);
+  saveStaff(homeId,newStaff);
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  var batch=fbDb.batch();
+  newStaff.forEach(function(s){ batch.set(fbDb.doc('homes/'+homeId+'/staff/'+s.id),s); });
+  var newIds=newStaff.map(function(s){return s.id;});
+  old.forEach(function(s){ if(!newIds.includes(s.id)) batch.delete(fbDb.doc('homes/'+homeId+'/staff/'+s.id)); });
+  batch.commit().catch(function(e){console.warn('fbSaveStaff:',e);});
+}
+function fbDeleteStaffCascade(homeId, staffId){
+  /* called after fbSaveStaff when a staff member is deleted */
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  fbDb.collection('homes/'+homeId+'/leaves').get().then(function(snap){
+    var b=fbDb.batch();
+    snap.docs.forEach(function(d){ if(d.id.startsWith(staffId+'_')) b.delete(d.ref); });
+    return b.commit();
+  }).catch(function(){});
+}
+function fbSaveLedger(homeId, newLedger){
+  var old=getLedger(homeId);
+  saveLedger(homeId,newLedger);
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  var batch=fbDb.batch();
+  newLedger.forEach(function(e){ batch.set(fbDb.doc('homes/'+homeId+'/ledger/'+e.id),e); });
+  var newIds=newLedger.map(function(e){return e.id;});
+  old.forEach(function(e){ if(!newIds.includes(e.id)) batch.delete(fbDb.doc('homes/'+homeId+'/ledger/'+e.id)); });
+  batch.commit().catch(function(e){console.warn('fbSaveLedger:',e);});
+}
+function fbSavePayments(homeId, newPays){
+  savePayments(homeId,newPays);
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  var batch=fbDb.batch();
+  newPays.forEach(function(p){ batch.set(fbDb.doc('homes/'+homeId+'/payments/'+p.key),p); });
+  batch.commit().catch(function(e){console.warn('fbSavePayments:',e);});
+}
+function fbSaveLeaves(homeId, staffId, ym, dates){
+  saveLeaves(staffId,ym,dates);
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  fbDb.doc('homes/'+homeId+'/leaves/'+staffId+'_'+ym).set({dates:dates})
+    .catch(function(e){console.warn('fbSaveLeaves:',e);});
+}
+
+/* Migration: move existing localStorage data into the cloud household */
+function migrateFromLocalStorage(homeId){
+  if(!FIREBASE_ENABLED||!fbDb) return Promise.resolve();
+  var batch=fbDb.batch();
+  var existingHomes=lsGet(SK.homes,[]);
+  existingHomes.forEach(function(home){
+    lsGet(SK.staff(home.id),[]).forEach(function(s){
+      batch.set(fbDb.doc('homes/'+homeId+'/staff/'+s.id),s);
+    });
+    lsGet(SK.ledger(home.id),[]).forEach(function(e){
+      batch.set(fbDb.doc('homes/'+homeId+'/ledger/'+e.id),e);
+    });
+    lsGet(SK.payments(home.id),[]).forEach(function(p){
+      batch.set(fbDb.doc('homes/'+homeId+'/payments/'+p.key),p);
+    });
+  });
+  lsKeys().filter(function(k){return k.startsWith('gs_lv_');}).forEach(function(k){
+    var ref=k.slice(6); /* strip gs_lv_ → staffId_YYYY-MM */
+    batch.set(fbDb.doc('homes/'+homeId+'/leaves/'+ref),{dates:lsGet(k,{})});
+  });
+  return batch.commit().catch(function(e){console.warn('Migration error:',e);});
+}
+
+/* ── SEED DATA ──────────────────────────────────────────────── */
+const SH1='hm_nagpur';
+function seedIfNeeded(){
+  if(getHomes().length>0) return;
+  saveHomes([{id:SH1,name:'नागपुर — मुख्य घर'},{id:'hm_mumbai',name:'मुंबई — ससुराल'}]);
+  var now=new Date();
+  var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var d=now.getDate();
+  saveStaff(SH1,[
+    {id:'st1',name:'कमला बाई',nickname:'कमला',role:'maid',salary:8000,phone:'9876543210',
+     joiningDate:'2023-01-15',payDay:'5',photo:'',notes:'सुबह सभी कमरे साफ करती हैं, बर्तन धोती हैं।',
+     aadhaar:'234567893456',bankName:'State Bank of India',accountNo:'11223344551234',ifsc:'SBIN0001234'},
+    {id:'st2',name:'रामू प्रसाद',nickname:'रामू',role:'cook',salary:12000,phone:'9765432109',
+     joiningDate:'2022-06-01',payDay:'1',photo:'',notes:'दोपहर और रात का खाना बनाते हैं। महाराष्ट्रीयन खाने में माहिर।',
+     aadhaar:'987654321099',bankName:'Bank of Baroda',accountNo:'44556677889900',ifsc:'BARB0NAGPUR'},
+  ]);
+  saveLedger(SH1,[
+    {id:'l1',staffId:'st1',type:'advance',amount:1000,date:ym+'-10',reason:'बेटी की स्कूल फीस'},
+    {id:'l2',staffId:'st2',type:'loan',amount:5000,installment:1000,totalInstallments:5,paidInstallments:0,date:ym+'-05',reason:'चिकित्सा आपात स्थिति',status:'active'},
+    {id:'l3',staffId:'st1',type:'bonus',amount:500,date:ym+'-01',reason:'दीवाली बोनस'},
+    {id:'l4',staffId:'st2',type:'expense',amount:250,date:ym+'-08',reason:'खाने का तेल खरीदा'},
+  ]);
+  var lv={};
+  if(d>6) lv[ym+'-06']='leave';
+  if(d>12) lv[ym+'-12']='leave';
+  saveLeaves('st1',ym,lv);
+  saveSettings({lang:'en',lastHomeId:SH1});
+}
+
+/* ── UTILS ──────────────────────────────────────────────────── */
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function fmt(n){return '₹'+Number(n||0).toLocaleString('en-IN');}
+function fmtD(s){if(!s)return '';var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function padYM(y,m){return y+'-'+String(m).padStart(2,'0');}
+function maskAadhaar(n){if(!n)return '—';var c=n.replace(/\D/g,'');return c.length>=4?'****-****-'+c.slice(-4):'****';}
+function maskAccount(n){if(!n)return '—';return n.length<=4?n:'*'.repeat(Math.max(0,n.length-4))+n.slice(-4);}
+function roleLabel(key,lang){var r=getRoles().find(function(r){return r.key===key;});return r?(lang==='hi'?r.hi:r.en):key;}
+
+function getLoanBal(staffId,ledger){
+  return (ledger||[])
+    .filter(function(e){return e.staffId===staffId&&e.type==='loan'&&e.status==='active';})
+    .reduce(function(s,e){
+      return s+Math.max(0,e.amount-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));
+    },0);
+}
+
+function calcSalary(staff,year,month,ledger,workingDays){
+  var ym=padYM(year,month);
+  var lv=getLeaves(staff.id,ym);
+  var leaveDays=0;
+  Object.entries(lv).forEach(function(e){
+    if(e[1]==='leave') leaveDays++;
+  });
+  var daily=staff.salary/(workingDays||30);
+  var leaveDeduction=Math.round(daily*leaveDays);
+  var items=(ledger||[]).filter(function(e){return e.staffId===staff.id && e.date && e.date.startsWith(ym);});
+  var advances  =items.filter(function(e){return e.type==='advance';   }).reduce(function(s,e){return s+(e.amount||0);},0);
+  var expenses  =items.filter(function(e){return e.type==='expense';   }).reduce(function(s,e){return s+(e.amount||0);},0);
+  var bonuses   =items.filter(function(e){return e.type==='bonus';     }).reduce(function(s,e){return s+(e.amount||0);},0);
+  var extraWork =items.filter(function(e){return e.type==='extra_work';}).reduce(function(s,e){return s+(e.amount||0);},0);
+  var shortHours=items.filter(function(e){return e.type==='short_hours';}).reduce(function(s,e){return s+(e.amount||0);},0);
+  var loanInst=(ledger||[]).filter(function(e){return e.staffId===staff.id&&e.type==='loan'&&e.status==='active';})
+               .reduce(function(s,e){return s+(e.installment||0);},0);
+  var loanBal=getLoanBal(staff.id,ledger);
+  var net=staff.salary-leaveDeduction-advances-expenses-loanInst+bonuses+extraWork-shortHours;
+  return {baseSalary:staff.salary,leaveDays:leaveDays,leaveDeduction:leaveDeduction,
+          advances:advances,expenses:expenses,loanInst:loanInst,bonuses:bonuses,
+          extraWork:extraWork,shortHours:shortHours,loanBal:loanBal,netPayable:Math.max(0,net)};
+}
+
+function waTemplate(type,staff,amount,date,homeName,lang){
+  var d=fmtD(date), hi=lang==='hi';
+  var msgs={
+    advance: hi?'नमस्ते! 🙏\n'+homeName+' से '+staff.name+' को ₹'+amount+' का अग्रिम '+d+' को दिया गया।\n— घरसेवा'
+               :'Hello! 🙏\nAdvance of ₹'+amount+' given to '+staff.name+' from '+homeName+' on '+d+'.\n— GharSeva',
+    loan:    hi?'नमस्ते! 🙏\n'+staff.name+' को ₹'+amount+' का लोन '+d+' को दिया गया।\n— घरसेवा'
+               :'Hello! 🙏\nLoan of ₹'+amount+' given to '+staff.name+' on '+d+'.\n— GharSeva',
+    leave:   hi?'नमस्ते! 🙏\n'+staff.name+' की छुट्टी '+d+' को दर्ज की गई।\n— घरसेवा'
+               :'Hello! 🙏\nLeave recorded for '+staff.name+' on '+d+'.\n— GharSeva',
+    bonus:   hi?'नमस्ते! 🙏\n'+staff.name+' को ₹'+amount+' का बोनस '+d+' को मिला। 🎉\n— घरसेवा'
+               :'Hello! 🙏\nBonus of ₹'+amount+' given to '+staff.name+' on '+d+'. 🎉\n— GharSeva',
+    expense: hi?'नमस्ते! 🙏\n'+staff.name+' के लिए ₹'+amount+' का खर्च '+d+' को हुआ।\n— घरसेवा'
+               :'Hello! 🙏\nExpense of ₹'+amount+' recorded for '+staff.name+' on '+d+'.\n— GharSeva',
+    salary:  hi?'नमस्ते! 🙏\n'+staff.name+' का वेतन ₹'+amount+' का भुगतान '+d+' को हो गया। ✅\n— घरसेवा'
+               :'Hello! 🙏\nSalary of ₹'+amount+' paid to '+staff.name+' on '+d+'. ✅\n— GharSeva',
+    loan_repay: hi?'नमस्ते! 🙏\n'+staff.name+' ने ₹'+amount+' का लोन '+d+' को वापस किया।\n— घरसेवा'
+                :'Hello! 🙏\nLoan repayment of ₹'+amount+' received from '+staff.name+' on '+d+'.\n— GharSeva',
+    extra_work: hi?'नमस्ते! 🙏\n'+staff.name+' के अतिरिक्त काम का ₹'+amount+' भत्ता '+d+' को दर्ज हुआ।\n— घरसेवा'
+                :'Hello! 🙏\nExtra work pay of ₹'+amount+' recorded for '+staff.name+' on '+d+'.\n— GharSeva',
+    short_hours:hi?'नमस्ते! 🙏\n'+staff.name+' के कम घंटों की ₹'+amount+' कटौती '+d+' को दर्ज हुई।\n— घरसेवा'
+                :'Hello! 🙏\nShort hours deduction of ₹'+amount+' recorded for '+staff.name+' on '+d+'.\n— GharSeva',
+  };
+  return msgs[type]||'';
+}
+
+function parseVoice(transcript,staffList){
+  var t=transcript.toLowerCase();
+  var foundStaff=null;
+  for(var i=0;i<staffList.length;i++){
+    var s=staffList[i];
+    var terms=[];
+    (s.name||'').split(' ').forEach(function(p){if(p.length>1) terms.push(p.toLowerCase());});
+    if(s.nickname){s.nickname.split(' ').forEach(function(p){if(p.length>0) terms.push(p.toLowerCase());});}
+    if(terms.some(function(p){return t.includes(p);})){foundStaff=s;break;}
+  }
+
+  var WORD_NUMS=[
+    ['panch sau',500],['paanch sau',500],['पाँच सौ',500],['पांच सौ',500],
+    ['ek hazaar',1000],['ek hazar',1000],['एक हज़ार',1000],['एक हजार',1000],
+    ['do hazaar',2000],['दो हज़ार',2000],
+    ['teen hazaar',3000],['तीन हज़ार',3000],
+    ['char hazaar',4000],['चार हज़ार',4000],
+    ['paanch hazaar',5000],['panch hazaar',5000],['पाँच हज़ार',5000],
+    ['das hazaar',10000],['dus hazaar',10000],['दस हज़ार',10000],
+    ['bees hazaar',20000],['बीस हज़ार',20000],
+  ];
+  var amount=null;
+  for(var w=0;w<WORD_NUMS.length;w++){
+    if(t.includes(WORD_NUMS[w][0])){amount=WORD_NUMS[w][1];break;}
+  }
+  if(amount===null){var amtM=t.match(/(\d+)/);if(amtM)amount=parseInt(amtM[1]);}
+
+  var action=null;
+  if(/took leave|was absent|absent|chutti|छुट्टी|nahi aayi|nahi aaya|chhutti|गैरहाज़िर|अनुपस्थित|नहीं आई|नहीं आया/.test(t)) action='leave';
+  else if(/half.?day|half day|adha din|aadha din|आधा दिन|अधा दिन/.test(t)) action='short_hours';
+  else if(/overtime|over.?time|extra.*(hours?|kaam|work)|ओवरटाइम|अतिरिक्त/.test(t)) action='extra_work';
+  else if(/advance|peshgi|agrim|अग्रिम|पेशगी|एडवांस/.test(t)) action='advance';
+  else if(/\bloan\b|udhar diya|udhaar|कर्ज़|उधार|लोन/.test(t)) action='loan';
+  else if(/bonus|inaam|बोनस|इनाम/.test(t)) action='bonus';
+  else if(/expense|kharcha|खर्च|खर्चा/.test(t)) action='expense';
+
+  var hours=null;
+  var hoursM=t.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|घंटे?)/);
+  if(hoursM) hours=parseFloat(hoursM[1]);
+
+  return {foundStaff:foundStaff,action:action,amount:amount,hours:hours,transcript:transcript};
+}
+
+/* ── MIC BUTTON ─────────────────────────────────────────────── */
+function MicButton({lang,onResult,style}){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var [listening,setListening]=useState(false);
+  var recRef=useRef(null);
+  var t=T[lang];
+  if(!SR) return null;
+  function toggle(){
+    if(listening){
+      recRef.current&&recRef.current.stop();
+      setListening(false);
+    } else {
+      var rec=new SR();
+      rec.lang=lang==='hi'?'hi-IN':'en-IN';
+      rec.interimResults=false;
+      rec.onresult=function(e){
+        var tr=e.results[0][0].transcript;
+        setListening(false);
+        onResult(tr);
+      };
+      rec.onerror=function(){setListening(false);};
+      rec.onend=function(){setListening(false);};
+      rec.start(); recRef.current=rec; setListening(true);
+    }
+  }
+  return (
+    <button onClick={toggle} title={t.micSpeak}
+      style={Object.assign({},{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:12,border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif',fontWeight:800,fontSize:fsr(13),
+        background:listening?'var(--danger)':'var(--accent)',color:'#fff',transition:'all .15s',whiteSpace:'nowrap'},style||{})}>
+      <span style={{fontSize:fsr(17),lineHeight:1}}>{listening?'■':'🎤'}</span>
+      <span>{listening?t.micStop:t.micSpeak}</span>
+      {listening&&<span style={{fontSize:fsr(11),opacity:.85}}>{t.micListening}</span>}
+    </button>
+  );
+}
+
+/* ── SHARED UI COMPONENTS ───────────────────────────────────── */
+function Modal({onClose,title,children}){
+  useEffect(function(){
+    document.body.style.overflow='hidden';
+    return function(){document.body.style.overflow='';};
+  },[]);
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col" style={{background:'rgba(0,0,0,0.55)'}}>
+      <div className="flex-1 overflow-y-auto flex flex-col" style={{background:'var(--surface)',maxWidth:480,margin:'0 auto',width:'100%'}}>
+        <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-10" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
+          <h2 style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)',margin:0}}>{title}</h2>
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-2xl leading-none" style={{background:'var(--surface2)',border:'none',cursor:'pointer',color:'var(--ink2)'}}>✕</button>
+        </div>
+        <div className="flex-1 p-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function PrimaryBtn({onClick,children,disabled,color,full,small}){
+  var cls='btn '
+    +(color==='red'?'btn-danger':color==='green'?'btn-ok':color==='gray'?'btn-ghost':'btn-accent')
+    +(small?' btn-sm':'')
+    +(full?' btn-full':'');
+  return <button onClick={disabled?undefined:onClick} className={cls} disabled={!!disabled} style={{minHeight:small?36:48}}>{children}</button>;
+}
+
+function FInput({value,onChange,placeholder,type,maxLength}){
+  return <input type={type||'text'} value={value||''} onChange={function(e){onChange(e.target.value);}}
+    placeholder={placeholder} maxLength={maxLength} className="inp" />;
+}
+
+function FSelect({value,onChange,children}){
+  return <select value={value||''} onChange={function(e){onChange(e.target.value);}} className="sel">
+    {children}
+  </select>;
+}
+
+function FLabel({label,hint,children}){
+  return (
+    <div className="mb-4">
+      <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:5}}>{label}</label>
+      {hint && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:5}}>{hint}</p>}
+      {children}
+    </div>
+  );
+}
+
+function Toast({msg,onDone}){
+  useEffect(function(){var t=setTimeout(onDone,2500);return function(){clearTimeout(t);};},[]);
+  return <div className="fixed z-50 bottom-24 left-1/2 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-bold shadow-xl fade-in whitespace-nowrap" style={{background:'var(--ink)',color:'#fff'}}>{msg}</div>;
+}
+
+function WACard({message,phone,t}){
+  var [copied,setCopied]=useState(false);
+  function doCopy(){
+    try{
+      navigator.clipboard.writeText(message).then(function(){setCopied(true);setTimeout(function(){setCopied(false);},2000);});
+    }catch(e){
+      var ta=document.createElement('textarea');
+      ta.value=message; document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta); setCopied(true); setTimeout(function(){setCopied(false);},2000);
+    }
+  }
+  function doWA(){
+    var ph=phone&&phone.length===10?'91'+phone:'';
+    window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(message),'_blank');
+  }
+  return (
+    <div className="mt-4 rounded-2xl p-3" style={{border:'2px solid #A8D4C4',background:'#D5EEE8'}}>
+      <p style={{fontSize:fsr(12),fontWeight:700,color:'#1A6E5E',marginBottom:8}}>{t.waTitle}</p>
+      <pre style={{fontSize:fsr(12),color:'var(--ink)',whiteSpace:'pre-wrap',fontFamily:'inherit',marginBottom:12,lineHeight:1.6}}>{message}</pre>
+      <div className="flex gap-2">
+        <button onClick={doCopy} className="flex-1 rounded-xl font-bold text-sm" style={{padding:'10px',border:'2px solid #1A6E5E',color:'#1A6E5E',background:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+          {copied?'✓ '+t.waCopied:t.waCopy}
+        </button>
+        <button onClick={doWA} className="flex-1 rounded-xl text-sm font-bold" style={{padding:'10px',background:'#1A6E5E',color:'#fff',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+          {t.waOpen}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── ADD / EDIT STAFF MODAL ─────────────────────────────────── */
+function StaffModal({lang,onClose,onSave,existing}){
+  var t=T[lang];
+  var blank={name:'',nickname:'',role:'maid',salary:'',phone:'',joiningDate:todayStr(),payDay:'1',photo:'',notes:'',
+             aadhaar:'',bankName:'',accountNo:'',ifsc:''};
+  var [form,setForm]=useState(existing?Object.assign({nickname:''},existing):blank);
+  var [showVault,setShowVault]=useState(false);
+  var [allRoles,setAllRoles]=useState(function(){return getRoles();});
+  var [addingRole,setAddingRole]=useState(false);
+  var [newRoleName,setNewRoleName]=useState('');
+  var fileRef=useRef(null);
+
+  function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
+
+  function handleRoleChange(v){
+    if(v==='__add__'){setAddingRole(true);}
+    else{set('role',v);setAddingRole(false);}
+  }
+
+  function addNewRole(){
+    if(!newRoleName.trim()) return;
+    var key='custom_'+Date.now();
+    var nr={key:key,en:newRoleName.trim(),hi:newRoleName.trim(),isDefault:false};
+    saveCustomRoles([...getCustomRoles(),nr]);
+    var updated=getRoles();
+    setAllRoles(updated);
+    set('role',key);
+    setNewRoleName('');
+    setAddingRole(false);
+  }
+
+  function handlePhoto(e){
+    var file=e.target.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(ev){set('photo',ev.target.result);};
+    reader.readAsDataURL(file);
+  }
+  var [errMsg,setErrMsg]=useState('');
+  function handleSave(){
+    if(!form.name.trim()){setErrMsg(t.errName);return;}
+    onSave(Object.assign({},form,{id:existing?existing.id:uid(),salary:Number(form.salary)||0}));
+  }
+
+  return (
+    <Modal onClose={onClose} title={existing?t.editStaff:t.addStaff}>
+      {errMsg&&<Toast msg={errMsg} onDone={function(){setErrMsg('');}} />}
+      <div className="flex justify-center mb-5">
+        <label className="cursor-pointer flex flex-col items-center">
+          {form.photo
+            ? <img src={form.photo} className="w-24 h-24 rounded-full object-cover" style={{border:'4px solid var(--accent2)'}} />
+            : <div className="w-24 h-24 rounded-full flex flex-col items-center justify-center" style={{background:'var(--surface2)',border:'2px dashed var(--border)',color:'var(--muted)'}}>
+                <span style={{fontSize:fsr(32)}}>📷</span>
+                <span style={{fontSize:fsr(11),marginTop:4}}>{t.addPhoto}</span>
+              </div>
+          }
+          {form.photo && <span style={{fontSize:fsr(12),color:'var(--accent)',marginTop:4,fontWeight:700}}>{t.changePhoto}</span>}
+          <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" ref={fileRef} />
+        </label>
+      </div>
+
+      <FLabel label={t.fname}><FInput value={form.name} onChange={function(v){set('name',v);}} placeholder={t.fnamePh} /></FLabel>
+      <FLabel label={t.nickname}><FInput value={form.nickname} onChange={function(v){set('nickname',v);}} placeholder={t.nicknamePh} /></FLabel>
+      <FLabel label={t.frole}>
+        <select className="sel" value={addingRole?'__add__':form.role} onChange={function(e){handleRoleChange(e.target.value);}}>
+          {allRoles.map(function(r){return <option key={r.key} value={r.key}>{lang==='hi'?r.hi:r.en}</option>;})}
+          <option value="__add__">+ {t.addRole}</option>
+        </select>
+        {addingRole && (
+          <div className="flex gap-2 mt-2">
+            <input value={newRoleName} onChange={function(e){setNewRoleName(e.target.value);}}
+              onKeyDown={function(e){if(e.key==='Enter')addNewRole();}}
+              placeholder={t.addRolePh} className="inp" style={{flex:1}} />
+            <button onClick={addNewRole} className="btn btn-accent btn-sm">{t.addRoleBtn}</button>
+            <button onClick={function(){setAddingRole(false);setNewRoleName('');}} className="btn btn-ghost btn-sm">✕</button>
+          </div>
+        )}
+      </FLabel>
+      <FLabel label={t.fsalary}><FInput type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder="0" /></FLabel>
+      <FLabel label={t.fphone}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',v);}} placeholder={t.fphonePh} maxLength={10} /></FLabel>
+      <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
+      <FLabel label={t.fpay} hint={t.hintPayDay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
+      <FLabel label={t.fnotes}>
+        <textarea value={form.notes||''} onChange={function(e){set('notes',e.target.value);}} placeholder={t.fnotesPh} className="ta" style={{height:80}} />
+      </FLabel>
+
+      <button onClick={function(){setShowVault(function(v){return !v;});}}
+        className="w-full text-left py-3 px-4 rounded-xl mb-3 font-bold flex justify-between items-center"
+        style={{background:'var(--surface2)',color:'var(--ink)',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif',fontSize:fsr(15)}}>
+        <span>{t.vault}</span>
+        <span style={{color:'var(--muted)',fontSize:fsr(13)}}>{showVault?'▲':'▼'}</span>
+      </button>
+      {showVault && (
+        <div className="rounded-xl p-3 mb-4" style={{border:'1px solid var(--border)'}}>
+          <FLabel label={t.vaadhaar} hint={t.vaadhaarH}><FInput type="number" value={form.aadhaar} onChange={function(v){set('aadhaar',v);}} placeholder="12-digit number" maxLength={12} /></FLabel>
+          <FLabel label={t.vbank}><FInput value={form.bankName} onChange={function(v){set('bankName',v);}} placeholder={t.vbankPh} /></FLabel>
+          <FLabel label={t.vaccount}><FInput value={form.accountNo} onChange={function(v){set('accountNo',v);}} placeholder="Account number" /></FLabel>
+          <FLabel label={t.vifsc} hint={t.hintIFSC}><FInput value={form.ifsc} onChange={function(v){set('ifsc',v);}} placeholder="e.g. SBIN0001234" /></FLabel>
+        </div>
+      )}
+
+      <div className="flex gap-3 mt-2">
+        <PrimaryBtn onClick={onClose} color="gray" full={true}>{t.cancel}</PrimaryBtn>
+        <PrimaryBtn onClick={handleSave} full={true}>{t.save}</PrimaryBtn>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── STAFF CARD ─────────────────────────────────────────────── */
+function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
+  var t=T[lang];
+  var [showDocs,setShowDocs]=useState(false);
+  var [confirmDel,setConfirmDel]=useState(false);
+  var initials=(staff.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+
+  return (
+    <div className="rounded-2xl mb-3 fade-in overflow-hidden" style={{background:'var(--surface)',border:'1px solid var(--border)',boxShadow:'0 1px 4px rgba(26,46,42,.07)'}}>
+      {/* Tappable main area — navigates to profile */}
+      <div className="p-4" onClick={onView} style={{cursor:'pointer'}}>
+        <div className="flex items-center gap-3">
+          {staff.photo
+            ? <img src={staff.photo} className="w-14 h-14 rounded-full object-cover shrink-0" style={{border:'2px solid var(--border)'}} />
+            : <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0" style={{background:avatarBg(staff.role)}}>{initials}</div>
+          }
+          <div className="flex-1 min-w-0">
+            <p style={{fontSize:fsr(17),fontWeight:800,color:'var(--ink)'}} className="truncate">{staff.name}</p>
+            {staff.nickname && <p style={{fontSize:fsr(12),color:'var(--muted)'}}>{staff.nickname}</p>}
+            <p style={{fontSize:fsr(13),color:'var(--ink2)'}}>{roleLabel(staff.role,lang)}</p>
+            <div className="flex items-center gap-2 flex-wrap" style={{marginTop:2}}>
+              <p style={{fontSize:fsr(15),fontWeight:700,color:'var(--accent)',margin:0}}>{fmt(staff.salary)}{t.perMonth}</p>
+              {isPaid
+                ? <span className="pill pill-ok" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tPaidBadge}</span>
+                : <span className="pill pill-warn" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tDueBadge}</span>
+              }
+            </div>
+            {loanBal>0 && <span className="pill pill-purple" style={{fontSize:fsr(11),marginTop:2,display:'inline-block'}}>🏦 {fmt(loanBal)} {t.loanDue}</span>}
+          </div>
+          <div className="shrink-0 flex flex-col items-center gap-1">
+            <div className="flex flex-col gap-2">
+              <button onClick={function(e){e.stopPropagation();onEdit();}} className="rounded-full flex items-center justify-center text-base" style={{minWidth:44,minHeight:44,background:'var(--surface2)',border:'none',cursor:'pointer'}}>✏️</button>
+              <button onClick={function(e){e.stopPropagation();setConfirmDel(true);}} className="rounded-full flex items-center justify-center text-base" style={{minWidth:44,minHeight:44,background:'#FCE8E8',border:'none',cursor:'pointer'}}>🗑️</button>
+            </div>
+          </div>
+        </div>
+        {staff.phone && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8}}>📞 {staff.phone}</p>}
+        {staff.notes && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:4}} className="line-clamp-2">📝 {staff.notes}</p>}
+        <p style={{fontSize:fsr(12),color:'var(--accent)',fontWeight:700,textAlign:'right',marginTop:6,marginBottom:0}}>{t.profViewProfile} →</p>
+      </div>
+
+      <div className="px-4 pb-3" onClick={function(e){e.stopPropagation();}}>
+        <button onClick={function(){setShowDocs(function(v){return !v;});}}
+          style={{fontSize:fsr(12),color:'var(--accent)',fontWeight:700,border:'1px solid var(--accent2)',borderRadius:8,padding:'4px 12px',background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+          {showDocs?t.hideDoc:t.viewDoc}
+        </button>
+      </div>
+
+      {showDocs && (
+        <div className="px-4 pb-4">
+          <div className="p-3 rounded-xl fade-in" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+            <p style={{fontSize:fsr(11),fontWeight:700,color:'var(--muted)',marginBottom:8}}>{t.vault}</p>
+            <div className="grid grid-cols-2 gap-2" style={{fontSize:fsr(12)}}>
+              <div><p style={{color:'var(--muted)'}}>{t.vaadhaar}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{maskAadhaar(staff.aadhaar)}</p></div>
+              <div><p style={{color:'var(--muted)'}}>{t.vbank}</p><p style={{fontWeight:700,color:'var(--ink)'}} className="truncate">{staff.bankName||'—'}</p></div>
+              <div><p style={{color:'var(--muted)'}}>{t.vaccount}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{maskAccount(staff.accountNo)}</p></div>
+              <div><p style={{color:'var(--muted)'}}>{t.vifsc}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{staff.ifsc||'—'}</p></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDel && (
+        <div className="px-4 pb-4">
+          <div className="p-3 rounded-xl" style={{background:'#FCE8E8',border:'1px solid #F5C6C6'}}>
+            <p style={{fontSize:fsr(13),color:'var(--danger)',fontWeight:700,marginBottom:8}}>{t.delStaff}</p>
+            <div className="flex gap-2">
+              <PrimaryBtn onClick={function(){setConfirmDel(false);}} color="gray" small={true} full={true}>{t.cancel}</PrimaryBtn>
+              <PrimaryBtn onClick={onDelete} color="red" small={true} full={true}>{t.del}</PrimaryBtn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── QUICK LEAVE MODAL ──────────────────────────────────────── */
+function QuickLeaveModal({staff,lang,ym,homeId,onClose,onSaved}){
+  var t=T[lang];
+  var today=todayStr();
+  var defaultDate=today.startsWith(ym)?today:ym+'-01';
+  var [date,setDate]=useState(defaultDate);
+  var [status,setStatus]=useState('leave');
+  var opts=[
+    {v:'leave',label:t.tLeave,icon:'🗓️',color:'var(--danger)',bg:'#FCE8E8'},
+    {v:'holiday',label:t.tHoliday,icon:'🏖️',color:'var(--warn)',bg:'#FDF3DC'},
+  ];
+
+  function handleSave(){
+    var lv=getLeaves(staff.id,ym);
+    lv[date]=status;
+    fbSaveLeaves(homeId||_activeHomeId,staff.id,ym,lv);
+    onSaved();
+  }
+  return (
+    <Modal onClose={onClose} title={t.profMarkLeave}>
+      <FLabel label={t.fdate}><FInput type="date" value={date} onChange={setDate} /></FLabel>
+      <div className="mb-5">
+        <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:8}}>{t.tType}</label>
+        <div className="grid grid-cols-2 gap-3">
+          {opts.map(function(opt){
+            var active=status===opt.v;
+            return (
+              <button key={opt.v} onClick={function(){setStatus(opt.v);}}
+                style={{padding:'14px 8px',borderRadius:12,fontWeight:800,fontSize:fsr(15),fontFamily:'Nunito,sans-serif',cursor:'pointer',
+                  border:active?'2px solid '+opt.color:'2px solid var(--border)',
+                  background:active?opt.bg:'var(--surface2)',color:active?opt.color:'var(--ink2)',
+                  display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                <span style={{fontSize:fsr(24)}}>{opt.icon}</span>
+                <span>{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <PrimaryBtn onClick={handleSave} full={true}>{t.save}</PrimaryBtn>
+    </Modal>
+  );
+}
+
+/* ── SALARY PAY MODAL ───────────────────────────────────────── */
+function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
+  var t=T[lang];
+  var now=new Date();
+  var month=now.getMonth()+1;
+  var year=now.getFullYear();
+  var [ledger,setLedger]=useState(function(){return getLedger(homeId);});
+  var [payments,setPayments]=useState(function(){return getPayments(homeId);});
+  var [done,setDone]=useState(false);
+  var [waMsg,setWAMsg]=useState('');
+  var payKey=staff.id+'_'+year+'_'+month;
+  var paidRec=payments.find(function(p){return p.key===payKey;});
+  var calc=calcSalary(staff,year,month,ledger,workingDays);
+  var rows=[{label:t.rBase,val:calc.baseSalary,color:'var(--ink)'}];
+  if(calc.leaveDays>0) rows.push({label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')',val:-calc.leaveDeduction,color:'var(--danger)'});
+  if(calc.advances>0) rows.push({label:t.rAdv,val:-calc.advances,color:'var(--warn)'});
+  if(calc.expenses>0) rows.push({label:t.rExp,val:-calc.expenses,color:'var(--warn)'});
+  if(calc.loanInst>0) rows.push({label:t.rLoan,val:-calc.loanInst,color:'var(--purple)'});
+  if(calc.bonuses>0) rows.push({label:t.rBonus,val:calc.bonuses,color:'var(--ok)'});
+  if(calc.extraWork>0) rows.push({label:t.rExtraWork,val:calc.extraWork,color:'var(--ok)'});
+  if(calc.shortHours>0) rows.push({label:t.rShortHours,val:-calc.shortHours,color:'var(--warn)'});
+  function doConfirm(){
+    if(paidRec||done) return;
+    var pDate=todayStr();
+    var home=homes.find(function(h){return h.id===homeId;})||{name:''};
+    var newPays=payments.concat([{key:payKey,staffId:staff.id,year:year,month:month,amount:calc.netPayable,date:pDate}]);
+    var newLed=ledger.map(function(e){
+      if(e.staffId===staff.id&&e.type==='loan'&&e.status==='active'){
+        var p=(e.paidInstallments||0)+1;
+        return Object.assign({},e,{paidInstallments:p,status:p>=(e.totalInstallments||Infinity)?'closed':'active'});
+      }
+      return e;
+    });
+    fbSavePayments(homeId,newPays); fbSaveLedger(homeId,newLed);
+    setDone(true);
+    setWAMsg(waTemplate('salary',staff,calc.netPayable,pDate,home.name,lang));
+    onPaid&&onPaid();
+  }
+  return (
+    <Modal onClose={onClose} title={t.profPaySalary}>
+      <div className="flex items-center gap-3 mb-4 p-3 rounded-2xl" style={{background:'var(--surface2)'}}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0" style={{background:avatarBg(staff.role)}}>{(staff.name[0]||'?').toUpperCase()}</div>
+        <div>
+          <p style={{fontWeight:800,fontSize:fsr(17),color:'var(--ink)',margin:0}}>{staff.name}</p>
+          <p style={{fontSize:fsr(13),color:'var(--ink2)',margin:0}}>{t.mFull[month-1]} {year}</p>
+        </div>
+      </div>
+      <div className="rounded-2xl overflow-hidden mb-4" style={{border:'1px solid var(--border)'}}>
+        {rows.map(function(row,i){
+          return (
+            <div key={i} className="flex items-center justify-between px-4 py-3" style={{borderBottom:'1px solid var(--border)',background:i%2===0?'var(--surface)':'var(--surface2)'}}>
+              <span style={{fontSize:fsr(15),color:'var(--ink2)'}}>{row.label}</span>
+              <span style={{fontSize:fsr(15),fontWeight:700,color:row.color}}>{row.val>0?'+':''}{fmt(Math.abs(row.val))}</span>
+            </div>
+          );
+        })}
+        <div className="flex items-center justify-between px-4 py-4" style={{background:'var(--accent)'}}>
+          <span style={{color:'#fff',fontWeight:700,fontSize:fsr(18)}}>{t.rNet}</span>
+          <span style={{color:'#fff',fontWeight:800,fontSize:fsr(24)}}>{fmt(calc.netPayable)}</span>
+        </div>
+      </div>
+      {(done||paidRec)
+        ? <div className="text-center">
+            <p style={{color:'var(--ok)',fontSize:fsr(18),fontWeight:800,padding:'8px 0'}}>✅ {t.paidOk}</p>
+            {waMsg&&<WACard message={waMsg} phone={staff.phone} t={t} />}
+          </div>
+        : <PrimaryBtn onClick={doConfirm} color="green" full={true}>{t.profConfirmPay}</PrimaryBtn>
+      }
+    </Modal>
+  );
+}
+
+/* ── STAFF PROFILE PAGE ─────────────────────────────────────── */
+function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}){
+  var t=T[lang];
+  var now=new Date();
+  var month=now.getMonth()+1;
+  var year=now.getFullYear();
+  var ym=padYM(year,month);
+  var [ledger,setLedger]=useState(function(){return getLedger(homeId);});
+  var [payments,setPayments]=useState(function(){return getPayments(homeId);});
+  var [showPayModal,setShowPayModal]=useState(false);
+  var [showEntryModal,setShowEntryModal]=useState(null);
+  var [showLeaveModal,setShowLeaveModal]=useState(false);
+  var [toast,setToast]=useState('');
+  var calc=useMemo(function(){return calcSalary(staff,year,month,ledger,workingDays);},[ledger,workingDays,staff]);
+  var leaveMap=getLeaves(staff.id,ym);
+  var leaveCount=0,holidayCount=0;
+  Object.values(leaveMap).forEach(function(v){if(v==='leave')leaveCount++;else if(v==='holiday')holidayCount++;});
+  var thisMonthAdv=ledger.filter(function(e){return e.staffId===staff.id&&e.date&&e.date.startsWith(ym)&&e.type==='advance';});
+  var thisMonthHalf=ledger.filter(function(e){return e.staffId===staff.id&&e.date&&e.date.startsWith(ym)&&e.type==='short_hours';});
+  var activeLoans=ledger.filter(function(e){return e.staffId===staff.id&&e.type==='loan'&&e.status==='active';});
+  var payKey=staff.id+'_'+year+'_'+month;
+  var paidRec=payments.find(function(p){return p.key===payKey;});
+  var halfDayCount=thisMonthHalf.length;
+  var presentDays=Math.max(0,workingDays-leaveCount-halfDayCount*0.5);
+  var initials=(staff.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+  function refreshData(){setLedger(getLedger(homeId));setPayments(getPayments(homeId));onStaffChange&&onStaffChange();}
+  function onSaveEntry(entry){
+    var next=ledger.concat([entry]);
+    if(entry.type==='loan_repay'&&entry.targetLoanId){
+      next=next.map(function(e){
+        if(e.id===entry.targetLoanId){
+          var nr=(e.manualRepaid||0)+entry.amount;
+          var tp=(e.paidInstallments||0)*(e.installment||0)+nr;
+          return Object.assign({},e,{manualRepaid:nr,status:tp>=e.amount?'closed':'active'});
+        }
+        return e;
+      });
+    }
+    fbSaveLedger(homeId,next); setLedger(next); setShowEntryModal(null); setToast(t.savedOk);
+  }
+  var allStaff=getStaff(homeId);
+  var actions=[
+    {icon:'💵',label:paidRec?t.profAlreadyPaid:t.profPaySalary,onClick:function(){setShowPayModal(true);},color:paidRec?'var(--muted)':'var(--ok)',disabled:!!paidRec},
+    {icon:'💸',label:t.profRecAdv,onClick:function(){setShowEntryModal('advance');},color:'var(--warn)',disabled:false},
+    {icon:'💰',label:t.profRecLoan,onClick:function(){setShowEntryModal('loan_repay');},color:'var(--purple)',disabled:false},
+    {icon:'🗓️',label:t.profMarkLeave,onClick:function(){setShowLeaveModal(true);},color:'var(--danger)',disabled:false},
+  ];
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {toast&&<Toast msg={toast} onDone={function(){setToast('');}} />}
+      {/* Back bar */}
+      <div className="shrink-0 flex items-center gap-3 px-4 py-3" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
+        <button onClick={onBack}
+          style={{background:'var(--surface2)',border:'none',cursor:'pointer',borderRadius:10,padding:'8px 14px',fontWeight:800,fontSize:fsr(14),color:'var(--ink)',fontFamily:'Nunito,sans-serif',display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap'}}>
+          ← {t.profBack}
+        </button>
+        <p style={{flex:1,fontWeight:800,fontSize:fsr(17),color:'var(--ink)',margin:0}} className="truncate">{staff.name}</p>
+      </div>
+      <div className="scroll-area flex-1 p-4" style={{display:'flex',flexDirection:'column',gap:16}}>
+
+        {/* ① Personal Info */}
+        <div className="card fade-in">
+          <div className="flex items-center gap-4 mb-4">
+            {staff.photo
+              ? <img src={staff.photo} className="rounded-full object-cover shrink-0" style={{width:64,height:64,border:'2px solid var(--border)'}} />
+              : <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{width:64,height:64,background:avatarBg(staff.role),fontSize:fsr(22)}}>{initials}</div>
+            }
+            <div>
+              <p style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',margin:0}}>{staff.name}</p>
+              {staff.nickname&&<p style={{fontSize:fsr(13),color:'var(--muted)',margin:'2px 0 0'}}>{staff.nickname}</p>}
+              <span className="pill pill-muted" style={{marginTop:6,display:'inline-block'}}>{roleLabel(staff.role,lang)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {staff.joiningDate&&(
+              <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>📅 {t.profJoined}</p>
+                <p style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700,margin:0}}>{fmtD(staff.joiningDate)}</p>
+              </div>
+            )}
+            <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>💵 {t.fsalary}</p>
+              <p style={{fontSize:fsr(14),color:'var(--accent)',fontWeight:800,margin:0}}>{fmt(staff.salary)}</p>
+            </div>
+            {staff.payDay&&(
+              <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>📆 {t.profPayDay}</p>
+                <p style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700,margin:0}}>{staff.payDay}</p>
+              </div>
+            )}
+            {staff.phone&&(
+              <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>📞 {t.fphone}</p>
+                <p style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700,margin:0}}>{staff.phone}</p>
+              </div>
+            )}
+          </div>
+          {staff.notes&&(
+            <div className="p-3 rounded-xl" style={{background:'var(--surface2)'}}>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:4}}>📝 {t.fnotes}</p>
+              <p style={{fontSize:fsr(14),color:'var(--ink)',lineHeight:1.5,margin:0}}>{staff.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ② Financial Summary */}
+        <div className="card fade-in">
+          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>💰 {t.profFinancials} — {t.mFull[month-1]} {year}</p>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="rounded-xl p-3 text-center" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:4}}>{t.profGross}</p>
+              <p style={{fontSize:fsr(22),fontWeight:800,color:'var(--accent)',margin:0}}>{fmt(calc.baseSalary)}</p>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{background:paidRec?'#D8EEE2':'var(--accent)',border:'1px solid var(--border)'}}>
+              <p style={{fontSize:fsr(11),color:paidRec?'var(--ok)':'rgba(255,255,255,0.7)',fontWeight:700,marginBottom:4}}>
+                {paidRec?'✓ '+t.profAlreadyPaid:t.rNet}
+              </p>
+              <p style={{fontSize:fsr(22),fontWeight:800,color:paidRec?'var(--ok)':'#fff',margin:0}}>{fmt(calc.netPayable)}</p>
+            </div>
+          </div>
+          <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}>💸 {t.rAdv}</p>
+          {thisMonthAdv.length===0
+            ? <p style={{fontSize:fsr(13),color:'var(--muted)',marginBottom:12}}>{t.profNoAdv}</p>
+            : <div className="mb-3">{thisMonthAdv.map(function(e){return (
+                <div key={e.id} className="flex justify-between items-center py-2 px-3 rounded-xl mb-1" style={{background:'#FDF3DC'}}>
+                  <div>
+                    <p style={{fontSize:fsr(13),color:'var(--ink)',fontWeight:700,margin:0}}>{fmtD(e.date)}</p>
+                    {e.reason&&<p style={{fontSize:fsr(11),color:'var(--ink2)',margin:0}}>{e.reason}</p>}
+                  </div>
+                  <span style={{fontSize:fsr(15),fontWeight:800,color:'var(--warn)'}}>{fmt(e.amount)}</span>
+                </div>
+              );})}</div>
+          }
+          <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}>🏦 {t.profLoans}</p>
+          {activeLoans.length===0
+            ? <p style={{fontSize:fsr(13),color:'var(--muted)'}}>{t.profNoLoans}</p>
+            : activeLoans.map(function(loan){
+                var rem=Math.max(0,loan.amount-(loan.paidInstallments||0)*(loan.installment||0)-(loan.manualRepaid||0));
+                return (
+                  <div key={loan.id} className="rounded-xl p-3 mb-2" style={{background:'#EAE4F5',border:'1px solid var(--border)'}}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span style={{fontSize:fsr(13),color:'var(--ink2)'}}>{t.loanBal}</span>
+                      <span style={{fontSize:fsr(18),fontWeight:800,color:'var(--purple)'}}>{fmt(rem)}</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <span className="pill pill-muted" style={{fontSize:fsr(11)}}>{t.profLoanEMI}: {fmt(loan.installment)}</span>
+                      <span className="pill pill-purple" style={{fontSize:fsr(11)}}>{(loan.paidInstallments||0)}/{loan.totalInstallments||'?'} {t.tDays}</span>
+                    </div>
+                    {loan.reason&&<p style={{fontSize:fsr(12),color:'var(--ink2)',marginTop:6,fontStyle:'italic',margin:'6px 0 0'}}>"{loan.reason}"</p>}
+                  </div>
+                );
+              })
+          }
+        </div>
+
+        {/* ③ Attendance */}
+        <div className="card fade-in">
+          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>📅 {t.profAttend} — {t.mFull[month-1]}</p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {[
+              {v:Math.floor(presentDays),label:t.tPresent,color:'var(--ok)',bg:'#D8EEE2'},
+              {v:leaveCount,label:t.tLeave,color:'var(--danger)',bg:'#FCE8E8'},
+              {v:holidayCount,label:t.tHoliday,color:'var(--warn)',bg:'#FDF3DC'},
+            ].map(function(box){return (
+              <div key={box.label} className="rounded-xl p-3 text-center" style={{background:box.bg}}>
+                <p style={{fontSize:fsr(28),fontWeight:800,color:box.color,margin:0,lineHeight:1.1}}>{box.v}</p>
+                <p style={{fontSize:fsr(11),color:box.color,fontWeight:700,margin:'4px 0 0'}}>{box.label}</p>
+              </div>
+            );})}
+          </div>
+          {halfDayCount>0&&(
+            <div className="flex items-center justify-between px-3 py-2 rounded-xl mb-2" style={{background:'#FDF3DC'}}>
+              <span style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700}}>⏱️ {t.tShortHours}</span>
+              <span style={{fontSize:fsr(17),fontWeight:800,color:'var(--warn)'}}>{halfDayCount}</span>
+            </div>
+          )}
+          {calc.leaveDeduction>0&&(
+            <div className="flex justify-between px-1 mt-2">
+              <span style={{fontSize:fsr(13),color:'var(--muted)'}}>{t.rLeave}</span>
+              <span style={{fontSize:fsr(14),fontWeight:700,color:'var(--danger)'}}>–{fmt(calc.leaveDeduction)}</span>
+            </div>
+          )}
+          <p style={{fontSize:fsr(12),color:'var(--muted)',marginTop:8,textAlign:'center'}}>{t.wdays} {workingDays}</p>
+        </div>
+
+        {/* ④ Quick Actions */}
+        <div className="card fade-in">
+          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>⚡ {t.profQA}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {actions.map(function(act,i){return (
+              <button key={i} onClick={act.disabled?undefined:act.onClick}
+                style={{background:'var(--surface)',border:'2px solid '+act.color,borderRadius:14,padding:'16px 8px',
+                  cursor:act.disabled?'not-allowed':'pointer',fontFamily:'Nunito,sans-serif',fontWeight:800,
+                  fontSize:fsr(13),color:act.color,opacity:act.disabled?.5:1,
+                  display:'flex',flexDirection:'column',alignItems:'center',gap:8,
+                  lineHeight:1.2,transition:'all .15s',width:'100%'}}>
+                <span style={{fontSize:fsr(26)}}>{act.icon}</span>
+                <span style={{textAlign:'center'}}>{act.label}</span>
+              </button>
+            );})}
+          </div>
+        </div>
+
+      </div>
+
+      {showPayModal&&<SalaryPayModal staff={staff} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} onClose={function(){setShowPayModal(false);}} onPaid={refreshData} />}
+      {showEntryModal&&<EntryModal lang={lang} staffList={allStaff} ledger={ledger} workingDays={workingDays} prefillStaffId={staff.id} prefillType={showEntryModal} onClose={function(){setShowEntryModal(null);}} onSave={onSaveEntry} />}
+      {showLeaveModal&&<QuickLeaveModal staff={staff} lang={lang} ym={ym} homeId={homeId} onClose={function(){setShowLeaveModal(false);}} onSaved={function(){setShowLeaveModal(false);setToast(t.savedOk);refreshData();}} />}
+    </div>
+  );
+}
+
+/* ── DASHBOARD TAB ──────────────────────────────────────────── */
+function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
+  var t=T[lang];
+  var [staff,setStaff]=useState(function(){return getStaff(homeId);});
+  var [ledger,setLedger]=useState(function(){return getLedger(homeId);});
+  var [payments,setPayments]=useState(function(){return getPayments(homeId);});
+
+  useEffect(function(){
+    setStaff(getStaff(homeId));
+    setLedger(getLedger(homeId));
+    setPayments(getPayments(homeId));
+  },[homeId,syncKey]);
+
+  var now=new Date();
+  var today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var curYear=now.getFullYear(),curMonth=now.getMonth()+1,todayDate=now.getDate();
+
+  /* attendance */
+  var presentCount=0,absentCount=0,holidayCount=0;
+  staff.forEach(function(s){
+    var st=getLeaves(s.id,curYM)[today];
+    if(st==='leave') absentCount++;
+    else if(st==='holiday') holidayCount++;
+    else presentCount++;
+  });
+
+  /* upcoming pay days sorted by closeness */
+  var payList=staff.map(function(s){
+    var pd=Number(s.payDay)||1;
+    var daysUntil=pd>=todayDate?pd-todayDate:(30-todayDate+pd);
+    var isPaid=payments.some(function(p){return p.staffId===s.id&&Number(p.year)===curYear&&Number(p.month)===curMonth;});
+    return {s:s,daysUntil:daysUntil,isPaid:isPaid,pd:pd};
+  }).sort(function(a,b){return a.daysUntil-b.daysUntil;});
+
+  /* recent ledger entries */
+  var recent=[...ledger].sort(function(a,b){return b.date>a.date?1:-1;}).slice(0,3);
+
+  /* monthly spend */
+  var totalSal=staff.reduce(function(s,x){return s+(x.salary||0);},0);
+  var paidAmt=payments.filter(function(p){return Number(p.year)===curYear&&Number(p.month)===curMonth;}).reduce(function(s,p){return s+(p.amount||0);},0);
+  var paidPct=totalSal>0?Math.min(100,Math.round(paidAmt/totalSal*100)):0;
+
+  var dayLabel=t.days[now.getDay()]+', '+now.getDate()+' '+t.mFull[now.getMonth()];
+
+  return (
+    <div className="flex-1 scroll-area p-4">
+      <p style={{fontSize:fsr(12),fontWeight:800,color:'var(--muted)',marginBottom:14,textTransform:'uppercase',letterSpacing:'0.07em'}}>
+        {t.dash} · {dayLabel}
+      </p>
+
+      {/* Attendance */}
+      {staff.length===0
+        ? <div className="card mb-4 text-center"><p style={{color:'var(--muted)',fontSize:fsr(14)}}>{t.dashNoStaff}</p></div>
+        : <div className="grid grid-cols-3 gap-3 mb-4">
+            {[{n:presentCount,lbl:t.dashPresent,c:'var(--ok)'},{n:absentCount,lbl:t.dashAbsent,c:'var(--danger)'},{n:holidayCount,lbl:t.dashHoliday,c:'var(--warn)'}].map(function(tile){
+              return (
+                <div key={tile.lbl} className="card text-center" style={{padding:'14px 8px'}}>
+                  <p style={{fontSize:fsr(30),fontWeight:800,color:tile.c,margin:0,lineHeight:1}}>{tile.n}</p>
+                  <p style={{fontSize:fsr(11),fontWeight:700,color:'var(--muted)',margin:'4px 0 0'}}>{tile.lbl}</p>
+                </div>
+              );
+            })}
+          </div>
+      }
+
+      {/* Pay Days */}
+      <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:8}}>{t.dashPay}</p>
+      <div className="rounded-2xl mb-4 overflow-hidden" style={{background:'var(--surface)',border:'1px solid var(--border)',boxShadow:'0 1px 4px rgba(26,46,42,.06)'}}>
+        {payList.length===0
+          ? <p className="p-4 text-center" style={{color:'var(--muted)',fontSize:fsr(13)}}>{t.dashNoStaff}</p>
+          : payList.map(function(item,i){
+              var dueTxt=item.daysUntil===0?t.dashToday:item.daysUntil===1?t.dashTomorrow:item.pd+' '+t.tDays;
+              return (
+                <div key={item.s.id} className="flex items-center gap-3 px-4 py-3"
+                  style={{borderBottom:i<payList.length-1?'1px solid var(--border)':'none'}}>
+                  <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
+                    style={{width:36,height:36,background:avatarBg(item.s.role),fontSize:fsr(13)}}>
+                    {(item.s.name[0]||'?').toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p style={{fontSize:fsr(14),fontWeight:800,color:'var(--ink)',margin:0}} className="truncate">{item.s.name}</p>
+                    <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{dueTxt}</p>
+                  </div>
+                  {item.isPaid
+                    ? <span className="pill pill-ok" style={{fontSize:fsr(10)}}>{t.tPaidBadge}</span>
+                    : <button onClick={function(){onNavigate('salary',item.s.id);}}
+                        style={{background:'var(--accent)',color:'#fff',border:'none',borderRadius:10,padding:'7px 14px',fontSize:fsr(13),fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif',minHeight:36,whiteSpace:'nowrap'}}>
+                        {t.dashPayBtn}
+                      </button>
+                  }
+                </div>
+              );
+            })
+        }
+      </div>
+
+      {/* Recent Entries */}
+      <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:8}}>{t.dashRecent}</p>
+      <div className="rounded-2xl mb-4 overflow-hidden" style={{background:'var(--surface)',border:'1px solid var(--border)',boxShadow:'0 1px 4px rgba(26,46,42,.06)'}}>
+        {recent.length===0
+          ? <p className="p-4 text-center" style={{color:'var(--muted)',fontSize:fsr(13)}}>{t.dashNoRecent}</p>
+          : recent.map(function(e,i){
+              var s=staff.find(function(x){return x.id===e.staffId;})||{name:'?'};
+              var tc=TC[e.type]||{icon:'•',bg:'var(--surface2)'};
+              return (
+                <div key={e.id} className="flex items-center gap-3 px-4 py-3"
+                  style={{background:tc.bg,borderBottom:i<recent.length-1?'1px solid var(--border)':'none'}}>
+                  <span style={{fontSize:fsr(20),width:28,textAlign:'center'}}>{tc.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink)',margin:0}} className="truncate">{s.name}</p>
+                    <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{e.reason||''} · {fmtD(e.date)}</p>
+                  </div>
+                  <p style={{fontSize:fsr(14),fontWeight:800,color:'var(--ink)',margin:0,flexShrink:0}}>{fmt(e.amount)}</p>
+                </div>
+              );
+            })
+        }
+      </div>
+
+      {/* Monthly Spend */}
+      <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:8}}>{t.dashSpend}</p>
+      <div className="card">
+        <div className="flex justify-between items-center mb-3">
+          <span style={{fontSize:fsr(13),color:'var(--muted)',fontWeight:700}}>{t.dashPaid}</span>
+          <span style={{fontSize:fsr(20),fontWeight:800,color:'var(--ok)'}}>{fmt(paidAmt)}</span>
+        </div>
+        <div style={{height:10,background:'var(--surface2)',borderRadius:6,overflow:'hidden'}}>
+          <div style={{height:'100%',width:paidPct+'%',background:'var(--ok)',borderRadius:6,transition:'width .5s ease'}} />
+        </div>
+        <div className="flex justify-between items-center mt-2">
+          <span style={{fontSize:fsr(11),color:'var(--muted)'}}>{t.dashOf} {fmt(totalSal)}</span>
+          <span style={{fontSize:fsr(11),fontWeight:800,color:paidPct===100?'var(--ok)':'var(--muted)'}}>{paidPct}%</span>
+        </div>
+      </div>
+
+      <div style={{height:16}} />
+    </div>
+  );
+}
+
+/* ── STAFF TAB ──────────────────────────────────────────────── */
+function StaffTab({lang,homeId,homes,workingDays,onStaffChange,syncKey}){
+  var t=T[lang];
+  var [staff,setStaff]=useState([]);
+  var [ledger,setLedger]=useState([]);
+  var [payments,setPayments]=useState([]);
+  var [showAdd,setShowAdd]=useState(false);
+  var [editing,setEditing]=useState(null);
+  var [selectedStaff,setSelectedStaff]=useState(null);
+  var now=new Date();
+  var curYear=now.getFullYear(), curMonth=now.getMonth()+1;
+
+  useEffect(function(){
+    setStaff(getStaff(homeId));setLedger(getLedger(homeId));
+    setPayments(getPayments(homeId));
+    setShowAdd(false);setEditing(null);setSelectedStaff(null);
+  },[homeId,syncKey]);
+
+  function save(s){
+    var idx=staff.findIndex(function(x){return x.id===s.id;});
+    var next=idx>=0?staff.map(function(x,i){return i===idx?s:x;}):[...staff,s];
+    setStaff(next); fbSaveStaff(homeId,next);
+    setShowAdd(false); setEditing(null);
+    onStaffChange && onStaffChange();
+  }
+  function del(id){
+    var next=staff.filter(function(x){return x.id!==id;});
+    setStaff(next); fbSaveStaff(homeId,next);
+    lsKeys().filter(function(k){return k.startsWith('gs_lv_'+id+'_');}).forEach(lsDel);
+    fbDeleteStaffCascade(homeId,id);
+    var nextLedger=getLedger(homeId).filter(function(e){return e.staffId!==id;});
+    fbSaveLedger(homeId,nextLedger);
+    setSelectedStaff(null);
+    onStaffChange && onStaffChange();
+  }
+
+  if(selectedStaff){
+    return <StaffProfile
+      staff={selectedStaff} lang={lang} homeId={homeId} homes={homes||[]} workingDays={workingDays||30}
+      onBack={function(){setSelectedStaff(null);setStaff(getStaff(homeId));setLedger(getLedger(homeId));}}
+      onStaffChange={function(){
+        setStaff(getStaff(homeId));setLedger(getLedger(homeId));
+        onStaffChange&&onStaffChange();
+      }}
+    />;
+  }
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="p-4 shrink-0" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
+        <PrimaryBtn onClick={function(){setShowAdd(true);}} full={true}>{t.addStaff}</PrimaryBtn>
+      </div>
+      <div className="p-4 scroll-area flex-1">
+        {staff.length===0
+          ? <p className="text-center mt-16 text-base whitespace-pre-line" style={{color:'var(--muted)'}}>{t.noStaff}</p>
+          : staff.map(function(s){
+              var isPaid=payments.some(function(p){return p.staffId===s.id&&Number(p.year)===curYear&&Number(p.month)===curMonth;});
+              return (
+                <StaffCard key={s.id} staff={s} lang={lang}
+                  loanBal={getLoanBal(s.id,ledger)}
+                  isPaid={isPaid}
+                  onView={function(){setSelectedStaff(s);}}
+                  onEdit={function(){setEditing(s);}}
+                  onDelete={function(){del(s.id);}} />
+              );
+            })
+        }
+      </div>
+      {showAdd && <StaffModal lang={lang} onClose={function(){setShowAdd(false);}} onSave={save} />}
+      {editing && <StaffModal lang={lang} onClose={function(){setEditing(null);}} onSave={save} existing={editing} />}
+    </div>
+  );
+}
+
+/* ── SALARY TAB ─────────────────────────────────────────────── */
+function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,syncKey}){
+  var t=T[lang];
+  var now=new Date();
+  var [staff,setStaff]=useState([]);
+  var [ledger,setLedger]=useState([]);
+  var [payments,setPayments]=useState([]);
+  var [selStaff,setSelStaff]=useState(defaultStaffId||'');
+  var [selMonth,setSelMonth]=useState(now.getMonth()+1);
+  var [selYear,setSelYear]=useState(now.getFullYear());
+  var [calc,setCalc]=useState(null);
+  var [waMsg,setWAMsg]=useState('');
+  var [toast,setToast]=useState('');
+
+  useEffect(function(){
+    var s=getStaff(homeId);
+    setStaff(s); setLedger(getLedger(homeId)); setPayments(getPayments(homeId));
+    setSelStaff(defaultStaffId||''); setCalc(null); setWAMsg('');
+  },[homeId,refreshKey,syncKey]);
+
+  function doCalc(){
+    var s=staff.find(function(x){return x.id===selStaff;});
+    if(!s) return;
+    setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays));
+    setWAMsg('');
+  }
+
+  function doMarkPaid(){
+    var s=staff.find(function(x){return x.id===selStaff;});
+    if(!s||!calc) return;
+    var key=selStaff+'_'+selYear+'_'+selMonth;
+    if(payments.find(function(p){return p.key===key;})) return;
+    var pDate=todayStr();
+    var home=homes.find(function(h){return h.id===homeId;})||{name:''};
+    var newPays=[...payments,{key:key,staffId:selStaff,year:selYear,month:selMonth,amount:calc.netPayable,date:pDate}];
+    var newLed=ledger.map(function(e){
+      if(e.staffId===selStaff&&e.type==='loan'&&e.status==='active'){
+        var paid=(e.paidInstallments||0)+1;
+        return Object.assign({},e,{paidInstallments:paid,status:paid>=(e.totalInstallments||Infinity)?'closed':'active'});
+      }
+      return e;
+    });
+    fbSavePayments(homeId,newPays); setPayments(newPays);
+    fbSaveLedger(homeId,newLed); setLedger(newLed);
+    setToast(t.paidOk);
+    setWAMsg(waTemplate('salary',s,calc.netPayable,pDate,home.name,lang));
+  }
+
+  var s=staff.find(function(x){return x.id===selStaff;});
+  var payKey=selStaff+'_'+selYear+'_'+selMonth;
+  var paidRec=payments.find(function(p){return p.key===payKey;});
+  var years=[now.getFullYear()-1,now.getFullYear()];
+
+  return (
+    <div className="p-4 scroll-area flex-1">
+      {toast && <Toast msg={toast} onDone={function(){setToast('');}} />}
+
+      <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface2)'}}>
+        <FLabel label={t.selStaff}>
+          <FSelect value={selStaff} onChange={function(v){setSelStaff(v);setCalc(null);setWAMsg('');}}>
+            <option value="">{t.selStaff}</option>
+            {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
+          </FSelect>
+        </FLabel>
+        <div className="flex gap-3">
+          <FLabel label={t.selMonth}>
+            <FSelect value={selMonth} onChange={function(v){setSelMonth(Number(v));}}>
+              {t.mFull.map(function(m,i){return <option key={i} value={i+1}>{m}</option>;})}
+            </FSelect>
+          </FLabel>
+          <FLabel label={t.selYear}>
+            <FSelect value={selYear} onChange={function(v){setSelYear(Number(v));}}>
+              {years.map(function(y){return <option key={y} value={y}>{y}</option>;})}
+            </FSelect>
+          </FLabel>
+        </div>
+        <PrimaryBtn onClick={doCalc} full={true} disabled={!selStaff}>{t.calcBtn}</PrimaryBtn>
+      </div>
+
+      {!calc && <p className="text-center text-base mt-8" style={{color:'var(--muted)'}}>{t.noCalc}</p>}
+
+      {calc && s && (
+        <div className="fade-in">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{background:avatarBg(s.role)}}>
+              {(s.name[0]||'?').toUpperCase()}
+            </div>
+            <div>
+              <p style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(18),margin:0}}>{s.name}</p>
+              <p style={{fontSize:fsr(12),color:'var(--muted)',margin:0}}>{t.mFull[selMonth-1]} {selYear}</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl overflow-hidden mb-4" style={{border:'1px solid var(--border)'}}>
+            {[
+              {label:t.rBase, val:calc.baseSalary, sign:0},
+              {label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')', val:calc.leaveDeduction, sign:-1},
+              {label:t.rAdv, val:calc.advances, sign:-1},
+              {label:t.rLoan, val:calc.loanInst, sign:-1},
+              {label:t.rExp, val:calc.expenses, sign:-1},
+              {label:t.rBonus, val:calc.bonuses, sign:1},
+              {label:t.rExtraWork, val:calc.extraWork, sign:1},
+              {label:t.rShortHours, val:calc.shortHours, sign:-1},
+            ].map(function(row){
+              var color=row.sign===-1&&row.val>0?'var(--danger)':row.sign===1&&row.val>0?'var(--ok)':'var(--ink)';
+              return (
+                <div key={row.label} className="flex justify-between items-center py-3 px-4" style={{borderBottom:'1px solid var(--border)',background:'var(--surface)'}}>
+                  <span style={{fontSize:fsr(15),color:'var(--ink2)'}}>{row.label}</span>
+                  <span style={{fontSize:fsr(15),fontWeight:700,color:color}}>
+                    {row.sign===-1&&row.val>0?'− ':row.sign===1&&row.val>0?'+ ':''}{fmt(row.val)}
+                  </span>
+                </div>
+              );
+            })}
+            <div className="flex justify-between items-center py-4 px-4" style={{background:'var(--accent)'}}>
+              <span style={{color:'#fff',fontWeight:700,fontSize:fsr(18)}}>{t.rNet}</span>
+              <span style={{color:'#fff',fontWeight:800,fontSize:fsr(24)}}>{fmt(calc.netPayable)}</span>
+            </div>
+          </div>
+
+          {calc.loanBal>0 && (
+            <div className="flex justify-between items-center px-4 py-2 mb-3 rounded-2xl" style={{background:'#EAE4F5',border:'1px solid var(--purple)'}}>
+              <span style={{fontSize:fsr(13),fontWeight:700,color:'var(--purple)'}}>🏦 {t.rLoanBal}</span>
+              <span style={{fontSize:fsr(15),fontWeight:800,color:'var(--purple)'}}>{fmt(calc.loanBal)}</span>
+            </div>
+          )}
+          <p style={{fontSize:fsr(12),color:'var(--muted)',textAlign:'center',marginBottom:16}}>{t.wdays} {workingDays}</p>
+
+          {paidRec
+            ? <div className="rounded-2xl p-4 text-center" style={{background:'#D5EEE8',border:'1px solid #A8D4C4'}}>
+                <p style={{color:'var(--ok)',fontWeight:700,fontSize:fsr(15)}}>✅ {t.paidOn} {fmtD(paidRec.date)}</p>
+                <p style={{color:'var(--ok)',fontSize:fsr(13),marginTop:4}}>{fmt(paidRec.amount)}</p>
+              </div>
+            : <PrimaryBtn onClick={doMarkPaid} color="green" full={true}>{t.markPaid}</PrimaryBtn>
+          }
+
+          {waMsg && <WACard message={waMsg} phone={s.phone} t={t} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── LEAVE CALENDAR ─────────────────────────────────────────── */
+function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,syncKey}){
+  var t=T[lang];
+  var ym=padYM(year,month);
+  var [lv,setLv]=useState({});
+  var [flash,setFlash]=useState('');
+  var today=new Date();
+
+  useEffect(function(){setLv(getLeaves(staffId,ym));},[staffId,ym,syncKey]);
+
+  function toggle(day){
+    var date=new Date(year,month-1,day);
+    if(date>today) return;
+    var key=ym+'-'+String(day).padStart(2,'0');
+    var cur=lv[key];
+    var next=cur==='leave'?'holiday':cur==='holiday'?null:'leave';
+    var updated=Object.assign({},lv);
+    if(next) updated[key]=next; else delete updated[key];
+    setLv(updated); fbSaveLeaves(homeId||_activeHomeId,staffId,ym,updated);
+  }
+
+  function markToday(status){
+    var isCurrentMonth=year===today.getFullYear()&&month===today.getMonth()+1;
+    if(!isCurrentMonth) return;
+    var key=ym+'-'+String(today.getDate()).padStart(2,'0');
+    var updated=Object.assign({},lv);
+    if(status===null) delete updated[key]; else updated[key]=status;
+    setLv(updated); fbSaveLeaves(homeId||_activeHomeId,staffId,ym,updated);
+    setFlash(status||'present');
+    setTimeout(function(){setFlash('');},1200);
+  }
+
+  var isCurrentMonth=year===today.getFullYear()&&month===today.getMonth()+1;
+
+  var firstDay=new Date(year,month-1,1).getDay();
+  var daysInMonth=new Date(year,month,0).getDate();
+  var leaveDays=Object.values(lv).filter(function(v){return v==='leave';}).length;
+  var deduction=Math.round((staffSalary/(workingDays||30))*leaveDays);
+
+  var cells=[];
+  for(var i=0;i<firstDay;i++) cells.push(null);
+  for(var d=1;d<=daysInMonth;d++) cells.push(d);
+
+  function dayStatus(day){
+    if(!day) return null;
+    var k=ym+'-'+String(day).padStart(2,'0');
+    return lv[k]||'present';
+  }
+
+  function dayCls(st){
+    if(st==='leave')   return {background:'#FCE8E8',color:'var(--danger)',fontWeight:700};
+    if(st==='holiday') return {background:'#F5EBC0',color:'var(--warn)',fontWeight:700};
+    return {background:'var(--surface2)',color:'var(--ink2)'};
+  }
+  function dayLbl(st){
+    if(st==='leave')   return t.Ls;
+    if(st==='holiday') return t.Hs;
+    return t.Ps;
+  }
+
+  return (
+    <div>
+      {isCurrentMonth && (
+        <div className="mb-4">
+          <p style={{fontSize:fsr(11),fontWeight:800,color:'var(--muted)',textAlign:'center',marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t.markToday}</p>
+          <div className="flex gap-2">
+            {[
+              {status:null,   icon:'✓', label:t.tPresent, cls:'pill-ok',   bg:'#CCEADC', c:'#1A5E35'},
+              {status:'leave',    icon:'🗓', label:t.tLeave,   bg:'#FCE8E8', c:'var(--danger)'},
+              {status:'holiday',  icon:'🏖', label:t.tHoliday, bg:'#F5EBC0', c:'var(--warn)'},
+            ].map(function(item){
+              var active=flash===( item.status||'present');
+              return (
+                <button key={item.label} onClick={function(){markToday(item.status);}}
+                  style={{flex:1,padding:'10px 4px',borderRadius:14,border:'2px solid '+(active?item.c:'transparent'),
+                    background:active?item.bg:item.bg+'99',color:item.c,fontWeight:800,
+                    fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif',
+                    display:'flex',flexDirection:'column',alignItems:'center',gap:2,
+                    transition:'all .15s',minHeight:60}}>
+                  <span style={{fontSize:fsr(18),lineHeight:1}}>{active?'✓':item.icon}</span>
+                  <span style={{fontSize:fsr(11)}}>{active?t.markTodayDone:item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <p style={{fontSize:fsr(12),color:'var(--muted)',textAlign:'center',marginBottom:12}}>{t.calHint}</p>
+      <div className="grid grid-cols-7 mb-1">
+        {t.days.map(function(d,i){return <div key={i} style={{textAlign:'center',fontSize:fsr(11),fontWeight:700,paddingTop:4,paddingBottom:4,color:i===0?'var(--danger)':'var(--ink2)'}}>{d}</div>;})}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map(function(day,idx){
+          if(!day) return <div key={'e'+idx} />;
+          var st=dayStatus(day);
+          var td=new Date(year,month-1,day);
+          var isToday=td.toDateString()===today.toDateString();
+          var isFuture=td>today&&!isToday;
+          var stStyle=dayCls(st);
+          return (
+            <button key={day} onClick={function(){toggle(day);}} disabled={!!isFuture}
+              className="cal-btn flex flex-col items-center justify-center rounded-lg text-xs transition-all"
+              style={Object.assign({},stStyle,{outline:'none',border:isToday?'2px solid var(--accent)':'none',cursor:isFuture?'default':'pointer',opacity:isFuture?0.5:1})}>
+              <span style={{fontSize:fsr(13),fontWeight:600,lineHeight:1}}>{day}</span>
+              <span style={{fontSize:fsr(11),lineHeight:1,marginTop:2,opacity:.8}}>{dayLbl(st)}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-4 flex gap-3">
+        <div className="flex-1 rounded-2xl p-3 text-center" style={{background:'#FCE8E8',border:'1px solid #F5C6C6'}}>
+          <p style={{fontSize:fsr(12),fontWeight:600,color:'var(--danger)'}}>{t.tlLeave}</p>
+          <p style={{fontSize:fsr(28),fontWeight:800,color:'var(--danger)'}}>{leaveDays}</p>
+        </div>
+        <div className="flex-1 rounded-2xl p-3 text-center" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
+          <p style={{fontSize:fsr(12),fontWeight:600,color:'var(--ink2)'}}>{t.tlDed}</p>
+          <p style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)'}}>{fmt(deduction)}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 justify-center">
+        {[[{background:'var(--surface2)',color:'var(--ink2)'},t.Ps,t.tPresent],[{background:'#FCE8E8',color:'var(--danger)'},t.Ls,t.tLeave],[{background:'#F5EBC0',color:'var(--warn)'},t.Hs,t.tHoliday]].map(function(item){
+          return <span key={item[2]} className="rounded-lg px-2 py-1 text-xs font-bold" style={item[0]}>{item[1]} = {item[2]}</span>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LeavesTab({lang,homeId,workingDays,syncKey}){
+  var t=T[lang];
+  var now=new Date();
+  var [staff,setStaff]=useState([]);
+  var [selStaff,setSelStaff]=useState('');
+  var [month,setMonth]=useState(now.getMonth()+1);
+  var [year,setYear]=useState(now.getFullYear());
+
+  useEffect(function(){
+    var s=getStaff(homeId);
+    setStaff(s); setSelStaff(s.length>0?s[0].id:'');
+  },[homeId,syncKey]);
+
+  function prevM(){if(month===1){setMonth(12);setYear(function(y){return y-1;});}else setMonth(function(m){return m-1;});}
+  function nextM(){
+    var nm=month===12?1:month+1, ny=month===12?year+1:year;
+    if(ny>now.getFullYear()||(ny===now.getFullYear()&&nm>now.getMonth()+1)) return;
+    setMonth(nm); if(month===12)setYear(function(y){return y+1;});
+  }
+
+  var s=staff.find(function(x){return x.id===selStaff;});
+
+  return (
+    <div className="p-4 scroll-area flex-1">
+      <FLabel label={t.selStaff}>
+        <FSelect value={selStaff} onChange={setSelStaff}>
+          {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
+        </FSelect>
+      </FLabel>
+
+      {s ? (
+        <div className="fade-in">
+          <div className="flex items-center justify-between mb-4 rounded-2xl p-3" style={{background:'var(--surface2)'}}>
+            <button onClick={prevM} className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{background:'var(--surface)',border:'1px solid var(--border)',cursor:'pointer'}}>‹</button>
+            <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(15)}}>{t.mFull[month-1]} {year}</span>
+            <button onClick={nextM} className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{background:'var(--surface)',border:'1px solid var(--border)',cursor:'pointer'}}>›</button>
+          </div>
+          <LeaveCalendar staffId={s.id} staffSalary={s.salary} lang={lang} year={year} month={month} workingDays={workingDays} homeId={homeId} syncKey={syncKey} />
+        </div>
+      ) : <p className="text-center mt-16" style={{color:'var(--muted)'}}>{t.noStaff}</p>}
+    </div>
+  );
+}
+
+/* ── ADD ENTRY MODAL ────────────────────────────────────────── */
+function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillStaffId,prefillType}){
+  var t=T[lang];
+  var [form,setForm]=useState({staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:''});
+  function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
+
+  var isTimeBased=form.type==='extra_work';
+  var isHalfDay=form.type==='short_hours';
+  var selStaff=staffList.find(function(x){return x.id===form.staffId;});
+  var dailyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)):0;
+  var defaultRate=selStaff?Math.round(dailyRate/8):0;
+  var halfDayAmt=selStaff?Math.round(dailyRate/2):0;
+  var effectiveRate=Number(form.rate)||defaultRate;
+  var computedAmount=isTimeBased&&form.hours?Math.round(Number(form.hours)*effectiveRate):0;
+
+  useEffect(function(){
+    if(isTimeBased&&form.staffId&&defaultRate) set('rate',String(defaultRate));
+    if(isHalfDay&&form.staffId&&halfDayAmt) set('amount',String(halfDayAmt));
+  },[form.staffId,form.type]);
+
+  var activeLoans=(ledger||[]).filter(function(e){return e.staffId===form.staffId&&e.type==='loan'&&e.status==='active';});
+
+  var [errMsg,setErrMsg]=useState('');
+  var [confirmEntry,setConfirmEntry]=useState(null);
+
+  function buildEntry(){
+    var finalAmount=isTimeBased?computedAmount:Number(form.amount);
+    var entry={id:uid(),staffId:form.staffId,type:form.type,amount:finalAmount,date:form.date,reason:form.reason};
+    if(form.type==='loan'){entry.installment=Number(form.installment)||0;entry.totalInstallments=Number(form.totalInstallments)||0;entry.paidInstallments=0;entry.status='active';}
+    if(form.type==='loan_repay') entry.targetLoanId=form.targetLoanId;
+    if(isTimeBased){entry.hours=Number(form.hours);entry.rate=effectiveRate;}
+    return entry;
+  }
+
+  function handleSave(){
+    if(!form.staffId){setErrMsg(t.errStaff);return;}
+    if(!form.date) return;
+    if(isTimeBased&&(!form.hours||computedAmount<=0)){setErrMsg(t.errAmount);return;}
+    if(!isTimeBased&&form.type!=='loan_repay'&&!form.amount){setErrMsg(t.errAmount);return;}
+    if(form.type==='loan_repay'&&(!form.amount||!form.targetLoanId)){setErrMsg(t.errAmount);return;}
+    var finalAmount=isTimeBased?computedAmount:Number(form.amount);
+    var needsConfirm=(form.type==='advance'||form.type==='loan')&&finalAmount>=1000;
+    if(needsConfirm){
+      var sName=(staffList.find(function(s){return s.id===form.staffId;})||{}).name||'';
+      setConfirmEntry({type:typeLabels[form.type]||form.type,amount:finalAmount,name:sName});
+      return;
+    }
+    onSave(buildEntry());
+  }
+
+  var inactive={border:'2px solid var(--border)',color:'var(--ink2)',background:'var(--surface2)'};
+  var typeStyles={
+    advance:    {active:{background:'#FDF3DC',border:'2px solid var(--warn)',color:'#8B5E08'},inactive:inactive},
+    loan:       {active:{background:'#EAE4F5',border:'2px solid var(--purple)',color:'#3A2E7A'},inactive:inactive},
+    expense:    {active:{background:'#D8EEE8',border:'2px solid var(--accent)',color:'var(--accent)'},inactive:inactive},
+    bonus:      {active:{background:'#D8EEE2',border:'2px solid var(--ok)',color:'var(--ok)'},inactive:inactive},
+    loan_repay: {active:{background:'#D8EEE2',border:'2px solid var(--ok)',color:'var(--ok)'},inactive:inactive},
+    extra_work: {active:{background:'#D8EEE2',border:'2px solid var(--ok)',color:'var(--ok)'},inactive:inactive},
+    short_hours:{active:{background:'#FDF3DC',border:'2px solid var(--warn)',color:'#8B5E08'},inactive:inactive},
+  };
+  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
+  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours};
+
+  function typeBtn(key,full){
+    var active=form.type===key;
+    var st=Object.assign({},active?typeStyles[key].active:typeStyles[key].inactive,{borderRadius:12,padding:full?'14px 12px':'10px 8px',cursor:'pointer',fontWeight:700,fontFamily:'Nunito,sans-serif',fontSize:fsr(full?15:13),transition:'all .15s',textAlign:'center',width:'100%',display:'block'});
+    return <button key={key} onClick={function(){set('type',key);}} style={st}>{TC[key]?TC[key].icon+' ':''}{typeLabels[key]}</button>;
+  }
+
+  return (
+    <Modal onClose={onClose} title={t.addEntry}>
+      {errMsg&&<Toast msg={errMsg} onDone={function(){setErrMsg('');}} />}
+      <FLabel label={t.selStaff}>
+        <FSelect value={form.staffId} onChange={function(v){set('staffId',v);}}>
+          <option value="">{t.selStaff}</option>
+          {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
+        </FSelect>
+      </FLabel>
+
+      <div className="mb-4">
+        <div className="mb-2">{typeBtn('advance',true)}</div>
+        <div className="grid grid-cols-3 gap-2">
+          {otherTypes.map(function(key){return typeBtn(key,false);})}
+        </div>
+      </div>
+
+      {isTimeBased ? (
+        <div>
+          <div className="flex gap-3">
+            <FLabel label={t.fhours} style={{flex:1}}><FInput type="number" value={form.hours} onChange={function(v){set('hours',v);}} placeholder="e.g. 2.5" /></FLabel>
+            <FLabel label={t.frate} style={{flex:1}}><FInput type="number" value={form.rate} onChange={function(v){set('rate',v);}} placeholder={String(defaultRate)} /></FLabel>
+          </div>
+          {computedAmount>0 && (
+            <div className="mb-4 px-3 py-2 rounded-xl flex justify-between items-center" style={{background:form.type==='extra_work'?'#D8EEE2':'#FDF3DC'}}>
+              <span style={{fontSize:fsr(13),color:'var(--ink2)'}}>{t.famount}</span>
+              <span style={{fontSize:fsr(18),fontWeight:800,color:form.type==='extra_work'?'var(--ok)':'var(--warn)'}}>{fmt(computedAmount)}</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <FLabel label={t.famount}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder="0" /></FLabel>
+          {isHalfDay&&dailyRate>0&&(
+            <div className="mb-4 px-3 py-2 rounded-xl flex justify-between items-center" style={{background:'#FDF3DC',marginTop:-8}}>
+              <span style={{fontSize:fsr(13),fontWeight:700,color:'#8B5E08'}}>{t.perDayCost}</span>
+              <span style={{fontSize:fsr(16),fontWeight:800,color:'#8B5E08'}}>{fmt(dailyRate)}</span>
+            </div>
+          )}
+        </div>
+      )}
+      <FLabel label={t.fdate}><FInput type="date" value={form.date} onChange={function(v){set('date',v);}} /></FLabel>
+      <FLabel label={t.freason}><FInput value={form.reason} onChange={function(v){set('reason',v);}} placeholder={t.freasonPh} /></FLabel>
+
+      {form.type==='loan' && (
+        <div>
+          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){set('installment',v);}} placeholder="0" /></FLabel>
+          <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" /></FLabel>
+        </div>
+      )}
+
+      {form.type==='loan_repay' && (
+        <FLabel label={t.fApplyLoan}>
+          {activeLoans.length===0
+            ? <p style={{fontSize:fsr(13),color:'var(--muted)',padding:'8px 0'}}>{t.noActiveLoans}</p>
+            : <FSelect value={form.targetLoanId} onChange={function(v){set('targetLoanId',v);}}>
+                <option value="">{t.selStaff}</option>
+                {activeLoans.map(function(ln){
+                  var bal=Math.max(0,ln.amount-(ln.paidInstallments||0)*(ln.installment||0)-(ln.manualRepaid||0));
+                  return <option key={ln.id} value={ln.id}>{fmtD(ln.date)} — {fmt(ln.amount)} (bal: {fmt(bal)})</option>;
+                })}
+              </FSelect>
+          }
+        </FLabel>
+      )}
+
+      {confirmEntry && (
+        <div className="fade-in" style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end',justifyContent:'center',background:'rgba(26,46,42,0.6)'}}>
+          <div style={{background:'var(--surface)',borderRadius:'24px 24px 0 0',padding:24,width:'100%',maxWidth:480}}>
+            <p style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)',marginBottom:6,textAlign:'center'}}>
+              {confirmEntry.type} — {fmt(confirmEntry.amount)}
+            </p>
+            <p style={{fontSize:fsr(14),color:'var(--ink2)',textAlign:'center',marginBottom:20}}>
+              {confirmEntry.name}
+            </p>
+            <div className="flex gap-3">
+              <PrimaryBtn onClick={function(){setConfirmEntry(null);}} color="gray" full={true}>{t.confCancel}</PrimaryBtn>
+              <PrimaryBtn onClick={function(){setConfirmEntry(null);onSave(buildEntry());}} full={true}>{t.confYes}</PrimaryBtn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3 mt-4">
+        <PrimaryBtn onClick={onClose} color="gray" full={true}>{t.cancel}</PrimaryBtn>
+        <PrimaryBtn onClick={handleSave} full={true}>{t.save}</PrimaryBtn>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── ADVANCES TAB ───────────────────────────────────────────── */
+function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
+  var t=T[lang];
+  var [staff,setStaff]=useState([]);
+  var [ledger,setLedger]=useState([]);
+  var [showAdd,setShowAdd]=useState(false);
+  var [filter,setFilter]=useState('all');
+  var [filterStaff,setFilterStaff]=useState('all');
+  var [toast,setToast]=useState('');
+  var [activeWA,setActiveWA]=useState(null);
+  var [confirmDel,setConfirmDel]=useState(null);
+
+  useEffect(function(){setStaff(getStaff(homeId));setLedger(getLedger(homeId));},[homeId,syncKey]);
+
+  function onSave(entry){
+    var next=[...ledger,entry];
+    if(entry.type==='loan_repay'&&entry.targetLoanId){
+      next=next.map(function(e){
+        if(e.id===entry.targetLoanId){
+          var newRepaid=(e.manualRepaid||0)+entry.amount;
+          var totalPaid=(e.paidInstallments||0)*(e.installment||0)+newRepaid;
+          return Object.assign({},e,{manualRepaid:newRepaid,status:totalPaid>=e.amount?'closed':'active'});
+        }
+        return e;
+      });
+    }
+    setLedger(next); fbSaveLedger(homeId,next);
+    setShowAdd(false); setToast(t.savedOk);
+  }
+  function onDelete(id){
+    var next=ledger.filter(function(e){return e.id!==id;});
+    setLedger(next); fbSaveLedger(homeId,next); setConfirmDel(null);
+  }
+
+  var filtered=ledger
+    .filter(function(e){return filter==='all'||e.type===filter;})
+    .filter(function(e){return filterStaff==='all'||e.staffId===filterStaff;})
+    .sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+
+  var home=homes.find(function(h){return h.id===homeId;})||{name:''};
+  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours};
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {toast && <Toast msg={toast} onDone={function(){setToast('');}} />}
+      <div className="p-4 shrink-0" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
+        <PrimaryBtn onClick={function(){setShowAdd(true);}} full={true}>{t.addEntry}</PrimaryBtn>
+      </div>
+
+      <div className="px-4 pt-3 shrink-0">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {['all','advance','loan','loan_repay','expense','bonus','extra_work','short_hours'].map(function(f){
+            var labels={all:t.filterAll,advance:t.tAdv,loan:t.tLoan,loan_repay:t.tLoanRepay,expense:t.tExp,bonus:t.tBonus,extra_work:t.tExtraWork,short_hours:t.tShortHours};
+            var active=filter===f;
+            var tc=TC[f];
+            var pillCls='pill '+(active?(tc?tc.pillCls:'pill-accent'):'pill-muted');
+            return (
+              <button key={f} onClick={function(){setFilter(f);}}
+                className={pillCls}
+                style={{cursor:'pointer',border:'none',whiteSpace:'nowrap'}}>
+                {labels[f]}
+              </button>
+            );
+          })}
+        </div>
+        {staff.length>1 && (
+          <div className="mb-2">
+            <FSelect value={filterStaff} onChange={setFilterStaff}>
+              <option value="all">{t.filterAll}</option>
+              {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
+            </FSelect>
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 pt-2 scroll-area flex-1">
+        {filtered.length===0
+          ? <p className="text-center mt-12 text-base" style={{color:'var(--muted)'}}>{t.noEntries}</p>
+          : filtered.map(function(entry){
+              var tc=TC[entry.type]||TC.advance;
+              var sObj=staff.find(function(s){return s.id===entry.staffId;});
+              var sName=sObj?sObj.name:'?';
+              var loanBal=entry.type==='loan'?Math.max(0,entry.amount-(entry.paidInstallments||0)*(entry.installment||0)-(entry.manualRepaid||0)):null;
+              return (
+                <div key={entry.id} className="rounded-2xl p-3 mb-3 fade-in" style={{background:tc.bg,border:'1px solid var(--border)'}}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <span style={{fontSize:fsr(20)}}>{tc.icon}</span>
+                      <div>
+                        <span className={'pill '+tc.pillCls}>{typeLabels[entry.type]}</span>
+                        <p style={{fontWeight:800,color:'var(--ink)',marginTop:2}}>{sName}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p style={{fontSize:fsr(20),fontWeight:800,color:'var(--ink)'}}>{fmt(entry.amount)}</p>
+                      <p style={{fontSize:fsr(12),color:'var(--ink2)'}}>{fmtD(entry.date)}</p>
+                    </div>
+                  </div>
+                  {entry.reason ? <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8,fontStyle:'italic'}}>"{entry.reason}"</p> : null}
+                  {entry.type==='loan' && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className={'pill '+(entry.status==='active'?'pill-purple':'pill-muted')}>
+                        {entry.status==='active'?t.loanActive:t.loanClosed}
+                      </span>
+                      <span className="pill pill-muted">{fmt(entry.installment)}/mo</span>
+                      {loanBal!==null && <span className="pill pill-purple">{t.loanBal}: {fmt(loanBal)}</span>}
+                    </div>
+                  )}
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    {sObj && <button onClick={function(){setActiveWA(entry.id===activeWA?null:entry.id);}}
+                      style={{fontSize:fsr(12),color:'#1A6E5E',border:'1px solid #A8D4C4',borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+                      📲 WhatsApp
+                    </button>}
+                    <button onClick={function(){setConfirmDel(entry.id===confirmDel?null:entry.id);}}
+                      style={{fontSize:fsr(12),color:'var(--danger)',border:'1px solid #F5C6C6',borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+                      {t.del}
+                    </button>
+                  </div>
+                  {confirmDel===entry.id && (
+                    <div className="mt-2 flex gap-2">
+                      <PrimaryBtn onClick={function(){setConfirmDel(null);}} color="gray" small={true} full={true}>{t.cancel}</PrimaryBtn>
+                      <PrimaryBtn onClick={function(){onDelete(entry.id);}} color="red" small={true} full={true}>{t.del}</PrimaryBtn>
+                    </div>
+                  )}
+                  {activeWA===entry.id && sObj && (
+                    <WACard message={waTemplate(entry.type,sObj,entry.amount,entry.date,home.name,lang)} phone={sObj.phone} t={t} />
+                  )}
+                </div>
+              );
+            })
+        }
+      </div>
+
+      {showAdd && <EntryModal lang={lang} staffList={staff} ledger={ledger} workingDays={workingDays} onClose={function(){setShowAdd(false);}} onSave={onSave} />}
+    </div>
+  );
+}
+
+/* ── ANNUAL TAB ─────────────────────────────────────────────── */
+function AnnualTab({lang,homeId,workingDays,syncKey}){
+  var t=T[lang];
+  var now=new Date();
+  var [staff,setStaff]=useState([]);
+  var [ledger,setLedger]=useState([]);
+  var [payments,setPayments]=useState([]);
+  var [selYear,setSelYear]=useState(now.getFullYear());
+
+  useEffect(function(){
+    setStaff(getStaff(homeId));
+    setLedger(getLedger(homeId));
+    setPayments(getPayments(homeId));
+  },[homeId,syncKey]);
+
+  var monthlyData=useMemo(function(){
+    var data=[];
+    for(var i=0;i<12;i++) data.push(0);
+    var yearPays=payments.filter(function(p){return p.year===selYear;});
+    yearPays.forEach(function(p){if(p.month>=1&&p.month<=12) data[p.month-1]+=(p.amount||0);});
+    if(data.every(function(v){return v===0;})){
+      staff.forEach(function(s){
+        for(var m=1;m<=12;m++){
+          var first=new Date(selYear,m-1,1);
+          if(first>now) return;
+          var c=calcSalary(s,selYear,m,ledger,workingDays);
+          data[m-1]+=c.netPayable;
+        }
+      });
+    }
+    return data;
+  },[staff,ledger,payments,selYear,workingDays]);
+
+  var yearTotal=monthlyData.reduce(function(a,b){return a+b;},0);
+  var maxBar=Math.max.apply(Math,monthlyData.concat([1]));
+  var W=330,H=120,barW=W/12-4;
+
+  var staffSummary=staff.map(function(s){
+    var sLed=ledger.filter(function(e){return e.staffId===s.id;});
+    var yPfx=selYear+'-';
+    var yLed=sLed.filter(function(e){return e.date&&e.date.startsWith(yPfx);});
+    var tAdv  =yLed.filter(function(e){return e.type==='advance';    }).reduce(function(a,e){return a+e.amount;},0);
+    var tExp  =yLed.filter(function(e){return e.type==='expense';    }).reduce(function(a,e){return a+e.amount;},0);
+    var tBon  =yLed.filter(function(e){return e.type==='bonus';      }).reduce(function(a,e){return a+e.amount;},0);
+    var tExtra=yLed.filter(function(e){return e.type==='extra_work'; }).reduce(function(a,e){return a+e.amount;},0);
+    var tShort=yLed.filter(function(e){return e.type==='short_hours';}).reduce(function(a,e){return a+e.amount;},0);
+    var aLoan=sLed.filter(function(e){return e.type==='loan'&&e.status==='active';});
+    var lBal=aLoan.reduce(function(a,e){return a+Math.max(0,e.amount-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));},0);
+    var paid=payments.filter(function(p){return p.staffId===s.id&&p.year===selYear;}).reduce(function(a,p){return a+p.amount;},0);
+    return {id:s.id,name:s.name,role:s.role,tSal:paid||s.salary*12,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort};
+  });
+
+  var years=[now.getFullYear()-1,now.getFullYear()];
+  var statColors={tSal:'var(--accent)',tAdv:'var(--warn)',tExp:'var(--ink2)',tBon:'var(--ok)',lBal:'var(--purple)',tExtra:'var(--ok)',tShort:'var(--warn)'};
+
+  return (
+    <div className="p-4 scroll-area flex-1">
+      <div className="flex items-center gap-3 mb-4">
+        <label style={{fontSize:fsr(13),fontWeight:700,color:'var(--ink2)',whiteSpace:'nowrap'}}>{t.annYear}</label>
+        <FSelect value={selYear} onChange={function(v){setSelYear(Number(v));}}>
+          {years.map(function(y){return <option key={y} value={y}>{y}</option>;})}
+        </FSelect>
+      </div>
+
+      <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
+        <p style={{fontSize:fsr(12),color:'var(--ink2)',fontWeight:700,marginBottom:4}}>{t.annTotal}</p>
+        <p style={{fontSize:fsr(30),fontWeight:800,color:'var(--ink)',marginBottom:16}}>{fmt(yearTotal)}</p>
+        <svg viewBox={'-2 0 '+(W+4)+' '+(H+28)} className="w-full">
+          {monthlyData.map(function(val,i){
+            var bh=maxBar>0?Math.round((val/maxBar)*H):0;
+            var x=i*(W/12)+2;
+            var y=H-bh;
+            return (
+              <g key={i}>
+                <rect x={x} y={y} width={barW} height={bh} fill={bh>0?'#1A6E5E':'#C4D4C6'} rx="3" />
+                {bh>4 ? <text x={x+barW/2} y={y-2} fontSize="7" textAnchor="middle" fill="#3D5E55">{val>=1000?Math.round(val/1000)+'k':val}</text> : null}
+                <text x={x+barW/2} y={H+14} fontSize="8" textAnchor="middle" fill="#7A998C">{t.months[i]}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <p style={{fontSize:fsr(13),fontWeight:700,color:'var(--ink)',marginBottom:12}}>{t.annPer}</p>
+      {staffSummary.map(function(s){
+        return (
+          <div key={s.id} className="rounded-2xl p-4 mb-3" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style={{background:avatarBg(s.role)}}>
+                {(s.name[0]||'?').toUpperCase()}
+              </div>
+              <div>
+                <p style={{fontWeight:800,color:'var(--ink)',margin:0}}>{s.name}</p>
+                <p style={{fontSize:fsr(12),color:'var(--ink2)',margin:0}}>{roleLabel(s.role,lang)}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                {l:t.aTotSal,   v:s.tSal,   k:'tSal'},
+                {l:t.aTotAdv,   v:s.tAdv,   k:'tAdv'},
+                {l:t.aTotExp,   v:s.tExp,   k:'tExp'},
+                {l:t.aTotBon,   v:s.tBon,   k:'tBon'},
+                {l:t.aTotLoan,  v:s.lBal,   k:'lBal'},
+                {l:t.aTotExtra, v:s.tExtra, k:'tExtra'},
+                {l:t.aTotShort, v:s.tShort, k:'tShort'},
+              ].map(function(row){
+                return (
+                  <div key={row.l} className="rounded-xl p-2" style={{background:'var(--surface2)'}}>
+                    <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{row.l}</p>
+                    <p style={{fontSize:fsr(15),fontWeight:700,color:statColors[row.k],margin:0}}>{fmt(row.v)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      {staffSummary.length===0 && <p className="text-center mt-8" style={{color:'var(--muted)'}}>{t.noStaff}</p>}
+    </div>
+  );
+}
+
+/* ── VOICE PARTIAL ENTRY ────────────────────────────────────── */
+function VoicePartialEntry({parsed,staffList,lang,workingDays,onSave,onRerecord}){
+  var t=T[lang];
+  var [staffId,setStaffId]=useState(parsed.foundStaff?parsed.foundStaff.id:'');
+  var [selAction,setSelAction]=useState(parsed.action||'');
+  var [amount,setAmount]=useState(parsed.amount?String(parsed.amount):'');
+  var [hours,setHours]=useState(parsed.hours?String(parsed.hours):'');
+  var [date,setDate]=useState(todayStr());
+  var [reason,setReason]=useState('');
+  var [showStaffPicker,setShowStaffPicker]=useState(!parsed.foundStaff);
+
+  var selStaff=staffList.find(function(x){return x.id===staffId;});
+  var dailyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)):0;
+  var hourlyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)/8):0;
+  var halfDayAmt=Math.round(dailyRate/2);
+
+  useEffect(function(){
+    if(selAction==='short_hours'&&dailyRate) setAmount(String(halfDayAmt));
+    if(selAction==='extra_work'&&hours&&hourlyRate) setAmount(String(Math.round(Number(hours)*hourlyRate)));
+  },[staffId,selAction,hours]);
+
+  var isTimeBased=selAction==='extra_work';
+  var isLeave=selAction==='leave';
+  var needsAmount=!isLeave;
+
+  function handleSave(){
+    if(!staffId||!selAction) return;
+    if(isTimeBased&&!hours) return;
+    if(needsAmount&&!amount) return;
+    onSave({staffId:staffId,action:selAction,amount:needsAmount?Number(amount):null,hours:hours?Number(hours):null,date:date,reason:reason});
+  }
+
+  var typeConf=[
+    {key:'leave',   label:t.tLeave},
+    {key:'advance', label:t.tAdv},
+    {key:'loan',    label:t.tLoan},
+    {key:'expense', label:t.tExp},
+    {key:'bonus',   label:t.tBonus},
+    {key:'extra_work',  label:t.tExtraWork},
+    {key:'short_hours', label:t.tShortHours},
+  ];
+  var inactSt={border:'1.5px solid var(--border)',color:'var(--ink2)',background:'transparent',borderRadius:10,padding:'8px 10px',cursor:'pointer',fontWeight:700,fontFamily:'Nunito,sans-serif',fontSize:fsr(14)};
+  var actSt={border:'2px solid var(--accent)',color:'var(--accent)',background:'#D8EEE8',borderRadius:10,padding:'8px 10px',cursor:'pointer',fontWeight:800,fontFamily:'Nunito,sans-serif',fontSize:fsr(14)};
+
+  return (
+    <div className="rounded-2xl p-4 mb-4 fade-in" style={{border:'2px solid var(--warn)',background:'#FDF8E3'}}>
+      <div className="flex items-center justify-between mb-3">
+        <p style={{fontWeight:800,fontSize:fsr(16),color:'#8B5E08',margin:0}}>⚠️ {t.voiceCompleteEntry}</p>
+        <button onClick={onRerecord} className="btn btn-ghost btn-sm">{t.voiceRerecord}</button>
+      </div>
+
+      {/* Staff */}
+      {parsed.foundStaff&&!showStaffPicker ? (
+        <div className="flex items-center gap-2 mb-4 p-3 rounded-xl" style={{background:'rgba(0,0,0,0.05)'}}>
+          <span style={{fontSize:fsr(14),color:'var(--ink2)',fontWeight:700}}>{t.voiceStaffIs}</span>
+          <span style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',flex:1}}>{parsed.foundStaff.name}</span>
+          <button onClick={function(){setShowStaffPicker(true);setStaffId('');}}
+            style={{fontSize:fsr(13),color:'var(--accent)',border:'1px solid var(--accent)',borderRadius:8,padding:'3px 10px',background:'transparent',cursor:'pointer',fontWeight:800,fontFamily:'Nunito,sans-serif'}}>
+            {t.voiceStaffChange}
+          </button>
+        </div>
+      ) : (
+        <FLabel label={t.selStaff}>
+          <FSelect value={staffId} onChange={setStaffId}>
+            <option value="">{t.selStaff}</option>
+            {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
+          </FSelect>
+        </FLabel>
+      )}
+
+      {/* Action type */}
+      <div className="mb-4">
+        <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:6}}>{t.tAction}</label>
+        <div className="grid grid-cols-2 gap-2">
+          {typeConf.map(function(tc){
+            var isLast=typeConf.indexOf(tc)===typeConf.length-1&&typeConf.length%2!==0;
+            return (
+              <button key={tc.key} onClick={function(){setSelAction(tc.key);}}
+                style={Object.assign({},selAction===tc.key?actSt:inactSt,isLast?{gridColumn:'1/-1'}:{})}>
+                {tc.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Amount / Hours */}
+      {isTimeBased && (
+        <FLabel label={t.fhours}>
+          <FInput type="number" value={hours} onChange={setHours} placeholder="e.g. 2" />
+        </FLabel>
+      )}
+      {needsAmount && (
+        <FLabel label={t.famount}>
+          <FInput type="number" value={amount} onChange={setAmount} placeholder="0" />
+        </FLabel>
+      )}
+
+      <FLabel label={t.fdate}><FInput type="date" value={date} onChange={setDate} /></FLabel>
+      <FLabel label={t.freason}><FInput value={reason} onChange={setReason} placeholder={t.freasonPh} /></FLabel>
+
+      <PrimaryBtn onClick={handleSave} color="green" full={true}
+        disabled={!staffId||!selAction||(needsAmount&&!amount)||(isTimeBased&&!hours)}>
+        {t.voiceSaveEntry}
+      </PrimaryBtn>
+    </div>
+  );
+}
+
+/* ── VOICE TAB ──────────────────────────────────────────────── */
+function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
+  var t=T[lang];
+  var [staff,setStaff]=useState([]);
+  var [ledger,setLedger]=useState([]);
+  var [listening,setListening]=useState(false);
+  var [transcript,setTranscript]=useState('');
+  var [parsed,setParsed]=useState(null);
+  var [confirmed,setConfirmed]=useState(false);
+  var [savedStaff,setSavedStaff]=useState(null);
+  var [toast,setToast]=useState('');
+  var [waMsg,setWAMsg]=useState('');
+  var [showExamples,setShowExamples]=useState(false);
+  var recRef=useRef(null);
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+
+  useEffect(function(){
+    setStaff(getStaff(homeId)); setLedger(getLedger(homeId));
+    setTranscript(''); setParsed(null); setConfirmed(false); setWAMsg(''); setSavedStaff(null);
+  },[homeId,syncKey]);
+
+  function startListen(){
+    if(!SR) return;
+    var rec=new SR();
+    rec.lang=lang==='hi'?'hi-IN':'en-IN';
+    rec.interimResults=false; rec.maxAlternatives=1;
+    rec.onresult=function(e){
+      var tr=e.results[0][0].transcript;
+      setTranscript(tr); setParsed(parseVoice(tr,staff));
+      setConfirmed(false); setWAMsg(''); setSavedStaff(null);
+    };
+    rec.onerror=function(){setListening(false);};
+    rec.onend=function(){setListening(false);};
+    rec.start(); recRef.current=rec; setListening(true);
+    setTranscript(''); setParsed(null); setConfirmed(false);
+  }
+  function stopListen(){if(recRef.current){recRef.current.stop();}setListening(false);}
+
+  function doSave(staffObj,action,amount,date,reason,extra){
+    var home=homes.find(function(h){return h.id===homeId;})||{name:''};
+    if(action==='leave'){
+      var ym=date.slice(0,7);
+      var cur=getLeaves(staffObj.id,ym);
+      cur[date]='leave'; fbSaveLeaves(homeId,staffObj.id,ym,cur);
+      setWAMsg(waTemplate('leave',staffObj,null,date,home.name,lang));
+    } else {
+      var entry=Object.assign({id:uid(),staffId:staffObj.id,type:action,amount:amount,date:date,reason:reason},extra||{});
+      if(action==='loan'){entry.installment=0;entry.totalInstallments=0;entry.paidInstallments=0;entry.status='active';}
+      var next=[...ledger,entry];
+      setLedger(next); fbSaveLedger(homeId,next);
+      setWAMsg(waTemplate(action,staffObj,amount,date,home.name,lang));
+    }
+    setSavedStaff(staffObj); setToast(t.savedOk); setConfirmed(true);
+  }
+
+  function confirmEntry(){
+    if(!parsed||!parsed.foundStaff||!parsed.action) return;
+    if(parsed.action!=='leave'&&!parsed.amount) return;
+    doSave(parsed.foundStaff,parsed.action,parsed.amount,todayStr(),transcript,null);
+  }
+
+  function saveFromPartial(fields){
+    var staffObj=staff.find(function(x){return x.id===fields.staffId;});
+    if(!staffObj) return;
+    var extra=fields.action==='extra_work'&&fields.hours?{hours:fields.hours,rate:fields.amount/(fields.hours||1)}:null;
+    doSave(staffObj,fields.action,fields.amount,fields.date,fields.reason,extra);
+    setParsed(null);
+  }
+
+  var isComplete=parsed&&parsed.foundStaff&&parsed.action&&(parsed.action==='leave'||parsed.amount);
+  var isPartial=parsed&&!isComplete&&!confirmed;
+  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,
+    extra_work:t.tExtraWork,short_hours:t.tShortHours,leave:t.tLeave};
+
+  return (
+    <div className="p-4 scroll-area flex-1">
+      {toast && <Toast msg={toast} onDone={function(){setToast('');}} />}
+
+      <h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',marginBottom:4}}>{t.voiceTitle}</h2>
+      <p style={{fontSize:fsr(15),color:'var(--ink2)',marginBottom:20}}>{t.voiceHint}</p>
+
+      {!SR && <div className="rounded-2xl p-4 mb-4" style={{background:'#FCE8E8',border:'1px solid #F5C6C6'}}><p style={{color:'var(--danger)',fontWeight:800}}>{t.voiceNoSupport}</p></div>}
+      {staff.length===0 && <div className="rounded-2xl p-4 mb-4" style={{background:'#FDF3DC',border:'1px solid var(--warn)'}}><p style={{color:'#8B5E08',fontWeight:800}}>{t.voiceNoStaff}</p></div>}
+
+      {SR && (
+        <div className="flex justify-center mb-5">
+          <div style={{position:'relative',display:'inline-block'}}>
+            <button onClick={listening?stopListen:startListen}
+              className={'w-32 h-32 rounded-full flex flex-col items-center justify-center text-white font-bold shadow-xl transition-all '+(listening?'mic-pulse-danger':'mic-pulse')}
+              style={{position:'relative',zIndex:1,background:listening?'var(--danger)':'var(--accent)',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif',transform:listening?'scale(1.08)':'scale(1)'}}>
+              <span style={{fontSize:fsr(44),marginBottom:4}}>🎤</span>
+              <span style={{fontSize:fsr(14),fontWeight:800}}>{listening?t.micStop:t.micSpeak}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {listening && <p style={{textAlign:'center',color:'var(--danger)',fontWeight:800,fontSize:fsr(17),marginBottom:16}}>{t.voiceListening}</p>}
+
+      {transcript && !listening && (
+        <div className="rounded-2xl p-3 mb-3 fade-in" style={{background:'var(--surface2)',borderLeft:'4px solid var(--accent2)'}}>
+          <p style={{fontSize:fsr(11),fontWeight:800,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>{t.voiceHeard}</p>
+          <p style={{fontSize:fsr(16),color:'var(--ink)',fontStyle:'italic',margin:0}}>"{transcript}"</p>
+        </div>
+      )}
+
+      {/* Partial entry card — fill in missing fields */}
+      {isPartial && (
+        <VoicePartialEntry
+          parsed={parsed} staffList={staff} lang={lang} workingDays={workingDays}
+          onSave={saveFromPartial}
+          onRerecord={function(){setParsed(null);setTranscript('');setConfirmed(false);}}
+        />
+      )}
+
+      {/* Complete entry confirm card */}
+      {parsed&&isComplete&&!confirmed && (
+        <div className="rounded-2xl p-4 mb-3 fade-in" style={{background:'#D8EEE8',border:'2px solid var(--accent2)'}}>
+          <p style={{fontSize:fsr(12),fontWeight:800,color:'var(--accent)',marginBottom:10,textTransform:'uppercase',letterSpacing:'.06em'}}>{t.voiceUnderstood}</p>
+          <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
+            <div className="flex justify-between items-center">
+              <span style={{fontSize:fsr(14),color:'var(--ink2)',fontWeight:600}}>{t.navStaff}</span>
+              <span style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)'}}>{parsed.foundStaff.name}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span style={{fontSize:fsr(14),color:'var(--ink2)',fontWeight:600}}>{t.tAction}</span>
+              <span style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)'}}>{typeLabels[parsed.action]||parsed.action}</span>
+            </div>
+            {parsed.amount&&<div className="flex justify-between items-center">
+              <span style={{fontSize:fsr(14),color:'var(--ink2)',fontWeight:600}}>{t.famount}</span>
+              <span style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)'}}>{fmt(parsed.amount)}</span>
+            </div>}
+          </div>
+          <PrimaryBtn onClick={confirmEntry} color="green" full={true}>{t.voiceConfirm}</PrimaryBtn>
+        </div>
+      )}
+
+      <div className="mt-4 text-center">
+        <button onClick={function(){setShowExamples(function(v){return !v;});}}
+          style={{background:'none',border:'none',color:'var(--ink2)',fontSize:fsr(13),fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif',padding:'6px 12px'}}>
+          {showExamples?t.voiceHideEx:t.voiceShowEx}
+        </button>
+      </div>
+      {showExamples && (
+        <div className="rounded-2xl p-3 mt-2 fade-in" style={{background:'var(--surface2)'}}>
+          {t.voiceExamples.map(function(ex,i){return <p key={i} style={{fontSize:fsr(14),color:'var(--ink2)',paddingTop:3,paddingBottom:3,margin:0}}>{ex}</p>;})}
+        </div>
+      )}
+
+      {confirmed && (
+        <div className="rounded-2xl p-4 mb-3 fade-in text-center" style={{background:'#D8EEE2',border:'1px solid var(--ok)'}}>
+          <p style={{fontSize:fsr(20),fontWeight:800,color:'var(--ok)'}}>✅ {t.savedOk}</p>
+          {savedStaff&&<p style={{fontSize:fsr(14),color:'var(--ok)',marginTop:4}}>{savedStaff.name}</p>}
+        </div>
+      )}
+
+      {waMsg&&savedStaff&&<WACard message={waMsg} phone={savedStaff.phone} t={t} />}
+    </div>
+  );
+}
+
+/* ── SETTINGS TAB ───────────────────────────────────────────── */
+function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut}){
+  var t=T[lang];
+  var [allRoles,setAllRoles]=useState(function(){return getRoles();});
+  var [newRoleName,setNewRoleName]=useState('');
+  var [confirmDelRole,setConfirmDelRole]=useState(null);
+  var [newHomeName,setNewHomeName]=useState('');
+  var [confirmDelHome,setConfirmDelHome]=useState(null);
+  var [wdInput,setWdInput]=useState(String(workingDays));
+  var [wdSaved,setWdSaved]=useState(false);
+  var [restoreConfirm,setRestoreConfirm]=useState(null);
+  var [restoreMsg,setRestoreMsg]=useState('');
+  var restoreRef=useRef(null);
+
+  function handleRestoreFile(e){
+    var file=e.target.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{JSON.parse(ev.target.result);setRestoreConfirm(ev.target.result);}
+      catch(err){setRestoreMsg(t.hmRestoreErr);}
+    };
+    reader.readAsText(file); e.target.value='';
+  }
+  function doRestore(){
+    try{applyBackup(restoreConfirm);setRestoreConfirm(null);setRestoreMsg(t.hmRestoreOk);setTimeout(function(){window.location.reload();},1200);}
+    catch(err){setRestoreConfirm(null);setRestoreMsg(t.hmRestoreErr);}
+  }
+
+  function addRole(){
+    if(!newRoleName.trim()) return;
+    var key='custom_'+Date.now();
+    var nr={key:key,en:newRoleName.trim(),hi:newRoleName.trim(),isDefault:false};
+    saveCustomRoles([...getCustomRoles(),nr]);
+    setAllRoles(getRoles());
+    setNewRoleName('');
+  }
+
+  function tryDeleteRole(roleKey){
+    var usageCount=0;
+    homes.forEach(function(h){
+      var s=getStaff(h.id);
+      usageCount+=s.filter(function(x){return x.role===roleKey;}).length;
+    });
+    if(usageCount>0){setConfirmDelRole({key:roleKey,count:usageCount});}
+    else{doDeleteRole(roleKey);}
+  }
+
+  function doDeleteRole(roleKey){
+    saveCustomRoles(getCustomRoles().filter(function(r){return r.key!==roleKey;}));
+    setAllRoles(getRoles());
+    setConfirmDelRole(null);
+  }
+
+  function addHome(){
+    if(!newHomeName.trim()) return;
+    onHomesChange([...homes,{id:uid(),name:newHomeName.trim()}]);
+    setNewHomeName('');
+  }
+
+  function delHome(id){
+    var st=getStaff(id);
+    st.forEach(function(s){lsKeys().filter(function(k){return k.startsWith('gs_lv_'+s.id+'_');}).forEach(lsDel);});
+    lsDel(SK.staff(id)); lsDel(SK.ledger(id)); lsDel(SK.payments(id));
+    onHomesChange(homes.filter(function(h){return h.id!==id;}));
+    setConfirmDelHome(null);
+  }
+
+  function saveWD(){
+    var n=Math.min(31,Math.max(1,Number(wdInput)||30));
+    saveSettings(Object.assign({},getSettings(),{workingDays:n}));
+    onWorkingDaysChange(n);
+    setWdInput(String(n));
+    setWdSaved(true);
+    setTimeout(function(){setWdSaved(false);},2000);
+  }
+
+  function toggleLang(){
+    var nl=lang==='en'?'hi':'en';
+    setLang(nl);
+    saveSettings(Object.assign({},getSettings(),{lang:nl}));
+  }
+
+  return (
+    <div className="p-4 scroll-area flex-1">
+      <h2 style={{fontSize:fsr(20),fontWeight:800,color:'var(--ink)',marginBottom:16}}>{t.navSettingsTitle}</h2>
+
+      {/* Household invite code (cloud mode only) */}
+      {!guestMode&&<InviteCard lang={lang} homeId={homeId} homes={homes} />}
+
+      {/* Section A: Roles */}
+      <div className="card mb-4">
+        <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.roleManagement}</p>
+        {allRoles.map(function(r){
+          var label=lang==='hi'?r.hi:r.en;
+          return (
+            <div key={r.key} className="flex items-center justify-between py-2" style={{borderBottom:'1px solid var(--border)'}}>
+              <div className="flex items-center gap-2">
+                <span style={{width:10,height:10,borderRadius:'50%',background:avatarBg(r.key),display:'inline-block',flexShrink:0}} />
+                <span style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:600}}>{label}</span>
+              </div>
+              {r.isDefault
+                ? <span className="pill pill-muted" style={{fontSize:fsr(11)}}>{t.defaultRole}</span>
+                : <button onClick={function(){tryDeleteRole(r.key);}}
+                    style={{background:'transparent',border:'none',cursor:'pointer',fontSize:fsr(16),padding:'2px 6px'}}>🗑️</button>
+              }
+            </div>
+          );
+        })}
+        {confirmDelRole && (
+          <div className="mt-3 p-3 rounded-xl" style={{background:'#FDF3DC',border:'1px solid var(--warn)'}}>
+            <p style={{fontSize:fsr(13),color:'#8B5E08',fontWeight:700,marginBottom:8}}>
+              {lang==='hi'
+                ?'यह भूमिका '+confirmDelRole.count+' स्टाफ सदस्यों को दी गई है। फिर भी हटाएं?'
+                :'This role is assigned to '+confirmDelRole.count+' staff member(s). Delete anyway?'}
+            </p>
+            <div className="flex gap-2">
+              <PrimaryBtn onClick={function(){setConfirmDelRole(null);}} color="gray" small={true} full={true}>{t.cancel}</PrimaryBtn>
+              <PrimaryBtn onClick={function(){doDeleteRole(confirmDelRole.key);}} color="red" small={true} full={true}>{t.del}</PrimaryBtn>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 mt-3">
+          <input value={newRoleName} onChange={function(e){setNewRoleName(e.target.value);}}
+            onKeyDown={function(e){if(e.key==='Enter')addRole();}}
+            placeholder={t.addRolePh} className="inp" style={{flex:1}} />
+          <button onClick={addRole} className="btn btn-accent btn-sm" style={{whiteSpace:'nowrap'}}>{t.addRoleBtn}</button>
+        </div>
+      </div>
+
+      {/* Section B: Homes */}
+      <div className="card mb-4">
+        <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.manageHomes}</p>
+        <div className="flex gap-2 mb-3">
+          <input value={newHomeName} onChange={function(e){setNewHomeName(e.target.value);}}
+            onKeyDown={function(e){if(e.key==='Enter')addHome();}}
+            placeholder={t.homeEx} className="inp" style={{flex:1}} />
+          <button onClick={addHome} className="btn btn-accent btn-sm" style={{whiteSpace:'nowrap'}}>{t.addHome}</button>
+        </div>
+        {homes.length===0 && <p style={{textAlign:'center',color:'var(--muted)',fontSize:fsr(13)}}>{t.noHomes}</p>}
+        {homes.map(function(h){return (
+          <div key={h.id} className="flex items-center justify-between p-3 rounded-xl mb-2" style={{background:'var(--surface2)'}}>
+            <span style={{fontWeight:600,color:'var(--ink)',fontSize:fsr(14)}}>🏠 {h.name}</span>
+            {confirmDelHome===h.id ? (
+              <div className="flex gap-2">
+                <button onClick={function(){setConfirmDelHome(null);}} className="btn btn-ghost btn-sm">{t.cancel}</button>
+                <button onClick={function(){delHome(h.id);}} className="btn btn-danger btn-sm">{t.del}</button>
+              </div>
+            ) : (
+              <button onClick={function(){setConfirmDelHome(h.id);}} className="btn btn-danger btn-sm">{t.del}</button>
+            )}
+          </div>
+        );})}
+      </div>
+
+      {/* Section C: App Preferences */}
+      <div className="card mb-4">
+        <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.langLabel}</p>
+        <button onClick={toggleLang} className="btn btn-ghost btn-sm mb-5">
+          {lang==='en'?'🇮🇳 हिंदी में बदलें':'🇬🇧 Switch to English'}
+        </button>
+
+        <label style={{display:'block',fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),marginBottom:4}}>{t.workingDaysLabel}</label>
+        <p style={{fontSize:fsr(12),color:'var(--muted)',marginBottom:8}}>{t.workingDaysHint}</p>
+        <div className="flex gap-2 items-center">
+          <input type="number" min="1" max="31" value={wdInput}
+            onChange={function(e){setWdInput(e.target.value);}}
+            className="inp" style={{width:80}} />
+          <button onClick={saveWD} className="btn btn-ok btn-sm">
+            {wdSaved?'✓ '+t.save:t.save}
+          </button>
+        </div>
+      </div>
+
+      <div className="card mb-4">
+        <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>{t.hmData}</p>
+        {restoreMsg&&<p style={{fontSize:fsr(13),color:'var(--ok)',fontWeight:700,marginBottom:10}}>{restoreMsg}</p>}
+        {restoreConfirm ? (
+          <div>
+            <p style={{fontSize:fsr(14),fontWeight:700,color:'var(--ink)',marginBottom:12}}>{t.hmRestoreConfirm}</p>
+            <div className="flex gap-3">
+              <button onClick={function(){setRestoreConfirm(null);}} style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--border)',background:'none',color:'var(--ink2)',fontWeight:800,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.cancel}</button>
+              <button onClick={doRestore} style={{flex:1,padding:'11px',borderRadius:12,border:'none',background:'var(--danger)',color:'#fff',fontWeight:800,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.confYes}</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button onClick={function(){downloadBackup();}} style={{flex:1,padding:'12px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface2)',color:'var(--ink)',fontWeight:700,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>💾 {t.hmBackup}</button>
+            <button onClick={function(){restoreRef.current&&restoreRef.current.click();}} style={{flex:1,padding:'12px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface2)',color:'var(--ink)',fontWeight:700,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>📂 {t.hmRestore}</button>
+          </div>
+        )}
+        <input type="file" accept=".json" onChange={handleRestoreFile} className="hidden" ref={restoreRef} />
+      </div>
+
+      {/* Sign Out (cloud mode only) */}
+      {!guestMode&&user&&(
+        <div className="card mb-4" style={{textAlign:'center'}}>
+          <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:12}}>
+            {user.phoneNumber||user.email||user.displayName||'Signed in'}
+          </p>
+          <button className="btn btn-danger btn-full" onClick={onSignOut}>
+            🚪 {t.signOut}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── HAMBURGER MENU ─────────────────────────────────────────── */
+function HamburgerMenu({open,onClose,setTab,lang,homeId}){
+  var t=T[lang];
+  var [showExport,setShowExport]=useState(false);
+  var fileRef=useRef(null);
+
+  if(!open) return null;
+
+  function go(tabKey){ setTab(tabKey); onClose(); }
+
+  var menuItems=[
+    {icon:'📊',label:t.hmAnnual,   action:function(){go('annual');}},
+    {icon:'🎤',label:t.hmVoice,    action:function(){go('voice');}},
+    {icon:'📤',label:t.hmExportMonth, action:function(){setShowExport(function(v){return !v;});}},
+    {icon:'⚙️',label:t.hmSettings, action:function(){go('settings');}},
+  ];
+
+  function rowBtn(item){
+    return (
+      <button key={item.label} onClick={item.action}
+        style={{display:'flex',alignItems:'center',gap:14,width:'100%',minHeight:56,padding:'0 20px',background:'none',border:'none',borderBottom:'1px solid var(--border)',cursor:'pointer',fontFamily:'Nunito,sans-serif',color:'var(--ink)',fontSize:fsr(16),fontWeight:700,textAlign:'left'}}>
+        <span style={{fontSize:fsr(24),width:34,textAlign:'center'}}>{item.icon}</span>
+        <span style={{flex:1}}>{item.label}</span>
+        <span style={{color:'var(--ink2)',fontSize:fsr(18)}}>›</span>
+      </button>
+    );
+  }
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:50,display:'flex',flexDirection:'column',justifyContent:'flex-end',alignItems:'center'}}>
+      <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(26,46,42,0.45)'}} />
+      <div className="fade-in" style={{position:'relative',width:'100%',maxWidth:480,background:'var(--surface)',borderRadius:'24px 24px 0 0',paddingBottom:8,boxShadow:'0 -4px 24px rgba(26,46,42,.18)'}}>
+        <div style={{display:'flex',justifyContent:'center',paddingTop:14,paddingBottom:4}}>
+          <div style={{width:44,height:4,background:'var(--border)',borderRadius:4}} />
+        </div>
+        {menuItems.map(function(item){
+          var isExport=item.icon==='📤';
+          return (
+            <div key={item.label}>
+              {rowBtn(item)}
+              {isExport&&showExport&&(
+                <div className="fade-in flex gap-3 px-4 py-3" style={{background:'var(--surface2)',borderBottom:'1px solid var(--border)'}}>
+                  <button onClick={function(){exportCSV(homeId,'month');onClose();}} style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportMonth}</button>
+                  <button onClick={function(){exportCSV(homeId,'year');onClose();}}  style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportYear}</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <button onClick={onClose}
+          style={{width:'100%',padding:'16px',background:'none',border:'none',color:'var(--ink2)',fontSize:fsr(14),fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginTop:4}}>
+          {t.cancel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── BOTTOM NAV ─────────────────────────────────────────────── */
+function BottomNav({tab,setTab,lang}){
+  var t=T[lang];
+  var tabs=[
+    {key:'staff',  icon:'👥',label:t.navStaff},
+    {key:'leaves', icon:'🗓️',label:t.navLeaves},
+    {key:'salary', icon:'💳',label:t.navSalary},
+    {key:'adv',    icon:'📋',label:t.navAdv},
+  ];
+  return (
+    <nav className="sticky bottom-0 z-20 shrink-0" style={{background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
+      <div className="flex">
+        {tabs.map(function(tb){
+          var active=tab===tb.key;
+          return (
+            <button key={tb.key} onClick={function(){setTab(tb.key);}}
+              className="flex-1 flex flex-col items-center py-2 transition-colors"
+              style={{minHeight:56,color:active?'var(--accent)':'var(--ink2)',background:'none',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+              <span style={{fontSize:fsr(22),lineHeight:1,marginBottom:3}}>{tb.icon}</span>
+              <span style={{fontSize:fsr(11),fontWeight:800,lineHeight:1.2}}>{tb.label}</span>
+              {active && <span style={{marginTop:3,width:20,height:3,background:'var(--accent)',borderRadius:2,display:'block'}} />}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+/* ── AUTH SCREEN ────────────────────────────────────────────── */
+function AuthScreen({lang,onGuest,onAuth}){
+  var t=T[lang];
+  var [mode,setMode]=useState('phone'); /* 'phone'|'otp' */
+  var [phone,setPhone]=useState('');
+  var [otp,setOtp]=useState('');
+  var [loading,setLoading]=useState(false);
+  var [error,setError]=useState('');
+  var [confirmResult,setConfirmResult]=useState(null);
+  var rcRef=useRef(null);
+
+  function sendOTP(){
+    setError(''); setLoading(true);
+    var num=phone.startsWith('+')?phone:'+91'+phone;
+    if(!rcRef.current){
+      rcRef.current=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
+    }
+    firebase.auth().signInWithPhoneNumber(num,rcRef.current)
+      .then(function(res){setConfirmResult(res);setMode('otp');setLoading(false);})
+      .catch(function(){
+        setError(t.authError);setLoading(false);
+        if(rcRef.current){rcRef.current.clear();rcRef.current=null;}
+      });
+  }
+  function verifyOTP(){
+    setError(''); setLoading(true);
+    confirmResult.confirm(otp)
+      .then(function(res){onAuth(res.user);})
+      .catch(function(){setError(t.authError);setLoading(false);});
+  }
+  function signInGoogle(){
+    setLoading(true);
+    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+      .then(function(res){onAuth(res.user);})
+      .catch(function(){setError(t.authError);setLoading(false);});
+  }
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column'}}>
+      <div style={{background:'var(--accent)',padding:'48px 20px 32px',textAlign:'center'}}>
+        <div style={{fontSize:'3.5rem',marginBottom:12}}>🏠</div>
+        <h1 style={{color:'#fff',fontSize:fsr(26),fontWeight:800,margin:0}}>{t.app}</h1>
+        <p style={{color:'rgba(255,255,255,.75)',fontSize:fsr(14),margin:'6px 0 0'}}>{t.tag}</p>
+      </div>
+      <div style={{padding:20,flex:1}}>
+        <div className="card mb-4">
+          {error&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{error}</p>}
+          {mode==='phone'&&(
+            <>
+              <p style={{fontWeight:800,fontSize:fsr(17),color:'var(--ink)',marginBottom:14}}>{t.signIn}</p>
+              <FLabel label={t.phoneNum}>
+                <FInput type="tel" value={phone} onChange={setPhone} placeholder="10-digit mobile number" />
+              </FLabel>
+              <div id="recaptcha-container" />
+              <button className="btn btn-accent btn-full" disabled={phone.replace(/\D/g,'').length<10||loading}
+                onClick={sendOTP}>{loading?'…':t.sendOtp}</button>
+            </>
+          )}
+          {mode==='otp'&&(
+            <>
+              <p style={{fontSize:fsr(14),color:'var(--ink2)',marginBottom:14}}>{t.otpSent}</p>
+              <FLabel label={t.verifyOtp}>
+                <FInput type="number" value={otp} onChange={setOtp} placeholder="6-digit code" />
+              </FLabel>
+              <button className="btn btn-accent btn-full" disabled={otp.length<6||loading}
+                onClick={verifyOTP}>{loading?'…':t.verifyOtp}</button>
+              <button onClick={function(){setMode('phone');setOtp('');setError('');}}
+                style={{width:'100%',marginTop:8,padding:'10px',background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif'}}>
+                {t.cancel}
+              </button>
+            </>
+          )}
+        </div>
+
+        <div style={{textAlign:'center',margin:'0 0 16px',color:'var(--muted)',fontSize:fsr(13)}}>— or —</div>
+        <button className="btn btn-ghost btn-full mb-5" onClick={signInGoogle} disabled={loading}>
+          🔵 {t.googleSignIn}
+        </button>
+
+        <div style={{textAlign:'center'}}>
+          <button onClick={onGuest}
+            style={{background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif',padding:'8px 16px'}}>
+            {t.guestMode}
+          </button>
+          <p style={{fontSize:fsr(12),color:'var(--muted)',margin:'4px 0 0'}}>{t.guestWarning}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── HOME SETUP SCREEN ──────────────────────────────────────── */
+function HomeSetupScreen({lang,user,onHomeReady}){
+  var t=T[lang];
+  var [mode,setMode]=useState('choose'); /* 'choose'|'create'|'join' */
+  var [homeName,setHomeName]=useState('');
+  var [code,setCode]=useState('');
+  var [loading,setLoading]=useState(false);
+  var [error,setError]=useState('');
+
+  function createHome(){
+    if(!homeName.trim()) return;
+    setLoading(true); setError('');
+    var homeId='hm_'+uid();
+    var inviteCode=Math.random().toString(36).slice(2,8).toUpperCase();
+    var homeDoc={name:homeName.trim(),ownerId:user.uid,memberIds:[user.uid],
+      inviteCode:inviteCode,workingDays:26,roles:[],lang:lang};
+    fbDb.collection('homes').doc(homeId).set(homeDoc)
+      .then(function(){
+        return fbDb.collection('users').doc(user.uid).set(
+          {displayName:user.displayName||user.phoneNumber||'',homeIds:[homeId],currentHomeId:homeId},
+          {merge:true});
+      })
+      .then(function(){
+        saveHomes([{id:homeId,name:homeDoc.name}]);
+        saveSettings({lang:lang,lastHomeId:homeId,workingDays:26});
+        onHomeReady([{id:homeId,name:homeDoc.name}],homeId);
+      })
+      .catch(function(e){setError(e.message);setLoading(false);});
+  }
+
+  function joinHome(){
+    if(code.length!==6) return;
+    setLoading(true); setError('');
+    fbDb.collection('homes').where('inviteCode','==',code.toUpperCase()).get()
+      .then(function(snap){
+        if(snap.empty){setError(t.codeNotFound);setLoading(false);return;}
+        var doc=snap.docs[0];
+        var homeId=doc.id;
+        var homeData=doc.data();
+        var members=(homeData.memberIds||[]);
+        if(!members.includes(user.uid)) members=members.concat([user.uid]);
+        return doc.ref.update({memberIds:members})
+          .then(function(){
+            return fbDb.collection('users').doc(user.uid).set(
+              {displayName:user.displayName||user.phoneNumber||'',
+               homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),currentHomeId:homeId},
+              {merge:true});
+          })
+          .then(function(){
+            saveHomes([{id:homeId,name:homeData.name}]);
+            saveSettings({lang:lang,lastHomeId:homeId,workingDays:homeData.workingDays||26});
+            onHomeReady([{id:homeId,name:homeData.name}],homeId);
+          });
+      })
+      .catch(function(e){setError(e.message);setLoading(false);});
+  }
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',padding:20,display:'flex',flexDirection:'column'}}>
+      <div style={{textAlign:'center',paddingTop:48,marginBottom:32}}>
+        <div style={{fontSize:'3rem',marginBottom:8}}>🏠</div>
+        <h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',margin:0}}>
+          {mode==='choose'?t.setupTitle:mode==='create'?t.createHome:t.joinHome}
+        </h2>
+      </div>
+
+      {mode==='choose'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <button onClick={function(){setMode('create');}} className="card"
+            style={{textAlign:'left',border:'2px solid var(--accent)',cursor:'pointer',background:'var(--surface)'}}>
+            <div style={{fontSize:'2rem',marginBottom:8}}>🏗️</div>
+            <p style={{fontWeight:800,fontSize:fsr(18),color:'var(--accent)',margin:0}}>{t.createHome}</p>
+            <p style={{fontSize:fsr(13),color:'var(--ink2)',margin:'4px 0 0'}}>{t.createDesc}</p>
+          </button>
+          <button onClick={function(){setMode('join');}} className="card"
+            style={{textAlign:'left',border:'2px solid var(--border)',cursor:'pointer',background:'var(--surface)'}}>
+            <div style={{fontSize:'2rem',marginBottom:8}}>🔑</div>
+            <p style={{fontWeight:800,fontSize:fsr(18),color:'var(--ink)',margin:0}}>{t.joinHome}</p>
+            <p style={{fontSize:fsr(13),color:'var(--ink2)',margin:'4px 0 0'}}>{t.joinDesc}</p>
+          </button>
+        </div>
+      )}
+
+      {mode==='create'&&(
+        <div className="card">
+          {error&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{error}</p>}
+          <FLabel label={t.homeName}>
+            <FInput value={homeName} onChange={setHomeName} placeholder={t.homeEx} />
+          </FLabel>
+          <button className="btn btn-accent btn-full" disabled={!homeName.trim()||loading}
+            onClick={createHome}>{loading?t.creating:t.createHome}</button>
+          <button onClick={function(){setMode('choose');setError('');}}
+            style={{width:'100%',marginTop:8,padding:'10px',background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif'}}>
+            {t.cancel}
+          </button>
+        </div>
+      )}
+
+      {mode==='join'&&(
+        <div className="card">
+          {error&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{error}</p>}
+          <FLabel label={t.enterCode}>
+            <input className="inp" value={code} maxLength={6}
+              onChange={function(e){setCode(e.target.value.toUpperCase());}}
+              placeholder="ABC123"
+              style={{textTransform:'uppercase',letterSpacing:'0.2em',textAlign:'center',fontSize:fsr(26)}} />
+          </FLabel>
+          <button className="btn btn-accent btn-full" disabled={code.length!==6||loading}
+            onClick={joinHome}>{loading?t.joining:t.joinHome}</button>
+          <button onClick={function(){setMode('choose');setError('');setCode('');}}
+            style={{width:'100%',marginTop:8,padding:'10px',background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif'}}>
+            {t.cancel}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── INVITE CARD (shown inside SettingsTab when cloud mode) ─── */
+function InviteCard({lang,homeId,homes}){
+  var t=T[lang];
+  var [code,setCode]=useState('');
+  var [copied,setCopied]=useState(false);
+
+  useEffect(function(){
+    if(!FIREBASE_ENABLED||!fbDb||!homeId) return;
+    fbDb.collection('homes').doc(homeId).get()
+      .then(function(doc){if(doc.exists) setCode(doc.data().inviteCode||'');})
+      .catch(function(){});
+  },[homeId]);
+
+  if(!FIREBASE_ENABLED||!code) return null;
+  var home=homes.find(function(h){return h.id===homeId;})||{name:''};
+  var waText='Join my household on GharSeva! Code: '+code+' 🏠 ('+home.name+')';
+
+  function copyCode(){
+    navigator.clipboard&&navigator.clipboard.writeText(code).then(function(){
+      setCopied(true); setTimeout(function(){setCopied(false);},2000);
+    });
+  }
+
+  return (
+    <div className="card mb-4">
+      <p style={{fontWeight:800,fontSize:fsr(16),color:'var(--ink)',marginBottom:4}}>{t.inviteCode}</p>
+      <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:14}}>{t.inviteCodeHint}</p>
+      <div style={{textAlign:'center',background:'var(--surface2)',borderRadius:14,padding:'18px 12px',marginBottom:14}}>
+        <span style={{fontSize:fsr(34),fontWeight:800,letterSpacing:'0.22em',color:'var(--accent)',fontFamily:'monospace'}}>
+          {code}
+        </span>
+      </div>
+      <div className="flex gap-3">
+        <button className="btn btn-ghost btn-sm flex-1" onClick={copyCode}>
+          {copied?'✅ '+t.copyCode:'📋 '+t.copyCode}
+        </button>
+        <a href={'https://wa.me/?text='+encodeURIComponent(waText)} target="_blank" rel="noopener noreferrer"
+          className="btn btn-ok btn-sm flex-1"
+          style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+          💬 {t.shareWA}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ROOT ───────────────────────────────────────────────── */
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={err:null};}
+  static getDerivedStateFromError(e){return {err:e};}
+  render(){
+    if(this.state.err){
+      return (
+        <div style={{padding:20}}>
+          <h2 style={{color:'#dc2626',fontSize:fsr(18),fontWeight:700}}>Something went wrong / कुछ गलत हो गया</h2>
+          <p style={{color:'#991b1b',fontSize:fsr(14),marginTop:8}}>{this.state.err.message}</p>
+          <button onClick={function(){window.location.reload();}} style={{marginTop:16,padding:'8px 16px',background:'var(--accent)',color:'#fff',border:'none',borderRadius:8,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+            Reload App / फिर लोड करें
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function App(){
+  var [ready,setReady]=useState(false);
+  var [lang,setLang]=useState('en');
+  var [homes,setHomes]=useState([]);
+  var [homeId,setHomeId]=useState('');
+  var [tab,setTab]=useState('home');
+  var [staffKey,setStaffKey]=useState(0);
+  var [preselectSalaryStaff,setPreselectSalaryStaff]=useState('');
+  var [workingDays,setWorkingDays]=useState(30);
+  var [fontSz,setFontSz]=useState('normal');
+  var [menuOpen,setMenuOpen]=useState(false);
+  /* cloud state */
+  var [user,setUser]=useState(undefined);   /* undefined=checking, null=no user */
+  var [guestMode,setGuestMode]=useState(false);
+  var [syncKey,setSyncKey]=useState(0);
+  var [needsHome,setNeedsHome]=useState(false);
+  var [migrating,setMigrating]=useState(false);
+
+  useEffect(function(){ applyFontSz(fontSz); },[fontSz]);
+
+  /* ── primary init ── */
+  useEffect(function(){
+    if(!FIREBASE_ENABLED){
+      setGuestMode(true); setUser(null);
+      seedIfNeeded();
+      var settings=getSettings();
+      setLang(settings.lang||'en');
+      setWorkingDays(settings.workingDays||30);
+      var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
+      var h=getHomes(); setHomes(h);
+      var lid=settings.lastHomeId;
+      var hid=(lid&&h.find(function(x){return x.id===lid;}))?lid:(h[0]?h[0].id:'');
+      setHomeId(hid); _activeHomeId=hid;
+      setReady(true);
+      return;
+    }
+    var unsubAuth=fbAuth.onAuthStateChanged(function(u){
+      setUser(u);
+      if(!u){
+        var settings=getSettings();
+        setLang(settings.lang||'en');
+        var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
+        setReady(true); return;
+      }
+      fbDb.collection('users').doc(u.uid).get().then(function(doc){
+        var settings=getSettings();
+        setLang(settings.lang||'en');
+        setWorkingDays(settings.workingDays||26);
+        var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
+        if(!doc.exists||(doc.data().homeIds||[]).length===0){
+          setNeedsHome(true); setReady(true); return;
+        }
+        var ud=doc.data();
+        Promise.all((ud.homeIds||[]).map(function(id){ return fbDb.collection('homes').doc(id).get(); }))
+          .then(function(docs){
+            var userHomes=docs.filter(function(d){return d.exists;}).map(function(d){
+              return {id:d.id,name:d.data().name};
+            });
+            var lid=ud.currentHomeId;
+            var hid=(lid&&userHomes.find(function(x){return x.id===lid;}))?lid:(userHomes[0]?userHomes[0].id:'');
+            setHomes(userHomes); setHomeId(hid); _activeHomeId=hid;
+            if(lsGet(SK.homes,[]).length>0) setMigrating(true);
+            setReady(true);
+          }).catch(function(){ setReady(true); });
+      }).catch(function(){ setReady(true); });
+    });
+    return function(){ unsubAuth(); };
+  },[]);
+
+  /* ── Firestore real-time listeners ── */
+  useEffect(function(){
+    if(!FIREBASE_ENABLED||!fbDb||!homeId||guestMode) return;
+    var db=fbDb, timer=null;
+    function bump(){
+      clearTimeout(timer);
+      timer=setTimeout(function(){ setSyncKey(function(k){return k+1;}); },250);
+    }
+    var unsubs=[
+      db.collection('homes/'+homeId+'/staff').onSnapshot(function(snap){
+        saveStaff(homeId,snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});})); bump();
+      }),
+      db.collection('homes/'+homeId+'/ledger').onSnapshot(function(snap){
+        saveLedger(homeId,snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});})); bump();
+      }),
+      db.collection('homes/'+homeId+'/payments').onSnapshot(function(snap){
+        savePayments(homeId,snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});})); bump();
+      }),
+      db.collection('homes/'+homeId+'/leaves').onSnapshot(function(snap){
+        snap.docs.forEach(function(d){
+          var p=d.id.split('_');
+          if(p.length>=2) saveLeaves(p[0],p.slice(1).join('_'),d.data().dates||{});
+        }); bump();
+      }),
+    ];
+    return function(){ clearTimeout(timer); unsubs.forEach(function(u){u();}); };
+  },[homeId,guestMode]);
+
+  function toggleLang(){
+    var nl=lang==='en'?'hi':'en'; setLang(nl);
+    saveSettings(Object.assign({},getSettings(),{lang:nl}));
+  }
+  function cycleFontSz(){
+    var next=fontSz==='normal'?'large':fontSz==='large'?'xlarge':'normal';
+    setFontSz(next); saveSettings(Object.assign({},getSettings(),{fontSz:next}));
+  }
+  function changeHome(id){
+    setHomeId(id); _activeHomeId=id;
+    saveSettings(Object.assign({},getSettings(),{lastHomeId:id}));
+    setTab('home');
+    if(FIREBASE_ENABLED&&fbDb&&user&&!guestMode)
+      fbDb.collection('users').doc(user.uid).update({currentHomeId:id}).catch(function(){});
+  }
+  function updateHomes(h){
+    saveHomes(h); setHomes(h);
+    if(h.length>0&&!h.find(function(x){return x.id===homeId;})) changeHome(h[0].id);
+  }
+  function signOut(){
+    if(fbAuth) fbAuth.signOut().then(function(){ window.location.reload(); });
+  }
+  function doMigrate(){
+    migrateFromLocalStorage(homeId).then(function(){ setMigrating(false); });
+  }
+  function enterGuestMode(){
+    setGuestMode(true);
+    seedIfNeeded();
+    var settings=getSettings();
+    setLang(settings.lang||'en');
+    setWorkingDays(settings.workingDays||30);
+    var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
+    var h=getHomes(); setHomes(h);
+    var hid=h.length?h[0].id:''; setHomeId(hid); _activeHomeId=hid;
+  }
+
+  /* ── auth gating ── */
+  if(!ready||user===undefined) return null;
+  if(!guestMode&&user===null){
+    return <AuthScreen lang={lang}
+      onAuth={function(){ window.location.reload(); }}
+      onGuest={enterGuestMode} />;
+  }
+  if(!guestMode&&needsHome){
+    return <HomeSetupScreen lang={lang} user={user}
+      onHomeReady={function(homesList,hid){
+        setHomes(homesList); setHomeId(hid); _activeHomeId=hid; setNeedsHome(false);
+      }} />;
+  }
+
+  var t=T[lang];
+
+  if(migrating){
+    return (
+      <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+        <div className="card" style={{maxWidth:380,width:'100%',textAlign:'center'}}>
+          <div style={{fontSize:'2.5rem',marginBottom:12}}>📦</div>
+          <h2 style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)',marginBottom:8}}>{t.migrateTitle}</h2>
+          <p style={{fontSize:fsr(14),color:'var(--ink2)',marginBottom:20}}>{t.migratePrompt}</p>
+          <div className="flex gap-3">
+            <button className="btn btn-accent flex-1" onClick={doMigrate}>{t.migrateYes}</button>
+            <button className="btn btn-ghost flex-1" onClick={function(){setMigrating(false);}}>{t.migrateSkip}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SyncCtx.Provider value={syncKey}>
+    <div className="flex flex-col" style={{minHeight:'100vh'}}>
+      <header className="shrink-0" style={{background:'var(--accent)',color:'#fff',padding:'12px 16px 10px'}}>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 style={{fontSize:fsr(20),fontWeight:800,lineHeight:1,margin:0,color:'#fff'}}>{t.app}</h1>
+            <p style={{fontSize:fsr(11),opacity:.6,margin:0,color:'#fff'}}>
+              {FIREBASE_ENABLED&&!guestMode?t.syncLive:t.tag}
+            </p>
+          </div>
+          <div style={{display:'flex',gap:6,alignItems:'center'}}>
+            {tab!=='home'&&<button onClick={function(){setTab('home');}} title="Home"
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(16),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
+              🏠
+            </button>}
+            <button onClick={cycleFontSz} title="Font size"
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
+              {fontSz==='normal'?'Aa':fontSz==='large'?'A+':'A++'}
+            </button>
+            <button onClick={toggleLang}
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 14px',fontWeight:700,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+              {lang==='en'?'हिं':'EN'}
+            </button>
+            <button onClick={function(){setMenuOpen(true);}} title="Menu"
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 11px',fontWeight:800,fontSize:fsr(17),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
+              ☰
+            </button>
+          </div>
+        </div>
+        <div style={{position:'relative'}}>
+          <select value={homeId} onChange={function(e){changeHome(e.target.value);}}
+            style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 36px 8px 12px',fontWeight:600,fontSize:fsr(14),color:'#fff',width:'100%',appearance:'none',WebkitAppearance:'none',fontFamily:'Nunito,sans-serif',outline:'none'}}>
+            {homes.map(function(h){return <option key={h.id} value={h.id} style={{background:'#1A2E2A',color:'#fff'}}>{h.name}</option>;})}
+          </select>
+          <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'rgba(255,255,255,0.6)'}}>🏠</span>
+        </div>
+      </header>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {tab==='home'     && <DashboardTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onNavigate={function(tabKey,staffId){setTab(tabKey);setPreselectSalaryStaff(staffId||'');}} />}
+        {tab==='staff'    && <StaffTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onStaffChange={function(){setStaffKey(function(k){return k+1;});}} />}
+        {tab==='salary'   && <SalaryTab key={homeId+'-'+staffKey+'-'+preselectSalaryStaff} lang={lang} homeId={homeId} homes={homes} refreshKey={staffKey} workingDays={workingDays} syncKey={syncKey} defaultStaffId={preselectSalaryStaff} />}
+        {tab==='leaves'   && <LeavesTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
+        {tab==='adv'      && <AdvancesTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
+        {tab==='annual'   && <AnnualTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
+        {tab==='voice'    && <VoiceTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
+        {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut} />}
+      </div>
+
+      <BottomNav tab={tab} setTab={setTab} lang={lang} />
+      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={setTab} lang={lang} homeId={homeId} />
+    </div>
+    </SyncCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  React.createElement(ErrorBoundary, null, React.createElement(App))
+);
+</script>
+</body>
+</html>

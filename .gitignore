@@ -1,0 +1,15 @@
+# Firebase CLI noise
+firebase-debug.log
+*-debug.log
+.firebase/
+
+# Node
+node_modules/
+
+# Local Claude Code preferences (machine-specific)
+.claude/settings.local.json
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
