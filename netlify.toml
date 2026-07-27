@@ -1,0 +1,5 @@
+[build]
+  # Generates config.js from the FIREBASE_* environment variables set in
+  # Netlify: Site configuration → Environment variables.
+  command = "node generate-config.js"
+  publish = "."

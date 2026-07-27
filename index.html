@@ -14,6 +14,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase project config. Generated at deploy time by generate-config.js
+       from environment variables. Absent locally → app runs in guest mode. -->
+  <script src="config.js"></script>
   <style>
     :root {
       /* Soft sage-white backgrounds */
@@ -95,22 +99,15 @@ window.onerror = function(msg,_,line){
 const {useState,useEffect,useRef,useMemo} = React;
 
 /* ── FIREBASE INIT ──────────────────────────────────────────── */
-/* Replace the values below with your Firebase project config.
-   Get it from: console.firebase.google.com → Project settings → Your apps → Web app
-   Leave as-is to run in local/guest mode (no cloud sync). */
-const FIREBASE_CONFIG = {
- apiKey: "AIzaSyCrq4DdyctHGnElJI8EX_U5MfX0VyJcbxo",
-  authDomain: "seva-74ffb.firebaseapp.com",
-  projectId: "seva-74ffb",
-  storageBucket: "seva-74ffb.firebasestorage.app",
-  messagingSenderId: "107908814833",
-  appId: "1:107908814833:web:c6616ffbce70a8c1035650"
-};
+/* Config comes from config.js (see config.example.js). On Netlify it is
+   generated at build time from environment variables; locally you create
+   it by hand. No config.js → app runs in guest mode, localStorage only. */
+const FIREBASE_CONFIG = window.GHARSEVA_CONFIG || { apiKey: 'YOUR_API_KEY' };
 var fbAuth = null, fbDb = null, FIREBASE_ENABLED = false;
 (function(){
   try {
     if (typeof firebase === 'undefined') return;
-    if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') return; // placeholder — skip
+    if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') return;
     firebase.initializeApp(FIREBASE_CONFIG);
     fbAuth = firebase.auth();
     fbDb   = firebase.firestore();
