@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GharSeva — Salary day, without the guesswork</title>
+<meta name="description" content="Track attendance, advances and loans for everyone who works at your home. GharSeva does the maths and tells you the exact salary to pay. Free, works offline, in Hindi and English." />
+<meta property="og:title" content="GharSeva — Salary day, without the guesswork" />
+<meta property="og:description" content="The household staff manager that remembers every leave, every advance, every loan — and works out the exact salary for you." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#EDF2EE; --surface:#FFFFFF; --surface2:#E5EDE6;
+  --border:#C4D4C6; --muted:#7A998C;
+  --ink:#1A2E2A; --ink2:#3D5E55;
+  --accent:#1A6E5E; --accent2:#3EA08A;
+  --ok:#1C7A48; --danger:#C0393B; --warn:#B45309; --sun:#E8B84B;
+  --maxw:1180px;
+  --r:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-weight:600;line-height:1.6;overflow-x:hidden;
+}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+section{padding:clamp(64px,9vw,120px) 0}
+
+/* ---------- type ---------- */
+h1,h2,h3{line-height:1.12;font-weight:900;letter-spacing:-.02em}
+h1{font-size:clamp(2.4rem,5.6vw,4.15rem)}
+h2{font-size:clamp(1.9rem,3.9vw,3rem)}
+h3{font-size:clamp(1.1rem,1.6vw,1.35rem);line-height:1.25}
+.lead{font-size:clamp(1.06rem,1.5vw,1.32rem);color:var(--ink2);line-height:1.62;font-weight:600}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:900;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--accent);
+  background:rgba(26,110,94,.09);padding:8px 15px;border-radius:100px;margin-bottom:22px;
+}
+.sec-head{max-width:720px;margin-bottom:clamp(40px,5vw,64px)}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head p{margin-top:18px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:17px 30px;border-radius:15px;font-weight:900;font-size:1.04rem;
+  font-family:inherit;cursor:pointer;border:2px solid transparent;transition:.18s ease;
+  white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 8px 22px -8px rgba(26,110,94,.6)}
+.btn-primary:hover{background:#14574A;transform:translateY(-2px);box-shadow:0 14px 30px -10px rgba(26,110,94,.66)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.btn-lg{padding:20px 38px;font-size:1.12rem}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky;top:0;z-index:60;background:rgba(237,242,238,.86);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid transparent;transition:border-color .2s
+}
+nav.scrolled{border-bottom-color:var(--border)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:74px}
+.logo{display:flex;align-items:center;gap:11px;font-weight:900;font-size:1.28rem;letter-spacing:-.02em}
+.logo-mark{
+  width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:1.25rem;
+  background:linear-gradient(145deg,var(--accent),var(--accent2));box-shadow:0 4px 12px -3px rgba(26,110,94,.5)
+}
+.nav-links{display:flex;align-items:center;gap:34px}
+.nav-links a{font-weight:700;color:var(--ink2);font-size:.97rem;transition:color .15s}
+.nav-links a:hover{color:var(--accent)}
+@media(max-width:880px){.nav-links a:not(.btn){display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding-top:clamp(42px,6vw,76px);padding-bottom:clamp(52px,7vw,96px);position:relative;overflow:hidden}
+.hero::before{
+  content:'';position:absolute;top:-360px;right:-240px;width:820px;height:820px;border-radius:50%;
+  background:radial-gradient(circle,rgba(62,160,138,.20),transparent 66%);pointer-events:none
+}
+.hero-grid{display:grid;grid-template-columns:1.06fr .94fr;gap:clamp(40px,5vw,76px);align-items:center;position:relative}
+.hero h1 .hl{
+  background:linear-gradient(180deg,transparent 62%,rgba(232,184,75,.5) 62%);
+  padding:0 4px;border-radius:3px
+}
+.hero .lead{margin-top:26px;max-width:530px}
+.hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:38px}
+.trust-row{display:flex;flex-wrap:wrap;gap:11px;margin-top:30px}
+.trust{
+  display:inline-flex;align-items:center;gap:8px;font-size:.87rem;font-weight:800;color:var(--ink2);
+  background:var(--surface);border:1px solid var(--border);padding:9px 15px;border-radius:100px
+}
+.trust b{color:var(--accent)}
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:52px}
+  .hero-copy{text-align:center}
+  .hero .lead{margin-inline:auto}
+  .hero-cta,.trust-row{justify-content:center}
+}
+
+/* ---------- phone ---------- */
+.phone-stage{display:flex;justify-content:center;position:relative}
+.phone{
+  width:300px;flex:none;background:#12211E;border-radius:40px;padding:11px;
+  box-shadow:0 40px 80px -28px rgba(26,46,42,.55),0 0 0 1px rgba(26,46,42,.1);
+  position:relative;animation:float 7s ease-in-out infinite
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.phone::before{
+  content:'';position:absolute;top:22px;left:50%;transform:translateX(-50%);
+  width:96px;height:22px;background:#12211E;border-radius:100px;z-index:5
+}
+.screen{background:var(--bg);border-radius:30px;overflow:hidden;height:604px;display:flex;flex-direction:column}
+.ph-head{background:var(--accent);color:#fff;padding:38px 16px 13px}
+.ph-head .t1{font-size:1.06rem;font-weight:900;line-height:1}
+.ph-head .t2{font-size:.63rem;opacity:.72;margin-top:3px}
+.ph-sel{
+  margin-top:11px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+  border-radius:11px;padding:7px 11px;font-size:.76rem;font-weight:700;
+  display:flex;justify-content:space-between;align-items:center
+}
+.ph-body{flex:1;padding:13px;display:flex;flex-direction:column;gap:10px;overflow:hidden;position:relative}
+.ph-nav{
+  display:flex;background:var(--surface);border-top:1px solid var(--border);padding:7px 0 9px
+}
+.ph-nav div{flex:1;text-align:center;font-size:.56rem;font-weight:900;color:var(--muted)}
+.ph-nav div span{display:block;font-size:1.1rem;margin-bottom:2px;filter:grayscale(1);opacity:.55}
+.ph-nav div.on{color:var(--accent)}
+.ph-nav div.on span{filter:none;opacity:1}
+.card-mini{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;
+  box-shadow:0 1px 3px rgba(26,46,42,.05)
+}
+.staff-row{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+  font-weight:900;font-size:.8rem;color:#fff;flex:none
+}
+.staff-row .nm{font-size:.85rem;font-weight:900;line-height:1.15}
+.staff-row .rl{font-size:.68rem;color:var(--muted);font-weight:700}
+.staff-row .amt{margin-left:auto;text-align:right}
+.staff-row .amt b{font-size:.85rem;color:var(--accent);display:block}
+.pill{
+  display:inline-block;font-size:.6rem;font-weight:900;padding:3px 8px;border-radius:100px;margin-top:3px
+}
+.pill.warn{background:#F7EBCD;color:var(--warn)}
+.pill.ok{background:#CCEADC;color:var(--ok)}
+
+/* salary receipt inside phone */
+.rcpt{font-size:.72rem;font-weight:700}
+.rcpt .ln{display:flex;justify-content:space-between;padding:6px 0;color:var(--ink2)}
+.rcpt .ln.neg span:last-child{color:var(--danger)}
+.rcpt .tot{
+  display:flex;justify-content:space-between;padding-top:9px;margin-top:5px;
+  border-top:2px dashed var(--border);font-size:.95rem;font-weight:900;color:var(--accent)
+}
+.mini-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.mini-cal i{
+  aspect-ratio:1;border-radius:6px;background:var(--surface2);display:grid;place-items:center;
+  font-size:.55rem;font-style:normal;font-weight:800;color:var(--ink2)
+}
+.mini-cal i.L{background:#FCE0E0;color:var(--danger)}
+.mini-cal i.H{background:#F7EBCD;color:var(--warn)}
+.mini-cal i.P{background:#CCEADC;color:var(--ok)}
+
+/* ---------- problem ---------- */
+.problem{background:var(--ink);color:#fff;border-radius:0}
+.problem .eyebrow{background:rgba(255,255,255,.12);color:#9FD8C6}
+.problem h2{color:#fff}
+.problem .lead{color:rgba(255,255,255,.7)}
+.q-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:18px;margin-top:52px}
+.q{
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);border-radius:var(--r);
+  padding:26px;font-size:1.06rem;font-weight:700;color:rgba(255,255,255,.93);line-height:1.5;
+  position:relative;transition:.2s
+}
+.q:hover{background:rgba(255,255,255,.09);transform:translateY(-3px)}
+.q .mark{font-size:2.2rem;color:var(--accent2);opacity:.5;line-height:1;display:block;margin-bottom:10px;font-weight:900}
+.after-q{
+  margin-top:44px;padding:30px;border-radius:var(--r);text-align:center;
+  background:linear-gradient(135deg,rgba(62,160,138,.22),rgba(62,160,138,.07));
+  border:1px solid rgba(62,160,138,.35);font-size:clamp(1.1rem,2vw,1.42rem);font-weight:800;color:#fff
+}
+.after-q b{color:#7FD3BB}
+
+/* ---------- video ---------- */
+.player{
+  background:var(--ink);border-radius:26px;overflow:hidden;position:relative;
+  box-shadow:0 40px 80px -32px rgba(26,46,42,.6);border:1px solid rgba(26,46,42,.14)
+}
+.stage{position:relative;aspect-ratio:16/9;background:linear-gradient(160deg,#16302A,#0E211D);overflow:hidden}
+@media(max-width:700px){.stage{aspect-ratio:4/5}}
+.scene{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:6% 8%;text-align:center;opacity:0;visibility:hidden;
+  transition:opacity .6s ease,transform .6s ease;transform:scale(.97)
+}
+.scene.on{opacity:1;visibility:visible;transform:none}
+.scene .cap{
+  font-size:clamp(1.15rem,2.7vw,2.05rem);font-weight:900;color:#fff;line-height:1.22;letter-spacing:-.02em;max-width:16ch
+}
+.scene .sub{font-size:clamp(.86rem,1.35vw,1.05rem);color:rgba(255,255,255,.62);font-weight:700;max-width:36ch}
+.scene .num{font-size:clamp(2.4rem,7vw,5rem);font-weight:900;color:#7FD3BB;letter-spacing:-.03em;line-height:1}
+.chip-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.chip{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;
+  padding:9px 16px;border-radius:100px;font-size:clamp(.72rem,1.15vw,.92rem);font-weight:800
+}
+.chip.hot{background:rgba(127,211,187,.19);border-color:rgba(127,211,187,.45);color:#9FE3CD}
+.note-scatter{position:relative;width:min(100%,440px);height:clamp(120px,20vw,180px)}
+.note{
+  position:absolute;background:#FBF3D8;color:#5A4A22;padding:11px 14px;border-radius:8px;
+  font-size:clamp(.7rem,1.1vw,.88rem);font-weight:800;box-shadow:0 10px 24px -8px rgba(0,0,0,.55);
+  border:1px solid rgba(0,0,0,.07)
+}
+.note:nth-child(1){top:2%;left:1%;transform:rotate(-7deg)}
+.note:nth-child(2){top:34%;right:2%;transform:rotate(5deg);background:#F6E2E2;color:#6B3232}
+.note:nth-child(3){bottom:2%;left:16%;transform:rotate(3deg);background:#E0EEE6;color:#26503F}
+.sync-pair{display:flex;align-items:center;gap:clamp(14px,3vw,34px)}
+.sync-ph{
+  width:clamp(64px,10vw,104px);aspect-ratio:9/17;border-radius:12px;background:#0B1A17;
+  border:2px solid rgba(127,211,187,.5);padding:6px;display:flex;flex-direction:column;gap:4px
+}
+.sync-ph i{display:block;height:7px;border-radius:3px;background:rgba(255,255,255,.16);font-style:normal}
+.sync-ph i.g{background:rgba(127,211,187,.75)}
+.sync-arrows{color:#7FD3BB;font-size:clamp(1.2rem,3vw,2rem);font-weight:900;animation:pulseA 1.5s ease-in-out infinite}
+@keyframes pulseA{0%,100%{opacity:.35;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
+.rcpt-big{
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.16);border-radius:16px;
+  padding:clamp(16px,2.4vw,26px);width:min(100%,400px);text-align:left
+}
+.rcpt-big .ln{
+  display:flex;justify-content:space-between;padding:6px 0;
+  font-size:clamp(.76rem,1.2vw,.98rem);font-weight:700;color:rgba(255,255,255,.66)
+}
+.rcpt-big .ln em{font-style:normal;color:#F2A5A5}
+.rcpt-big .tot{
+  display:flex;justify-content:space-between;border-top:2px dashed rgba(255,255,255,.24);
+  margin-top:9px;padding-top:12px;font-size:clamp(1rem,1.9vw,1.5rem);font-weight:900;color:#7FD3BB
+}
+/* player chrome */
+.bar{display:flex;align-items:center;gap:16px;padding:15px 20px;background:rgba(0,0,0,.34)}
+.pbtn{
+  width:44px;height:44px;flex:none;border-radius:50%;border:none;cursor:pointer;
+  background:#fff;color:var(--ink);display:grid;place-items:center;font-size:1rem;transition:.15s
+}
+.pbtn:hover{transform:scale(1.07)}
+.track{flex:1;height:6px;background:rgba(255,255,255,.2);border-radius:100px;overflow:hidden;cursor:pointer}
+.fill{height:100%;width:0;background:var(--accent2);border-radius:100px;transition:width .25s linear}
+.tstamp{color:rgba(255,255,255,.68);font-size:.83rem;font-weight:800;font-variant-numeric:tabular-nums;flex:none}
+.dots{display:flex;justify-content:center;gap:7px;margin-top:22px}
+.dots button{
+  width:9px;height:9px;border-radius:50%;border:none;background:var(--border);cursor:pointer;
+  padding:0;transition:.2s
+}
+.dots button.on{background:var(--accent);width:26px;border-radius:100px}
+
+/* ---------- bento ---------- */
+.bento{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.b{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;
+  transition:.22s ease;position:relative;overflow:hidden
+}
+.b:hover{transform:translateY(-4px);box-shadow:0 20px 42px -22px rgba(26,46,42,.34);border-color:var(--accent2)}
+.b .ico{
+  width:50px;height:50px;border-radius:14px;background:var(--surface2);display:grid;place-items:center;
+  font-size:1.5rem;margin-bottom:18px
+}
+.b h3{margin-bottom:9px}
+.b p{color:var(--ink2);font-size:.97rem;line-height:1.55}
+.b.wide{grid-column:span 2}
+.b.hero-card{
+  grid-column:span 2;grid-row:span 2;background:linear-gradient(155deg,var(--accent),#12564A);
+  color:#fff;border-color:transparent;display:flex;flex-direction:column
+}
+.b.hero-card .ico{background:rgba(255,255,255,.16)}
+.b.hero-card h3{font-size:clamp(1.4rem,2.3vw,1.95rem);color:#fff}
+.b.hero-card p{color:rgba(255,255,255,.76);font-size:1.03rem}
+.calc-demo{
+  margin-top:auto;background:rgba(0,0,0,.22);border-radius:15px;padding:19px;font-size:.87rem;font-weight:700
+}
+.calc-demo .ln{display:flex;justify-content:space-between;padding:5px 0;color:rgba(255,255,255,.72)}
+.calc-demo .ln em{font-style:normal;color:#F5B9B9}
+.calc-demo .tot{
+  display:flex;justify-content:space-between;border-top:2px dashed rgba(255,255,255,.26);
+  margin-top:8px;padding-top:11px;font-size:1.28rem;font-weight:900;color:#fff
+}
+@media(max-width:1000px){
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .b.hero-card{grid-column:span 2;grid-row:auto}
+}
+@media(max-width:620px){
+  .bento{grid-template-columns:1fr}
+  .b.wide,.b.hero-card{grid-column:span 1}
+}
+
+/* ---------- steps ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;counter-reset:s}
+.step{position:relative;padding-top:22px}
+.step::before{
+  counter-increment:s;content:counter(s);
+  font-size:4.2rem;font-weight:900;color:var(--accent);opacity:.15;line-height:.8;display:block;margin-bottom:14px
+}
+.step h3{margin-bottom:9px}
+.step p{color:var(--ink2);font-size:.99rem}
+@media(max-width:800px){.steps{grid-template-columns:1fr;gap:34px}}
+
+/* ---------- share ---------- */
+.share{background:var(--surface2)}
+.share-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(38px,5vw,72px);align-items:center}
+@media(max-width:900px){.share-grid{grid-template-columns:1fr}}
+.code-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:34px;text-align:center;
+  box-shadow:0 24px 50px -28px rgba(26,46,42,.34)
+}
+.code-card .lbl{font-size:.76rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.code{
+  font-size:clamp(2rem,5vw,3rem);font-weight:900;letter-spacing:.24em;color:var(--accent);
+  margin:16px 0 6px;font-family:ui-monospace,'SF Mono',Menlo,monospace
+}
+.code-card .hint{font-size:.9rem;color:var(--ink2)}
+.member-row{display:flex;justify-content:center;gap:-10px;margin-top:24px}
+.member{
+  width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;
+  font-size:.87rem;border:3px solid var(--surface);margin-left:-10px
+}
+.member:first-child{margin-left:0}
+.tick-list{list-style:none;margin-top:30px;display:flex;flex-direction:column;gap:15px}
+.tick-list li{display:flex;gap:13px;align-items:flex-start;font-size:1.04rem;color:var(--ink2);font-weight:700}
+.tick{
+  width:25px;height:25px;border-radius:50%;background:var(--accent);color:#fff;flex:none;
+  display:grid;place-items:center;font-size:.75rem;font-weight:900;margin-top:2px
+}
+
+/* ---------- india strip ---------- */
+.india-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:20px}
+.ind{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;text-align:center
+}
+.ind .big{font-size:2.1rem;margin-bottom:12px;display:block}
+.ind h3{font-size:1.06rem;margin-bottom:7px}
+.ind p{font-size:.92rem;color:var(--ink2)}
+
+/* ---------- faq ---------- */
+.faq{max-width:800px;margin:0 auto}
+details{
+  background:var(--surface);border:1px solid var(--border);border-radius:15px;
+  margin-bottom:13px;overflow:hidden;transition:.2s
+}
+details[open]{border-color:var(--accent2);box-shadow:0 10px 26px -18px rgba(26,46,42,.36)}
+summary{
+  padding:21px 24px;font-weight:900;font-size:1.04rem;cursor:pointer;list-style:none;
+  display:flex;justify-content:space-between;align-items:center;gap:16px
+}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'+';font-size:1.5rem;color:var(--accent);font-weight:900;flex:none;transition:.2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{padding:0 24px 22px;color:var(--ink2);font-size:.99rem;line-height:1.62}
+
+/* ---------- final ---------- */
+.final{
+  background:linear-gradient(150deg,var(--accent),#0F4B40);color:#fff;text-align:center;
+  border-radius:30px;padding:clamp(50px,7vw,86px) 30px;position:relative;overflow:hidden
+}
+.final::after{
+  content:'';position:absolute;bottom:-190px;left:50%;transform:translateX(-50%);
+  width:640px;height:640px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)
+}
+.final>*{position:relative;z-index:1}
+.final h2{color:#fff;max-width:16ch;margin:0 auto 20px}
+.final p{color:rgba(255,255,255,.8);max-width:52ch;margin:0 auto 38px;font-size:1.1rem}
+.final .btn-primary{background:#fff;color:var(--accent);box-shadow:0 12px 30px -10px rgba(0,0,0,.4)}
+.final .btn-primary:hover{background:#F0FAF6}
+.final .fine{margin-top:24px;font-size:.9rem;color:rgba(255,255,255,.62)}
+
+/* ---------- footer ---------- */
+footer{padding:56px 0 40px;border-top:1px solid var(--border);margin-top:clamp(64px,9vw,120px)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:26px;flex-wrap:wrap}
+.foot p{color:var(--muted);font-size:.9rem}
+.foot-links{display:flex;gap:26px;font-size:.9rem;font-weight:700;color:var(--ink2)}
+.foot-links a:hover{color:var(--accent)}
+
+/* ---------- reveal ----------
+   Content is visible by default. The hide-then-reveal only switches on once
+   JS has confirmed IntersectionObserver works, so a script failure can never
+   leave the page blank. */
+.rv{opacity:1;transform:none}
+html.js-rv .rv{opacity:0;transform:translateY(26px);transition:opacity .65s cubic-bezier(.2,.7,.3,1),transform .65s cubic-bezier(.2,.7,.3,1)}
+html.js-rv .rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto}
+  html.js-rv .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap nav-in">
+    <a href="#top" class="logo"><span class="logo-mark">🏠</span> GharSeva</a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#share">For families</a>
+      <a href="#faq">FAQ</a>
+      <a href="index.html" class="btn btn-primary" style="padding:12px 24px;font-size:.95rem">Open the app</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">🏠 Household staff manager</span>
+      <h1>Salary day,<br>without the <span class="hl">guesswork</span>.</h1>
+      <p class="lead">
+        GharSeva remembers every leave, every advance and every loan instalment for the people who
+        work at your home — then works out exactly what to pay. No diary. No arguments.
+      </p>
+      <div class="hero-cta">
+        <a href="index.html" class="btn btn-primary btn-lg">Open GharSeva — free →</a>
+        <a href="#video" class="btn btn-ghost btn-lg">▶ See how it works</a>
+      </div>
+      <div class="trust-row">
+        <span class="trust">✅ <b>No account</b> needed to start</span>
+        <span class="trust">📶 Works <b>offline</b></span>
+        <span class="trust">🇮🇳 <b>हिंदी</b> &amp; English</span>
+      </div>
+    </div>
+
+    <div class="phone-stage">
+      <div class="phone">
+        <div class="screen">
+          <div class="ph-head">
+            <div class="t1">GharSeva</div>
+            <div class="t2">Synced with your family</div>
+            <div class="ph-sel"><span>Nagpur — Main House</span><span>🏠</span></div>
+          </div>
+          <div class="ph-body" id="phBody">
+            <!-- panel: staff -->
+            <div class="ph-panel" data-p="0">
+              <div class="card-mini" style="margin-bottom:10px">
+                <div class="staff-row">
+                  <div class="avatar" style="background:#1A6E5E">KB</div>
+                  <div><div class="nm">Kamala Bai</div><div class="rl">Maid · ₹8,000/mo</div></div>
+                  <div class="amt"><span class="pill warn">Due</span></div>
+                </div>
+              </div>
+              <div class="card-mini" style="margin-bottom:10px">
+                <div class="staff-row">
+                  <div class="avatar" style="background:#5B4A9B">RP</div>
+                  <div><div class="nm">Ramu Prasad</div><div class="rl">Cook · ₹12,000/mo</div></div>
+                  <div class="amt"><span class="pill warn">Due</span></div>
+                </div>
+              </div>
+              <div class="card-mini">
+                <div class="staff-row">
+                  <div class="avatar" style="background:#B45309">SD</div>
+                  <div><div class="nm">Sunita Devi</div><div class="rl">Driver · ₹6,000/mo</div></div>
+                  <div class="amt"><span class="pill ok">Paid</span></div>
+                </div>
+              </div>
+            </div>
+            <!-- panel: attendance -->
+            <div class="ph-panel" data-p="1">
+              <div class="card-mini">
+                <div style="font-size:.72rem;font-weight:900;color:var(--muted);text-align:center;margin-bottom:9px;letter-spacing:.06em">JULY 2026</div>
+                <div class="mini-cal">
+                  <i>1</i><i class="P">2</i><i class="P">3</i><i class="L">4</i><i class="P">5</i><i class="P">6</i><i class="H">7</i>
+                  <i class="P">8</i><i class="P">9</i><i class="P">10</i><i class="P">11</i><i class="L">12</i><i class="P">13</i><i class="H">14</i>
+                  <i class="P">15</i><i class="P">16</i><i class="P">17</i><i class="P">18</i><i class="P">19</i><i class="P">20</i><i class="H">21</i>
+                  <i class="P">22</i><i class="P">23</i><i class="L">24</i><i class="P">25</i><i class="P">26</i><i class="P">27</i><i class="H">28</i>
+                </div>
+                <div style="display:flex;gap:9px;justify-content:center;margin-top:11px;font-size:.6rem;font-weight:800">
+                  <span style="color:var(--ok)">● Present</span>
+                  <span style="color:var(--danger)">● Leave</span>
+                  <span style="color:var(--warn)">● Holiday</span>
+                </div>
+              </div>
+            </div>
+            <!-- panel: salary -->
+            <div class="ph-panel" data-p="2">
+              <div class="card-mini rcpt">
+                <div style="font-weight:900;font-size:.8rem;margin-bottom:8px">Kamala Bai · July</div>
+                <div class="ln"><span>Base salary</span><span>₹8,000</span></div>
+                <div class="ln neg"><span>3 leave days</span><span>− ₹923</span></div>
+                <div class="ln neg"><span>Advance taken</span><span>− ₹1,000</span></div>
+                <div class="ln neg"><span>Loan instalment</span><span>− ₹1,000</span></div>
+                <div class="ln"><span>Diwali bonus</span><span>+ ₹500</span></div>
+                <div class="tot"><span>Pay now</span><span>₹5,577</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="ph-nav" id="phNav">
+            <div class="on"><span>👥</span>Staff</div>
+            <div><span>🗓️</span>Attend</div>
+            <div><span>💳</span>Pay</div>
+            <div><span>📋</span>Records</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= PROBLEM ================= -->
+<section class="problem">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">The month-end scramble</span>
+      <h2>Every home has the same four questions.</h2>
+      <p class="lead">And nobody can ever quite remember the answers.</p>
+    </div>
+    <div class="q-grid">
+      <div class="q rv"><span class="mark">“</span>She took leave last week… was that three days, or four?</div>
+      <div class="q rv"><span class="mark">“</span>We gave an advance in March. Did we ever deduct it?</div>
+      <div class="q rv"><span class="mark">“</span>The loan — how many instalments are actually left?</div>
+      <div class="q rv"><span class="mark">“</span>Mummy paid him last month. Or was that me?</div>
+    </div>
+    <div class="after-q rv">
+      So you round it off, pay a little extra, and hope nobody feels short-changed.<br>
+      <b>There is a better way — and it takes two minutes to set up.</b>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VIDEO ================= -->
+<section id="video">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">▶ Watch — 30 seconds</span>
+      <h2>From messy notes to an exact number.</h2>
+      <p class="lead">Here is the whole idea, start to finish.</p>
+    </div>
+
+    <div class="player rv">
+      <!-- To use a real recording instead, drop your file in and replace this
+           whole .stage block with:
+           <video class="stage" controls playsinline poster="poster.jpg" style="width:100%">
+             <source src="gharseva.mp4" type="video/mp4">
+           </video>
+           …and delete the .bar element below. -->
+      <div class="stage" id="stage">
+        <div class="scene on" data-s="0">
+          <div class="note-scatter">
+            <div class="note">Kamala — 2 chutti? 3?</div>
+            <div class="note">Ramu advance ₹2000 (ya 1500?)</div>
+            <div class="note">loan — kitni kist baaki?</div>
+          </div>
+          <div class="cap">This is how most homes keep track.</div>
+          <div class="sub">A diary, a phone note, and somebody's memory.</div>
+        </div>
+
+        <div class="scene" data-s="1">
+          <div class="num">₹1,847</div>
+          <div class="cap">The amount you quietly overpay.</div>
+          <div class="sub">Not because you are careless — because nobody can hold a month of half-days and advances in their head.</div>
+        </div>
+
+        <div class="scene" data-s="2">
+          <div style="font-size:clamp(2.6rem,7vw,4.6rem)">🏠</div>
+          <div class="cap">So we built GharSeva.</div>
+          <div class="sub">One place for everyone who works at your home.</div>
+        </div>
+
+        <div class="scene" data-s="3">
+          <div class="chip-row">
+            <span class="chip hot">👥 Add your staff</span>
+            <span class="chip">Name</span>
+            <span class="chip">Work</span>
+            <span class="chip">Monthly salary</span>
+          </div>
+          <div class="cap">Step one — add them once.</div>
+          <div class="sub">Takes about thirty seconds per person. That is the only setup there is.</div>
+        </div>
+
+        <div class="scene" data-s="4">
+          <div class="chip-row">
+            <span class="chip">✅ Present</span>
+            <span class="chip hot">🗓️ Leave</span>
+            <span class="chip">🏖 Holiday</span>
+          </div>
+          <div class="cap">Step two — one tap a day.</div>
+          <div class="sub">Miss a day? Tap any date on the calendar and fix it later.</div>
+        </div>
+
+        <div class="scene" data-s="5">
+          <div class="rcpt-big">
+            <div class="ln"><span>Base salary</span><span>₹8,000</span></div>
+            <div class="ln"><span>3 leave days</span><em>− ₹923</em></div>
+            <div class="ln"><span>Advance taken</span><em>− ₹1,000</em></div>
+            <div class="ln"><span>Loan instalment</span><em>− ₹1,000</em></div>
+            <div class="ln"><span>Diwali bonus</span><span>+ ₹500</span></div>
+            <div class="tot"><span>Pay now</span><span>₹5,577</span></div>
+          </div>
+          <div class="cap">Step three — there is no step three.</div>
+        </div>
+
+        <div class="scene" data-s="6">
+          <div class="sync-pair">
+            <div class="sync-ph"><i class="g"></i><i></i><i class="g"></i><i></i><i></i></div>
+            <div class="sync-arrows">⇄</div>
+            <div class="sync-ph"><i class="g"></i><i></i><i class="g"></i><i></i><i></i></div>
+          </div>
+          <div class="cap">And the whole family sees it.</div>
+          <div class="sub">Share one code. Whatever anyone writes down appears on everybody's phone.</div>
+        </div>
+
+        <div class="scene" data-s="7">
+          <div style="font-size:clamp(2.2rem,6vw,3.8rem)">🏠</div>
+          <div class="cap">Free. Offline. In हिंदी too.</div>
+          <div class="sub">No account needed to try it.</div>
+          <div class="chip-row"><span class="chip hot">Open GharSeva →</span></div>
+        </div>
+      </div>
+
+      <div class="bar">
+        <button class="pbtn" id="pp" aria-label="Play or pause">❚❚</button>
+        <div class="track" id="track"><div class="fill" id="fill"></div></div>
+        <span class="tstamp" id="ts">0:00</span>
+      </div>
+    </div>
+    <div class="dots" id="dots"></div>
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow">Everything in one place</span>
+      <h2>Small app. Surprisingly thorough.</h2>
+      <p class="lead">Built around how Indian households actually pay their help — not a generic payroll tool with the words swapped out.</p>
+    </div>
+
+    <div class="bento">
+      <div class="b hero-card rv">
+        <div class="ico">🧮</div>
+        <h3>The salary works itself out</h3>
+        <p>Leave days, advances, loan instalments, bonuses, extra hours — all of it lands in one number. You just pay it.</p>
+        <div class="calc-demo">
+          <div class="ln"><span>Base salary</span><span>₹8,000</span></div>
+          <div class="ln"><span>3 leave days</span><em>− ₹923</em></div>
+          <div class="ln"><span>Advance</span><em>− ₹1,000</em></div>
+          <div class="ln"><span>Loan instalment</span><em>− ₹1,000</em></div>
+          <div class="ln"><span>Bonus</span><span>+ ₹500</span></div>
+          <div class="tot"><span>Pay now</span><span>₹5,577</span></div>
+        </div>
+      </div>
+
+      <div class="b rv"><div class="ico">🗓️</div><h3>One tap a day</h3><p>Present, leave or holiday. Tap any past date to correct it — the salary updates itself.</p></div>
+      <div class="b rv"><div class="ico">🏦</div><h3>Advances &amp; loans</h3><p>Give a loan, set the instalment, and watch the balance come down every month on its own.</p></div>
+      <div class="b wide rv"><div class="ico">👨‍👩‍👧</div><h3>Your whole family, one shared list</h3><p>Share a six-character code. When your mother marks a leave in Nagpur, you see it in Mumbai a second later.</p></div>
+      <div class="b rv"><div class="ico">📶</div><h3>Works without internet</h3><p>Mark attendance in a lift or a basement. It syncs the moment you are back online.</p></div>
+      <div class="b rv"><div class="ico">🔤</div><h3>Large-text mode</h3><p>Two taps make everything bigger. Built so elders in the house can use it without help.</p></div>
+      <div class="b rv"><div class="ico">🎤</div><h3>Speak instead of typing</h3><p>Say what happened and let the app write the entry for you.</p></div>
+      <div class="b rv"><div class="ico">📊</div><h3>Year at a glance</h3><p>Every rupee paid, every day taken — per person, per year. Export to a spreadsheet whenever you like.</p></div>
+      <div class="b rv"><div class="ico">🔐</div><h3>Document drawer</h3><p>Aadhaar and bank details kept with the person they belong to, so you are not hunting for them at payment time.</p></div>
+      <div class="b rv"><div class="ico">🏘️</div><h3>More than one home</h3><p>Main house, in-laws' place, the farm. Keep each one separate and switch in a tap.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOW ================= -->
+<section id="how" style="background:var(--surface2)">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">Two minutes to set up</span>
+      <h2>Three things, then it runs itself.</h2>
+    </div>
+    <div class="steps">
+      <div class="step rv">
+        <h3>Add the people</h3>
+        <p>Name, the work they do, and what you pay them each month. Everything else is optional and can wait.</p>
+      </div>
+      <div class="step rv">
+        <h3>Tap once a day</h3>
+        <p>Present, leave or holiday. That single tap is the only habit the app ever asks of you.</p>
+      </div>
+      <div class="step rv">
+        <h3>Pay the number it gives you</h3>
+        <p>On salary day, open the Pay screen. The exact amount is already sitting there, deductions and all.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:52px" class="rv">
+      <a href="index.html" class="btn btn-primary btn-lg">Try it now — nothing to install →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SHARE ================= -->
+<section id="share" class="share">
+  <div class="wrap share-grid">
+    <div class="rv">
+      <span class="eyebrow">Made for joint families</span>
+      <h2>Everyone writes. Nobody double-pays.</h2>
+      <p class="lead" style="margin-top:18px">
+        In most homes, more than one person deals with the help — and that is exactly where the
+        confusion starts. GharSeva gives the household one shared record instead of four private ones.
+      </p>
+      <ul class="tick-list">
+        <li><span class="tick">✓</span> Up to five family members on one household</li>
+        <li><span class="tick">✓</span> An entry made by anyone shows up for everyone, instantly</li>
+        <li><span class="tick">✓</span> Joining is a six-character code — no emails, no passwords to share</li>
+        <li><span class="tick">✓</span> Change your phone and nothing is lost</li>
+      </ul>
+    </div>
+    <div class="rv">
+      <div class="code-card">
+        <div class="lbl">Your household code</div>
+        <div class="code">NAG4K2</div>
+        <div class="hint">Send it on WhatsApp. They tap “Join a household”, type the code, and they are in.</div>
+        <div class="member-row">
+          <div class="member" style="background:#1A6E5E">M</div>
+          <div class="member" style="background:#5B4A9B">P</div>
+          <div class="member" style="background:#B45309">A</div>
+          <div class="member" style="background:#1C7A48">S</div>
+          <div class="member" style="background:var(--muted)">+1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INDIA ================= -->
+<section>
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">🇮🇳 Built here, for here</span>
+      <h2>It already speaks your household's language.</h2>
+    </div>
+    <div class="india-grid">
+      <div class="ind rv"><span class="big">🗣️</span><h3>हिंदी and English</h3><p>Switch the entire app with one tap in the corner. Nothing is left half-translated.</p></div>
+      <div class="ind rv"><span class="big">👷</span><h3>The right job names</h3><p>Maid, cook, driver, watchman, gardener — and add your own if we missed one.</p></div>
+      <div class="ind rv"><span class="big">💬</span><h3>Shares on WhatsApp</h3><p>Send a salary slip or an invite the way your family already talks.</p></div>
+      <div class="ind rv"><span class="big">📅</span><h3>Your working-days rule</h3><p>Some homes count 26 days, some 30. Set yours once and every calculation follows it.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq" style="background:var(--surface2)">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow">Straight answers</span>
+      <h2>Questions people ask first.</h2>
+    </div>
+    <div class="faq">
+      <details class="rv" open>
+        <summary>Is it really free?</summary>
+        <p>Yes. There is no paid tier, no trial clock and nothing to unlock. The app is free to use.</p>
+      </details>
+      <details class="rv">
+        <summary>Do I have to create an account?</summary>
+        <p>No. Tap “Use on this device only” and start straight away — everything stays on your phone. You only need to sign in if you want the household shared with family or backed up to the cloud.</p>
+      </details>
+      <details class="rv">
+        <summary>What happens to my data if I change my phone?</summary>
+        <p>If you signed in, your household is in the cloud — sign in on the new phone and it is all there. If you are using it without an account, take a backup file from Settings first and restore it on the new device.</p>
+      </details>
+      <details class="rv">
+        <summary>Will it work when the internet is down?</summary>
+        <p>Yes. You can add people, mark attendance and record advances completely offline. Anything you do is sent up automatically the next time you have a connection.</p>
+      </details>
+      <details class="rv">
+        <summary>Is my staff's Aadhaar and bank information safe?</summary>
+        <p>Those details sit in a separate section on your own device, and in the cloud only if you have signed in. Nobody outside the people you invite to your household can read them.</p>
+      </details>
+      <details class="rv">
+        <summary>My mother is not comfortable with apps. Can she use it?</summary>
+        <p>That is who it was designed around. There is a guided walkthrough the first time you open it that points at the exact button to press, a large-text mode, and the whole thing works in Hindi.</p>
+      </details>
+      <details class="rv">
+        <summary>Do I need to install anything?</summary>
+        <p>No. It opens in your browser. On Android or iPhone you can also use “Add to Home Screen” and it will behave like any other app.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL ================= -->
+<section>
+  <div class="wrap">
+    <div class="final rv">
+      <h2>Next salary day can be the easy one.</h2>
+      <p>Add one person, tap a few days, and watch the app do the arithmetic you have been doing in your head for years.</p>
+      <a href="index.html" class="btn btn-primary btn-lg">Open GharSeva — free →</a>
+      <div class="fine">No account needed · Works offline · हिंदी &amp; English</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <a href="#top" class="logo" style="font-size:1.1rem"><span class="logo-mark" style="width:32px;height:32px;font-size:1rem">🏠</span> GharSeva</a>
+    <div class="foot-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+      <a href="index.html">Open the app</a>
+    </div>
+    <p>Made for Indian homes.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- sticky nav border ---- */
+  var nav=document.getElementById('nav');
+  function onScroll(){ nav.classList.toggle('scrolled', window.scrollY>10); }
+  onScroll(); window.addEventListener('scroll',onScroll,{passive:true});
+
+  /* ---- scroll reveal ---- */
+  var rv=[].slice.call(document.querySelectorAll('.rv'));
+  function revealAll(){ rv.forEach(function(el){ el.classList.add('in'); }); }
+  if('IntersectionObserver' in window && !reduce){
+    document.documentElement.classList.add('js-rv');   /* only now start hidden */
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    },{rootMargin:'0px 0px -8% 0px',threshold:.08});
+    rv.forEach(function(el,i){ el.style.transitionDelay=(Math.min(i%4,3)*70)+'ms'; io.observe(el); });
+    /* safety net: if the observer never fired at all, show everything */
+    setTimeout(function(){ if(!document.querySelector('.rv.in')) revealAll(); },1800);
+  } else { revealAll(); }
+
+  /* ---- phone screen rotation ---- */
+  var panels=[].slice.call(document.querySelectorAll('.ph-panel'));
+  var navItems=[].slice.call(document.querySelectorAll('#phNav div'));
+  var pi=0;
+  function showPanel(i){
+    panels.forEach(function(p,n){
+      p.style.display = n===i ? 'block' : 'none';
+      p.style.animation = n===i ? 'fadeUp .45s ease' : 'none';
+    });
+    navItems.forEach(function(d,n){ d.classList.toggle('on', n===i); });
+  }
+  showPanel(0);
+  if(!reduce) setInterval(function(){ pi=(pi+1)%panels.length; showPanel(pi); },3200);
+
+  /* ---- the explainer "video" ---- */
+  var scenes=[].slice.call(document.querySelectorAll('.scene'));
+  var DUR=[3800,3800,3000,4200,4200,5000,4200,4600];      // ms per scene
+  var TOTAL=DUR.reduce(function(a,b){return a+b;},0);
+  var idx=0, t0=0, elapsedBefore=0, raf=null, playing=false;
+  var fill=document.getElementById('fill'), ts=document.getElementById('ts');
+  var pp=document.getElementById('pp'), track=document.getElementById('track');
+  var dots=document.getElementById('dots');
+
+  scenes.forEach(function(_,i){
+    var b=document.createElement('button');
+    b.setAttribute('aria-label','Scene '+(i+1));
+    b.onclick=function(){ goTo(i, playing); };
+    dots.appendChild(b);
+  });
+  var dotEls=[].slice.call(dots.children);
+
+  function offsetOf(i){ var s=0; for(var k=0;k<i;k++) s+=DUR[k]; return s; }
+  function fmt(ms){
+    var s=Math.floor(ms/1000);
+    return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  }
+  function paint(i){
+    scenes.forEach(function(s,n){ s.classList.toggle('on', n===i); });
+    dotEls.forEach(function(d,n){ d.classList.toggle('on', n===i); });
+  }
+  function goTo(i, keepPlaying){
+    idx=i; elapsedBefore=offsetOf(i); paint(i);
+    render(elapsedBefore);
+    if(keepPlaying){ t0=performance.now(); } else { pause(); }
+  }
+  function render(ms){
+    fill.style.width=(ms/TOTAL*100)+'%';
+    ts.textContent=fmt(ms);
+  }
+  function tick(now){
+    if(!playing) return;
+    var into=now-t0;
+    if(into>=DUR[idx]){
+      idx=(idx+1)%scenes.length;
+      if(idx===0) elapsedBefore=0; else elapsedBefore=offsetOf(idx);
+      t0=now; paint(idx);
+    }
+    render(Math.min(elapsedBefore+(now-t0), TOTAL));
+    raf=requestAnimationFrame(tick);
+  }
+  function play(){
+    if(playing) return;
+    playing=true; pp.textContent='❚❚'; pp.setAttribute('aria-label','Pause');
+    t0=performance.now(); raf=requestAnimationFrame(tick);
+  }
+  function pause(){
+    playing=false; pp.textContent='▶'; pp.setAttribute('aria-label','Play');
+    if(raf) cancelAnimationFrame(raf);
+  }
+  pp.onclick=function(){ playing?pause():play(); };
+  track.onclick=function(e){
+    var r=track.getBoundingClientRect();
+    var want=(e.clientX-r.left)/r.width*TOTAL, acc=0, i=0;
+    for(;i<DUR.length;i++){ if(want<acc+DUR[i]) break; acc+=DUR[i]; }
+    goTo(Math.min(i,scenes.length-1), playing);
+  };
+
+  paint(0); render(0);
+  if(reduce){ pause(); }
+  else if('IntersectionObserver' in window){
+    /* only run while the player is actually on screen */
+    var vio=new IntersectionObserver(function(es){
+      es.forEach(function(e){ e.isIntersecting ? play() : pause(); });
+    },{threshold:.35});
+    vio.observe(document.getElementById('stage'));
+  } else { play(); }
+})();
+</script>
+<style>@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}</style>
+</body>
+</html>
