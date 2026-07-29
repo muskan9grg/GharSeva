@@ -588,13 +588,45 @@ function buildDemoData(lang){
   var lv={};
   if(d>6) lv[ym+'-06']='leave';
   if(d>12) lv[ym+'-12']='leave';
-  return {staff:staff, ledger:ledger, leaves:{staffId:'st1', ym:ym, dates:lv}};
+  var homes=[{id:SH1,name:hi?'नागपुर — मुख्य घर':'Nagpur — Main House'},
+             {id:'hm_mumbai',name:hi?'मुंबई — ससुराल':'Mumbai — In-laws'}];
+  return {homes:homes, staff:staff, ledger:ledger, leaves:{staffId:'st1', ym:ym, dates:lv}};
+}
+
+/* The sample records seeded above are demo content, so they should follow the
+   interface language. Older builds seeded them in Hindi regardless of the
+   chosen language, which left English users looking at Hindi names.
+   A field is rewritten only when it still exactly matches the other
+   language's seeded value — the moment the user edits anything, it stops
+   matching and is left alone. Local data only: a cloud household is shared,
+   and one member's language must not rewrite what the others see. */
+function localizeDemoData(lang){
+  var want=buildDemoData(lang), other=buildDemoData(lang==='hi'?'en':'hi');
+  function relocalize(list, otherList, wantList, fields){
+    var changed=false;
+    list.forEach(function(rec){
+      var o=otherList.find(function(x){return x.id===rec.id;});
+      var w=wantList.find(function(x){return x.id===rec.id;});
+      if(!o||!w) return;                       /* not a seeded record */
+      fields.forEach(function(f){
+        if(o[f]!==undefined && rec[f]===o[f] && rec[f]!==w[f]){ rec[f]=w[f]; changed=true; }
+      });
+    });
+    return changed;
+  }
+  var homes=getHomes(), staff=getStaff(SH1), ledger=getLedger(SH1);
+  var hDone=relocalize(homes, other.homes, want.homes, ['name']);
+  var sDone=relocalize(staff, other.staff, want.staff, ['name','nickname','notes']);
+  var lDone=relocalize(ledger, other.ledger, want.ledger, ['reason']);
+  if(hDone) saveHomes(homes);
+  if(sDone) saveStaff(SH1,staff);
+  if(lDone) saveLedger(SH1,ledger);
+  return hDone||sDone||lDone;
 }
 function seedIfNeeded(lang){
   if(getHomes().length>0) return;
   var demo=buildDemoData(lang);
-  saveHomes([{id:SH1,name:lang==='hi'?'नागपुर — मुख्य घर':'Nagpur — Main House'},
-             {id:'hm_mumbai',name:lang==='hi'?'मुंबई — ससुराल':'Mumbai — In-laws'}]);
+  saveHomes(demo.homes);
   saveStaff(SH1,demo.staff);
   saveLedger(SH1,demo.ledger);
   saveLeaves(demo.leaves.staffId,demo.leaves.ym,demo.leaves.dates);
@@ -3531,12 +3563,25 @@ function App(){
 
   useEffect(function(){ applyFontSz(fontSz); },[fontSz]);
 
+  /* Keep the untouched sample records in step with the interface language.
+     Catches both language toggles and installs seeded by an older build.
+     Guest only — a cloud household is shared, so one member switching
+     language must not rewrite the names everyone else sees. */
+  useEffect(function(){
+    if(!guestMode) return;
+    if(localizeDemoData(lang)){
+      setHomes(getHomes());
+      setSyncKey(function(k){return k+1;});
+    }
+  },[lang,guestMode]);
+
   /* ── primary init ── */
   useEffect(function(){
     if(!FIREBASE_ENABLED){
       setGuestMode(true); setUser(null);
       var settings=getSettings();
       seedIfNeeded(settings.lang||'en');
+      localizeDemoData(settings.lang||'en');   /* heal samples seeded in the wrong language */
       if(!settings.tutorialDone){ setShowTutorial(true); setTab('staff'); }
       setLang(settings.lang||'en');
       setWorkingDays(settings.workingDays||30);
@@ -3661,6 +3706,7 @@ function App(){
     setGuestMode(true);
     var settings=getSettings();
     seedIfNeeded(settings.lang||'en');
+    localizeDemoData(settings.lang||'en');
     if(!settings.tutorialDone){ setShowTutorial(true); setTab('staff'); }
     setLang(settings.lang||'en');
     setWorkingDays(settings.workingDays||30);
