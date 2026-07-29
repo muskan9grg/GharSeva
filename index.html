@@ -43,6 +43,8 @@
     .mic-pulse::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:3px solid rgba(26,110,94,0.4);animation:pulse-ring 1.2s ease-out infinite;}
     .mic-pulse-danger::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:3px solid rgba(192,57,59,0.5);animation:pulse-ring 0.8s ease-out infinite;}
     @keyframes pulse-ring{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.35);opacity:0}}
+    @keyframes tutPulse{0%,100%{box-shadow:0 0 0 3px rgba(62,160,138,.35)}50%{box-shadow:0 0 0 9px rgba(62,160,138,.12)}}
+    @keyframes tutNudge{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
     .cal-btn{min-height:44px;min-width:44px;}
     ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(26,46,42,.06);}
@@ -119,6 +121,26 @@ var fbAuth = null, fbDb = null, FIREBASE_ENABLED = false;
 /* Shared sync counter — tabs subscribe via React.useContext(SyncCtx)
    and add it to their useEffect deps so remote writes trigger re-fetch. */
 var SyncCtx = React.createContext(0);
+
+/* Household members, for attributing who actually paid for something.
+   {uid, members:{uid:{name,color}}, guestMode}. Names live on the home doc
+   because Firestore rules keep /users/{uid} readable only by that user, so
+   one member can never look another's display name up directly. */
+var MembersCtx = React.createContext({uid:'',members:{},guestMode:true});
+var MEMBER_COLORS=['#1A6E5E','#5B4A9B','#B45309','#1C7A48','#C0393B','#3EA08A'];
+function memberColor(uid){
+  var h=0; for(var i=0;i<(uid||'').length;i++) h=(h*31+uid.charCodeAt(i))>>>0;
+  return MEMBER_COLORS[h%MEMBER_COLORS.length];
+}
+function memberLabel(uid,members,t){
+  if(!uid) return t?t.notRecorded:'—';
+  var m=members&&members[uid];
+  return (m&&m.name)||(t?t.memberUnknown:'Member');
+}
+function displayNameOf(user){
+  if(!user) return '';
+  return user.displayName||user.phoneNumber||user.email||'Member';
+}
 
 /* Current home for write helpers that don't receive homeId in scope */
 var _activeHomeId = '';
@@ -228,6 +250,31 @@ en:{
   dashPay:'Upcoming Pay Days',dashRecent:'Recent Entries',dashSpend:'This Month',
   dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet — go to Staff tab',
   dashPayBtn:'Pay →',dashNoRecent:'No entries yet',dashTomorrow:'Tomorrow',dashToday:'Today',
+  tutWelcomeT:'Welcome to GharSeva',
+  tutWelcomeB:'Let us add your first helper together — it takes two minutes. The two people listed are only samples.',
+  tutAddT:'Add your first helper',
+  tutAddHint:'Tap the green + Add Staff button at the top',
+  tutFormT:'Fill in three things',
+  tutFormB:'Name, the work they do, and monthly salary in rupees — for example 6000. Leave the rest blank for now.',
+  tutSaveT:'Now save',
+  tutSaveHint:'Tap Save to add them to your list',
+  tutSavedT:'Well done — they are on your list',
+  tutSavedB:'The four buttons along the bottom of the screen move you between Staff, Attendance, Pay and Records. They are always there.',
+  tutSavedHint:'Tap 🗓️ Attend — second from the left, at the bottom',
+  tutAttendT:'Attendance',
+  tutAttendB:'Tap Present, Leave or Holiday for today. To change an earlier day, tap that date on the calendar below. Leave is cut from the salary on its own.',
+  tutAttendHint:'Tap 📋 Records — last on the right, at the bottom',
+  tutRecordsT:'Money records',
+  tutRecordsB:'Advances, loans, bonuses and expenses go here, using + Add Entry. Each one adjusts the salary on its own.',
+  tutRecordsHint:'Tap 💳 Pay — third from the left, at the bottom',
+  tutPayT:'Salary is worked out for you',
+  tutPayB:'Pick a person and month, then tap Calculate — leaves and advances are already subtracted. Reports and settings sit in the ☰ menu, top right.',
+  paidBy:'Paid by',paidByHint:'Who actually gave the money — change it if someone else paid',
+  paidByYou:'you',allMembers:'Everyone',notRecorded:'Not recorded',memberUnknown:'Member',
+  whoPaid:'Who paid what',whoPaidHint:'Money paid out this year, split by household member',
+  tutActionHint:'Press the highlighted button to continue',
+  tutStepWord:'STEP',tutOfWord:'OF',
+  tutNext:'Next',tutBack:'Back',tutSkip:'Skip the guide',tutDone:'Finish',tutReplayBtn:'Show Tutorial Again',
   voiceExamples:['say: "Kamla took leave today"','say: "Give Ramu 500 advance"','say: "Santosh 2000 bonus"','say: "Ramu ko 1000 loan"'],
   roleManagement:'Staff Roles',addRole:'Add new role…',addRolePh:'e.g. Ironing Maid',addRoleBtn:'Add',
   defaultRole:'Default (locked)',
@@ -321,6 +368,31 @@ hi:{
   dashPay:'इस महीने वेतन तारीखें',dashRecent:'हाल की एंट्री',dashSpend:'इस महीने',
   dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं — स्टाफ टैब पर जाएं',
   dashPayBtn:'दें →',dashNoRecent:'कोई एंट्री नहीं',dashTomorrow:'कल',dashToday:'आज',
+  tutWelcomeT:'घरसेवा में आपका स्वागत है',
+  tutWelcomeB:'आइए मिलकर पहला स्टाफ जोड़ें — दो मिनट लगेंगे। सूची में दिख रहे दो लोग सिर्फ नमूने हैं।',
+  tutAddT:'अपना पहला स्टाफ जोड़ें',
+  tutAddHint:'ऊपर हरा "+ स्टाफ जोड़ें" बटन दबाएं',
+  tutFormT:'तीन चीज़ें भरें',
+  tutFormB:'नाम, काम का प्रकार, और महीने का वेतन रुपयों में — जैसे 6000। बाकी खाने अभी खाली छोड़ दें।',
+  tutSaveT:'अब सेव करें',
+  tutSaveHint:'सूची में जोड़ने के लिए सेव दबाएं',
+  tutSavedT:'बढ़िया — वे सूची में आ गए',
+  tutSavedB:'स्क्रीन के सबसे नीचे चार बटन आपको स्टाफ, उपस्थिति, भुगतान और रिकॉर्ड के बीच ले जाते हैं। ये हमेशा वहीं रहते हैं।',
+  tutSavedHint:'🗓️ उपस्थिति दबाएं — सबसे नीचे, बाएं से दूसरा',
+  tutAttendT:'उपस्थिति',
+  tutAttendB:'आज के लिए उपस्थित, छुट्टी या अवकाश दबाएं। पिछला दिन बदलना हो तो नीचे कैलेंडर में उस तारीख को दबाएं। छुट्टी वेतन से अपने आप कट जाती है।',
+  tutAttendHint:'📋 रिकॉर्ड दबाएं — सबसे नीचे, दाएं छोर पर',
+  tutRecordsT:'पैसों का रिकॉर्ड',
+  tutRecordsB:'एडवांस, लोन, बोनस और खर्च यहाँ "+ एंट्री जोड़ें" से लिखें। हर एक वेतन में अपने आप समायोजित हो जाता है।',
+  tutRecordsHint:'💳 भुगतान दबाएं — सबसे नीचे, बाएं से तीसरा',
+  tutPayT:'वेतन अपने आप गिना जाता है',
+  tutPayB:'व्यक्ति और महीना चुनें, फिर गणना दबाएं — छुट्टियाँ और एडवांस पहले ही घटे होते हैं। रिपोर्ट और सेटिंग्स ऊपर दाईं ओर ☰ मेन्यू में हैं।',
+  paidBy:'किसने दिया',paidByHint:'पैसे असल में किसने दिए — कोई और हो तो बदल दें',
+  paidByYou:'आप',allMembers:'सभी',notRecorded:'दर्ज नहीं',memberUnknown:'सदस्य',
+  whoPaid:'किसने कितना दिया',whoPaidHint:'इस साल दिए गए पैसे, हर सदस्य के हिसाब से',
+  tutActionHint:'आगे बढ़ने के लिए चमकता हुआ बटन दबाएं',
+  tutStepWord:'चरण',tutOfWord:'/',
+  tutNext:'आगे',tutBack:'पीछे',tutSkip:'गाइड छोड़ें',tutDone:'समाप्त',tutReplayBtn:'ट्यूटोरियल फिर से देखें',
   voiceExamples:['"कमला ने आज छुट्टी ली"','"रामू को 500 रुपये अग्रिम दिए"','"संतोष को 2000 बोनस मिला"','"रामू को 1000 का लोन दिया"'],
   roleManagement:'स्टाफ भूमिकाएं',addRole:'नई भूमिका जोड़ें…',addRolePh:'जैसे: प्रेस वाली',addRoleBtn:'जोड़ें',
   defaultRole:'डिफ़ॉल्ट (लॉक)',
@@ -483,33 +555,56 @@ function migrateFromLocalStorage(homeId){
   return batch.commit().catch(function(e){console.warn('Migration error:',e);});
 }
 
-/* ── SEED DATA ──────────────────────────────────────────────── */
+/* ── SEED / DEMO DATA ──────────────────────────────────────────
+   buildDemoData(lang) returns the same {staff,ledger,leaves} shape
+   for both the guest-mode seed and a freshly-created cloud household.
+   Ids are fixed (st1/st2, l1-l4) so re-running is idempotent. */
 const SH1='hm_nagpur';
-function seedIfNeeded(){
-  if(getHomes().length>0) return;
-  saveHomes([{id:SH1,name:'नागपुर — मुख्य घर'},{id:'hm_mumbai',name:'मुंबई — ससुराल'}]);
+function buildDemoData(lang){
+  var hi = lang==='hi';
   var now=new Date();
   var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var d=now.getDate();
-  saveStaff(SH1,[
-    {id:'st1',name:'कमला बाई',nickname:'कमला',role:'maid',salary:8000,phone:'9876543210',
-     joiningDate:'2023-01-15',payDay:'5',photo:'',notes:'सुबह सभी कमरे साफ करती हैं, बर्तन धोती हैं।',
+  var staff=[
+    {id:'st1',
+     name:hi?'कमला बाई':'Kamala Bai', nickname:hi?'कमला':'Kamala',
+     role:'maid',salary:8000,phone:'9876543210',
+     joiningDate:'2023-01-15',payDay:'5',photo:'',
+     notes:hi?'सुबह सभी कमरे साफ करती हैं, बर्तन धोती हैं।':'Cleans all rooms every morning and washes dishes.',
      aadhaar:'234567893456',bankName:'State Bank of India',accountNo:'11223344551234',ifsc:'SBIN0001234'},
-    {id:'st2',name:'रामू प्रसाद',nickname:'रामू',role:'cook',salary:12000,phone:'9765432109',
-     joiningDate:'2022-06-01',payDay:'1',photo:'',notes:'दोपहर और रात का खाना बनाते हैं। महाराष्ट्रीयन खाने में माहिर।',
+    {id:'st2',
+     name:hi?'रामू प्रसाद':'Ramu Prasad', nickname:hi?'रामू':'Ramu',
+     role:'cook',salary:12000,phone:'9765432109',
+     joiningDate:'2022-06-01',payDay:'1',photo:'',
+     notes:hi?'दोपहर और रात का खाना बनाते हैं। महाराष्ट्रीयन खाने में माहिर।':'Cooks lunch and dinner. Specializes in Maharashtrian food.',
      aadhaar:'987654321099',bankName:'Bank of Baroda',accountNo:'44556677889900',ifsc:'BARB0NAGPUR'},
-  ]);
-  saveLedger(SH1,[
-    {id:'l1',staffId:'st1',type:'advance',amount:1000,date:ym+'-10',reason:'बेटी की स्कूल फीस'},
-    {id:'l2',staffId:'st2',type:'loan',amount:5000,installment:1000,totalInstallments:5,paidInstallments:0,date:ym+'-05',reason:'चिकित्सा आपात स्थिति',status:'active'},
-    {id:'l3',staffId:'st1',type:'bonus',amount:500,date:ym+'-01',reason:'दीवाली बोनस'},
-    {id:'l4',staffId:'st2',type:'expense',amount:250,date:ym+'-08',reason:'खाने का तेल खरीदा'},
-  ]);
+  ];
+  var ledger=[
+    {id:'l1',staffId:'st1',type:'advance',amount:1000,date:ym+'-10',reason:hi?'बेटी की स्कूल फीस':"Daughter's school fee"},
+    {id:'l2',staffId:'st2',type:'loan',amount:5000,installment:1000,totalInstallments:5,paidInstallments:0,date:ym+'-05',reason:hi?'चिकित्सा आपात स्थिति':'Medical emergency',status:'active'},
+    {id:'l3',staffId:'st1',type:'bonus',amount:500,date:ym+'-01',reason:hi?'दीवाली बोनस':'Diwali bonus'},
+    {id:'l4',staffId:'st2',type:'expense',amount:250,date:ym+'-08',reason:hi?'खाने का तेल खरीदा':'Bought cooking oil'},
+  ];
   var lv={};
   if(d>6) lv[ym+'-06']='leave';
   if(d>12) lv[ym+'-12']='leave';
-  saveLeaves('st1',ym,lv);
-  saveSettings({lang:'en',lastHomeId:SH1});
+  return {staff:staff, ledger:ledger, leaves:{staffId:'st1', ym:ym, dates:lv}};
+}
+function seedIfNeeded(lang){
+  if(getHomes().length>0) return;
+  var demo=buildDemoData(lang);
+  saveHomes([{id:SH1,name:lang==='hi'?'नागपुर — मुख्य घर':'Nagpur — Main House'},
+             {id:'hm_mumbai',name:lang==='hi'?'मुंबई — ससुराल':'Mumbai — In-laws'}]);
+  saveStaff(SH1,demo.staff);
+  saveLedger(SH1,demo.ledger);
+  saveLeaves(demo.leaves.staffId,demo.leaves.ym,demo.leaves.dates);
+  saveSettings(Object.assign({},getSettings(),{lang:lang||'en',lastHomeId:SH1}));
+}
+function seedDemoDataCloud(homeId, lang){
+  var demo=buildDemoData(lang);
+  fbSaveStaff(homeId,demo.staff);
+  fbSaveLedger(homeId,demo.ledger);
+  fbSaveLeaves(homeId,demo.leaves.staffId,demo.leaves.ym,demo.leaves.dates);
 }
 
 /* ── UTILS ──────────────────────────────────────────────────── */
@@ -677,21 +772,22 @@ function Modal({onClose,title,children}){
   );
 }
 
-function PrimaryBtn({onClick,children,disabled,color,full,small}){
+/* `tut` renders a data-tut anchor the tutorial spotlight can target. */
+function PrimaryBtn({onClick,children,disabled,color,full,small,tut}){
   var cls='btn '
     +(color==='red'?'btn-danger':color==='green'?'btn-ok':color==='gray'?'btn-ghost':'btn-accent')
     +(small?' btn-sm':'')
     +(full?' btn-full':'');
-  return <button onClick={disabled?undefined:onClick} className={cls} disabled={!!disabled} style={{minHeight:small?36:48}}>{children}</button>;
+  return <button onClick={disabled?undefined:onClick} className={cls} disabled={!!disabled} data-tut={tut} style={{minHeight:small?36:48}}>{children}</button>;
 }
 
-function FInput({value,onChange,placeholder,type,maxLength}){
+function FInput({value,onChange,placeholder,type,maxLength,tut}){
   return <input type={type||'text'} value={value||''} onChange={function(e){onChange(e.target.value);}}
-    placeholder={placeholder} maxLength={maxLength} className="inp" />;
+    placeholder={placeholder} maxLength={maxLength} data-tut={tut} className="inp" />;
 }
 
-function FSelect({value,onChange,children}){
-  return <select value={value||''} onChange={function(e){onChange(e.target.value);}} className="sel">
+function FSelect({value,onChange,children,tut}){
+  return <select value={value||''} onChange={function(e){onChange(e.target.value);}} data-tut={tut} className="sel">
     {children}
   </select>;
 }
@@ -802,10 +898,10 @@ function StaffModal({lang,onClose,onSave,existing}){
         </label>
       </div>
 
-      <FLabel label={t.fname}><FInput value={form.name} onChange={function(v){set('name',v);}} placeholder={t.fnamePh} /></FLabel>
+      <FLabel label={t.fname}><FInput tut="staff-name" value={form.name} onChange={function(v){set('name',v);}} placeholder={t.fnamePh} /></FLabel>
       <FLabel label={t.nickname}><FInput value={form.nickname} onChange={function(v){set('nickname',v);}} placeholder={t.nicknamePh} /></FLabel>
       <FLabel label={t.frole}>
-        <select className="sel" value={addingRole?'__add__':form.role} onChange={function(e){handleRoleChange(e.target.value);}}>
+        <select className="sel" data-tut="staff-role" value={addingRole?'__add__':form.role} onChange={function(e){handleRoleChange(e.target.value);}}>
           {allRoles.map(function(r){return <option key={r.key} value={r.key}>{lang==='hi'?r.hi:r.en}</option>;})}
           <option value="__add__">+ {t.addRole}</option>
         </select>
@@ -819,7 +915,7 @@ function StaffModal({lang,onClose,onSave,existing}){
           </div>
         )}
       </FLabel>
-      <FLabel label={t.fsalary}><FInput type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder="0" /></FLabel>
+      <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder="0" /></FLabel>
       <FLabel label={t.fphone}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',v);}} placeholder={t.fphonePh} maxLength={10} /></FLabel>
       <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
       <FLabel label={t.fpay} hint={t.hintPayDay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
@@ -844,7 +940,7 @@ function StaffModal({lang,onClose,onSave,existing}){
 
       <div className="flex gap-3 mt-2">
         <PrimaryBtn onClick={onClose} color="gray" full={true}>{t.cancel}</PrimaryBtn>
-        <PrimaryBtn onClick={handleSave} full={true}>{t.save}</PrimaryBtn>
+        <PrimaryBtn onClick={handleSave} full={true} tut="staff-save">{t.save}</PrimaryBtn>
       </div>
     </Modal>
   );
@@ -981,6 +1077,10 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   var [payments,setPayments]=useState(function(){return getPayments(homeId);});
   var [done,setDone]=useState(false);
   var [waMsg,setWAMsg]=useState('');
+  var mc=React.useContext(MembersCtx);
+  var memberIds=Object.keys(mc.members||{});
+  var showPaidBy=!mc.guestMode&&memberIds.length>0;
+  var [payer,setPayer]=useState(mc.uid||'');
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
   var calc=calcSalary(staff,year,month,ledger,workingDays);
@@ -996,7 +1096,9 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
     if(paidRec||done) return;
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
-    var newPays=payments.concat([{key:payKey,staffId:staff.id,year:year,month:month,amount:calc.netPayable,date:pDate}]);
+    var rec={key:payKey,staffId:staff.id,year:year,month:month,amount:calc.netPayable,date:pDate};
+    if(showPaidBy&&payer) rec.paidBy=payer;
+    var newPays=payments.concat([rec]);
     var newLed=ledger.map(function(e){
       if(e.staffId===staff.id&&e.type==='loan'&&e.status==='active'){
         var p=(e.paidInstallments||0)+1;
@@ -1032,9 +1134,23 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
           <span style={{color:'#fff',fontWeight:800,fontSize:fsr(24)}}>{fmt(calc.netPayable)}</span>
         </div>
       </div>
+      {!(done||paidRec)&&showPaidBy&&(
+        <FLabel label={t.paidBy} hint={t.paidByHint}>
+          <FSelect value={payer} onChange={setPayer}>
+            {memberIds.map(function(id){
+              return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
+            })}
+          </FSelect>
+        </FLabel>
+      )}
       {(done||paidRec)
         ? <div className="text-center">
             <p style={{color:'var(--ok)',fontSize:fsr(18),fontWeight:800,padding:'8px 0'}}>✅ {t.paidOk}</p>
+            {paidRec&&paidRec.paidBy&&(
+              <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:8}}>
+                {t.paidBy}: <b>{memberLabel(paidRec.paidBy,mc.members,t)}</b>
+              </p>
+            )}
             {waMsg&&<WACard message={waMsg} phone={staff.phone} t={t} />}
           </div>
         : <PrimaryBtn onClick={doConfirm} color="green" full={true}>{t.profConfirmPay}</PrimaryBtn>
@@ -1446,7 +1562,7 @@ function StaffTab({lang,homeId,homes,workingDays,onStaffChange,syncKey}){
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-4 shrink-0" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-        <PrimaryBtn onClick={function(){setShowAdd(true);}} full={true}>{t.addStaff}</PrimaryBtn>
+        <PrimaryBtn onClick={function(){setShowAdd(true);}} full={true} tut="add-staff">{t.addStaff}</PrimaryBtn>
       </div>
       <div className="p-4 scroll-area flex-1">
         {staff.length===0
@@ -1474,6 +1590,10 @@ function StaffTab({lang,homeId,homes,workingDays,onStaffChange,syncKey}){
 function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,syncKey}){
   var t=T[lang];
   var now=new Date();
+  var mc=React.useContext(MembersCtx);
+  var memberIds=Object.keys(mc.members||{});
+  var showPaidBy=!mc.guestMode&&memberIds.length>0;
+  var [payer,setPayer]=useState(mc.uid||'');
   var [staff,setStaff]=useState([]);
   var [ledger,setLedger]=useState([]);
   var [payments,setPayments]=useState([]);
@@ -1504,7 +1624,9 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
     if(payments.find(function(p){return p.key===key;})) return;
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
-    var newPays=[...payments,{key:key,staffId:selStaff,year:selYear,month:selMonth,amount:calc.netPayable,date:pDate}];
+    var rec={key:key,staffId:selStaff,year:selYear,month:selMonth,amount:calc.netPayable,date:pDate};
+    if(showPaidBy&&payer) rec.paidBy=payer;
+    var newPays=[...payments,rec];
     var newLed=ledger.map(function(e){
       if(e.staffId===selStaff&&e.type==='loan'&&e.status==='active'){
         var paid=(e.paidInstallments||0)+1;
@@ -1529,7 +1651,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
 
       <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface2)'}}>
         <FLabel label={t.selStaff}>
-          <FSelect value={selStaff} onChange={function(v){setSelStaff(v);setCalc(null);setWAMsg('');}}>
+          <FSelect tut="salary-staff" value={selStaff} onChange={function(v){setSelStaff(v);setCalc(null);setWAMsg('');}}>
             <option value="">{t.selStaff}</option>
             {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
           </FSelect>
@@ -1546,7 +1668,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
             </FSelect>
           </FLabel>
         </div>
-        <PrimaryBtn onClick={doCalc} full={true} disabled={!selStaff}>{t.calcBtn}</PrimaryBtn>
+        <PrimaryBtn onClick={doCalc} full={true} disabled={!selStaff} tut="salary-calc">{t.calcBtn}</PrimaryBtn>
       </div>
 
       {!calc && <p className="text-center text-base mt-8" style={{color:'var(--muted)'}}>{t.noCalc}</p>}
@@ -1602,8 +1724,24 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
             ? <div className="rounded-2xl p-4 text-center" style={{background:'#D5EEE8',border:'1px solid #A8D4C4'}}>
                 <p style={{color:'var(--ok)',fontWeight:700,fontSize:fsr(15)}}>✅ {t.paidOn} {fmtD(paidRec.date)}</p>
                 <p style={{color:'var(--ok)',fontSize:fsr(13),marginTop:4}}>{fmt(paidRec.amount)}</p>
+                {showPaidBy&&paidRec.paidBy&&(
+                  <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:6}}>
+                    {t.paidBy}: <b>{memberLabel(paidRec.paidBy,mc.members,t)}</b>
+                  </p>
+                )}
               </div>
-            : <PrimaryBtn onClick={doMarkPaid} color="green" full={true}>{t.markPaid}</PrimaryBtn>
+            : <div>
+                {showPaidBy&&(
+                  <FLabel label={t.paidBy} hint={t.paidByHint}>
+                    <FSelect value={payer} onChange={setPayer}>
+                      {memberIds.map(function(id){
+                        return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
+                      })}
+                    </FSelect>
+                  </FLabel>
+                )}
+                <PrimaryBtn onClick={doMarkPaid} color="green" full={true}>{t.markPaid}</PrimaryBtn>
+              </div>
           }
 
           {waMsg && <WACard message={waMsg} phone={s.phone} t={t} />}
@@ -1676,7 +1814,7 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
   return (
     <div>
       {isCurrentMonth && (
-        <div className="mb-4">
+        <div className="mb-4" data-tut="mark-today">
           <p style={{fontSize:fsr(11),fontWeight:800,color:'var(--muted)',textAlign:'center',marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t.markToday}</p>
           <div className="flex gap-2">
             {[
@@ -1788,8 +1926,13 @@ function LeavesTab({lang,homeId,workingDays,syncKey}){
 /* ── ADD ENTRY MODAL ────────────────────────────────────────── */
 function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillStaffId,prefillType}){
   var t=T[lang];
-  var [form,setForm]=useState({staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:''});
+  var mc=React.useContext(MembersCtx);
+  var memberIds=Object.keys(mc.members||{});
+  /* only for money actually leaving someone's hand, and only once signed in */
+  var CASH_OUT=['advance','loan','expense','bonus','extra_work'];
+  var [form,setForm]=useState({staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:'',paidBy:mc.uid||''});
   function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
+  var showPaidBy=!mc.guestMode&&memberIds.length>0&&CASH_OUT.indexOf(form.type)>-1;
 
   var isTimeBased=form.type==='extra_work';
   var isHalfDay=form.type==='short_hours';
@@ -1816,6 +1959,7 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
     if(form.type==='loan'){entry.installment=Number(form.installment)||0;entry.totalInstallments=Number(form.totalInstallments)||0;entry.paidInstallments=0;entry.status='active';}
     if(form.type==='loan_repay') entry.targetLoanId=form.targetLoanId;
     if(isTimeBased){entry.hours=Number(form.hours);entry.rate=effectiveRate;}
+    if(showPaidBy&&form.paidBy) entry.paidBy=form.paidBy;
     return entry;
   }
 
@@ -1896,6 +2040,15 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
         </div>
       )}
       <FLabel label={t.fdate}><FInput type="date" value={form.date} onChange={function(v){set('date',v);}} /></FLabel>
+      {showPaidBy && (
+        <FLabel label={t.paidBy} hint={t.paidByHint}>
+          <FSelect value={form.paidBy} onChange={function(v){set('paidBy',v);}}>
+            {memberIds.map(function(id){
+              return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
+            })}
+          </FSelect>
+        </FLabel>
+      )}
       <FLabel label={t.freason}><FInput value={form.reason} onChange={function(v){set('reason',v);}} placeholder={t.freasonPh} /></FLabel>
 
       {form.type==='loan' && (
@@ -1953,6 +2106,10 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
   var [showAdd,setShowAdd]=useState(false);
   var [filter,setFilter]=useState('all');
   var [filterStaff,setFilterStaff]=useState('all');
+  var [filterMember,setFilterMember]=useState('all');
+  var mc=React.useContext(MembersCtx);
+  var memberIds=Object.keys(mc.members||{});
+  var showMembers=!mc.guestMode&&memberIds.length>0;
   var [toast,setToast]=useState('');
   var [activeWA,setActiveWA]=useState(null);
   var [confirmDel,setConfirmDel]=useState(null);
@@ -1982,6 +2139,11 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
   var filtered=ledger
     .filter(function(e){return filter==='all'||e.type===filter;})
     .filter(function(e){return filterStaff==='all'||e.staffId===filterStaff;})
+    .filter(function(e){
+      if(filterMember==='all') return true;
+      if(filterMember==='none') return !e.paidBy;
+      return e.paidBy===filterMember;
+    })
     .sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
 
   var home=homes.find(function(h){return h.id===homeId;})||{name:''};
@@ -1991,7 +2153,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
     <div className="flex-1 flex flex-col overflow-hidden">
       {toast && <Toast msg={toast} onDone={function(){setToast('');}} />}
       <div className="p-4 shrink-0" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-        <PrimaryBtn onClick={function(){setShowAdd(true);}} full={true}>{t.addEntry}</PrimaryBtn>
+        <PrimaryBtn onClick={function(){setShowAdd(true);}} full={true} tut="add-entry">{t.addEntry}</PrimaryBtn>
       </div>
 
       <div className="px-4 pt-3 shrink-0">
@@ -2018,6 +2180,21 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
             </FSelect>
           </div>
         )}
+        {showMembers && memberIds.length>1 && (
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {['all'].concat(memberIds,['none']).map(function(mid){
+              var active=filterMember===mid;
+              var label=mid==='all'?t.allMembers:mid==='none'?t.notRecorded:memberLabel(mid,mc.members,t);
+              return (
+                <button key={mid} onClick={function(){setFilterMember(mid);}}
+                  className={'pill '+(active?'pill-accent':'pill-muted')}
+                  style={{cursor:'pointer',border:'none',whiteSpace:'nowrap'}}>
+                  {mid==='all'?'👥 ':mid==='none'?'':'💰 '}{label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="p-4 pt-2 scroll-area flex-1">
@@ -2041,6 +2218,16 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                     <div className="text-right shrink-0 ml-2">
                       <p style={{fontSize:fsr(20),fontWeight:800,color:'var(--ink)'}}>{fmt(entry.amount)}</p>
                       <p style={{fontSize:fsr(12),color:'var(--ink2)'}}>{fmtD(entry.date)}</p>
+                      {showMembers&&entry.paidBy&&(
+                        <span style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:4,
+                          fontSize:fsr(11),fontWeight:800,color:'var(--ink2)'}}>
+                          <span style={{width:15,height:15,borderRadius:'50%',display:'inline-grid',placeItems:'center',
+                            background:(mc.members[entry.paidBy]||{}).color||'var(--muted)',color:'#fff',fontSize:fsr(8)}}>
+                            {memberLabel(entry.paidBy,mc.members,t).charAt(0).toUpperCase()}
+                          </span>
+                          {memberLabel(entry.paidBy,mc.members,t)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {entry.reason ? <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8,fontStyle:'italic'}}>"{entry.reason}"</p> : null}
@@ -2135,6 +2322,36 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     return {id:s.id,name:s.name,role:s.role,tSal:paid||s.salary*12,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort};
   });
 
+  /* ── who in the household actually paid for what ──
+     Counts money that left someone's hand: salary payments plus cash-out
+     ledger entries. Loan repayments and short-hour deductions are money
+     coming back, so they are left out. */
+  var mc=React.useContext(MembersCtx);
+  var memberIds=Object.keys(mc.members||{});
+  var showMembers=!mc.guestMode&&memberIds.length>0;
+  var spendSummary=useMemo(function(){
+    if(!showMembers) return null;
+    var CASH_OUT=['advance','loan','expense','bonus','extra_work'];
+    var yPfx=selYear+'-';
+    var buckets={};
+    memberIds.forEach(function(id){ buckets[id]={uid:id,salary:0,records:0,total:0}; });
+    buckets.none={uid:'none',salary:0,records:0,total:0};
+    function bucket(id){ return buckets[id]||buckets.none; }
+    payments.filter(function(p){return p.year===selYear;}).forEach(function(p){
+      var b=bucket(p.paidBy); b.salary+=(p.amount||0); b.total+=(p.amount||0);
+    });
+    ledger.filter(function(e){
+      return e.date&&e.date.startsWith(yPfx)&&CASH_OUT.indexOf(e.type)>-1;
+    }).forEach(function(e){
+      var b=bucket(e.paidBy); b.records+=(e.amount||0); b.total+=(e.amount||0);
+    });
+    var rows=Object.keys(buckets).map(function(k){return buckets[k];})
+      .filter(function(b){return b.total>0||b.uid!=='none';})
+      .sort(function(a,b){return b.total-a.total;});
+    var grand=rows.reduce(function(a,b){return a+b.total;},0);
+    return {rows:rows,grand:grand};
+  },[payments,ledger,selYear,memberIds.join(','),showMembers]);
+
   var years=[now.getFullYear()-1,now.getFullYear()];
   var statColors={tSal:'var(--accent)',tAdv:'var(--warn)',tExp:'var(--ink2)',tBon:'var(--ok)',lBal:'var(--purple)',tExtra:'var(--ok)',tShort:'var(--warn)'};
 
@@ -2165,6 +2382,45 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
           })}
         </svg>
       </div>
+
+      {spendSummary&&spendSummary.grand>0&&(
+        <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
+          <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:2}}>{t.whoPaid}</p>
+          <p style={{fontSize:fsr(12),color:'var(--ink2)',marginBottom:14}}>{t.whoPaidHint}</p>
+          {spendSummary.rows.map(function(r){
+            var isNone=r.uid==='none';
+            var name=isNone?t.notRecorded:memberLabel(r.uid,mc.members,t);
+            var col=isNone?'var(--muted)':((mc.members[r.uid]||{}).color||'var(--accent)');
+            var pct=spendSummary.grand>0?Math.round(r.total/spendSummary.grand*100):0;
+            return (
+              <div key={r.uid} style={{marginBottom:14}}>
+                <div className="flex items-center gap-2" style={{marginBottom:6}}>
+                  <span style={{width:26,height:26,borderRadius:'50%',display:'grid',placeItems:'center',
+                    background:col,color:'#fff',fontWeight:800,fontSize:fsr(11),flex:'none'}}>
+                    {isNone?'?':name.charAt(0).toUpperCase()}
+                  </span>
+                  <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(14),flex:1}}>
+                    {name}{r.uid===mc.uid?' ('+t.paidByYou+')':''}
+                  </span>
+                  <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(15)}}>{fmt(r.total)}</span>
+                </div>
+                <div style={{height:8,background:'var(--surface2)',borderRadius:5,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:pct+'%',background:col,borderRadius:5,transition:'width .3s'}} />
+                </div>
+                <div className="flex gap-3" style={{marginTop:5,fontSize:fsr(11),color:'var(--ink2)',fontWeight:700}}>
+                  <span>{pct}%</span>
+                  <span>💳 {t.aTotSal}: {fmt(r.salary)}</span>
+                  <span>📋 {fmt(r.records)}</span>
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex justify-between" style={{borderTop:'2px dashed var(--border)',paddingTop:11,marginTop:4}}>
+            <span style={{fontWeight:800,color:'var(--ink2)',fontSize:fsr(13)}}>{t.annTotal}</span>
+            <span style={{fontWeight:800,color:'var(--accent)',fontSize:fsr(17)}}>{fmt(spendSummary.grand)}</span>
+          </div>
+        </div>
+      )}
 
       <p style={{fontSize:fsr(13),fontWeight:700,color:'var(--ink)',marginBottom:12}}>{t.annPer}</p>
       {staffSummary.map(function(s){
@@ -2476,7 +2732,7 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
 }
 
 /* ── SETTINGS TAB ───────────────────────────────────────────── */
-function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut}){
+function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut,onReplayTutorial}){
   var t=T[lang];
   var [allRoles,setAllRoles]=useState(function(){return getRoles();});
   var [newRoleName,setNewRoleName]=useState('');
@@ -2646,6 +2902,10 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
             {wdSaved?'✓ '+t.save:t.save}
           </button>
         </div>
+
+        <button onClick={onReplayTutorial} className="btn btn-ghost btn-full" style={{marginTop:16}}>
+          🔄 {t.tutReplayBtn}
+        </button>
       </div>
 
       <div className="card mb-4">
@@ -2741,6 +3001,203 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId}){
   );
 }
 
+/* ── FIRST-RUN TUTORIAL (interactive coach) ────────────────────
+   Spotlights the exact control to press and dims everything else,
+   so only the highlighted element stays tappable. Steps marked
+   `action` wait for the user to really do it (open the form, save
+   the staff member, switch tab) before moving on. */
+function TutorialOverlay({lang,tab,onNavigate,onDone}){
+  var t=T[lang];
+  var [step,setStep]=useState(0);
+  var [rect,setRect]=useState(null);
+
+  function q(name){ return document.querySelector('[data-tut="'+name+'"]'); }
+
+  /* `open` = spotlight the control but leave the screen usable, for steps
+     where the card describes something the user needs to see or try.
+     Only the pure "press this one button" step dims and blocks. */
+  var steps=[
+    {tab:'staff', open:true, title:t.tutWelcomeT, body:t.tutWelcomeB},
+    {tab:'staff', target:'add-staff', action:true, title:t.tutAddT, hint:t.tutAddHint,
+     domDone:function(){ return !!q('staff-name'); }},
+    /* No target and no scroll: the whole form is the subject, so the card
+       drops to the bottom edge and the form sits at its natural top. */
+    {open:true, title:t.tutFormT, body:t.tutFormB},
+    {target:'staff-save', action:true, open:true, title:t.tutSaveT, hint:t.tutSaveHint,
+     domDone:function(){ return !q('staff-name'); }},
+    {tab:'staff',  target:'nav-leaves', action:true, open:true, doneTab:'leaves',
+     title:t.tutSavedT,   body:t.tutSavedB,   hint:t.tutSavedHint},
+    {tab:'leaves', target:'nav-adv',    action:true, open:true, doneTab:'adv', look:'mark-today',
+     title:t.tutAttendT,  body:t.tutAttendB,  hint:t.tutAttendHint},
+    {tab:'adv',    target:'nav-salary', action:true, open:true, doneTab:'salary', look:'add-entry',
+     title:t.tutRecordsT, body:t.tutRecordsB, hint:t.tutRecordsHint},
+    {tab:'salary', target:'salary-calc', open:true, title:t.tutPayT, body:t.tutPayB},
+  ];
+  var cur=steps[step];
+  var last=step===steps.length-1;
+
+  /* drive the tab for steps that declare one */
+  useEffect(function(){ if(cur.tab) onNavigate(cur.tab); },[step]);
+
+  /* Keep the spotlight glued to its target. Driven by DOM mutations and
+     scroll/resize rather than rAF, so it still tracks when the page is
+     backgrounded (rAF stops entirely in a hidden tab). */
+  useEffect(function(){
+    if(!cur.target){ setRect(null); return; }
+    function measure(){
+      var el=q(cur.target);
+      if(!el){ setRect(null); return; }
+      var r=el.getBoundingClientRect();
+      if(!r.width&&!r.height){ setRect(null); return; }
+      setRect(function(p){
+        if(p&&p.t===r.top&&p.l===r.left&&p.w===r.width&&p.h===r.height) return p; /* keep identity */
+        return {t:r.top,l:r.left,w:r.width,h:r.height};
+      });
+    }
+    measure();
+    var mo=new MutationObserver(measure);
+    mo.observe(document.body,{childList:true,subtree:true,attributes:true});
+    var iv=setInterval(measure,150);
+    window.addEventListener('scroll',measure,true);
+    window.addEventListener('resize',measure);
+    return function(){
+      mo.disconnect(); clearInterval(iv);
+      window.removeEventListener('scroll',measure,true);
+      window.removeEventListener('resize',measure);
+    };
+  },[step,cur.target]);
+
+  /* Bring the relevant thing on screen when the step opens. `look` is the
+     content the card is talking about (scrolled to the top so it sits in
+     the clear band above the card); otherwise centre the target itself. */
+  useEffect(function(){
+    var sel=cur.look||cur.target;
+    if(!sel) return;
+    var n=0;
+    var iv=setInterval(function(){
+      var el=q(sel);
+      /* instant, not smooth: smooth scrolling is driven by animation frames,
+         which never run while the page is backgrounded */
+      if(el){ el.scrollIntoView({block:cur.look?'start':'center'}); clearInterval(iv); }
+      if(++n>25) clearInterval(iv);
+    },100);
+    return function(){ clearInterval(iv); };
+  },[step]);
+
+  /* Steps completed by opening/closing the staff form. MutationObserver
+     fires off the DOM change itself, so this stays responsive even when
+     timer throttling would delay a poll. */
+  useEffect(function(){
+    if(!cur.domDone) return;
+    var fired=false;
+    function check(){
+      if(fired||!cur.domDone()) return;
+      fired=true; setStep(function(s){return s+1;});
+    }
+    check();
+    var mo=new MutationObserver(check);
+    mo.observe(document.body,{childList:true,subtree:true});
+    var iv=setInterval(check,300);
+    return function(){ mo.disconnect(); clearInterval(iv); };
+  },[step]);
+
+  /* Steps completed by switching tab — read straight off the prop. */
+  useEffect(function(){
+    if(cur.doneTab&&tab===cur.doneTab) setStep(function(s){return s+1;});
+  },[tab,step]);
+
+  function back(){ if(step>0) setStep(step-1); }
+  function next(){ if(last) onDone(); else setStep(step+1); }
+
+  var pad=6;
+  var dim='rgba(26,46,42,0.62)';
+  var vh=typeof window!=='undefined'?window.innerHeight:800;
+
+  /* Sit the card directly beside the highlighted control — below it when
+     there is room, otherwise above. Keeping it adjacent (rather than pinned
+     to the far edge) puts the words next to the button they describe and
+     leaves the rest of the screen visible, so the card never hides the
+     content it is explaining. */
+  var cardRef=useRef(null);
+  var [cardH,setCardH]=useState(260);
+  useEffect(function(){
+    if(cardRef.current){
+      var h=cardRef.current.offsetHeight;
+      if(h&&h!==cardH) setCardH(h);
+    }
+  });
+  var m=12, cardY;
+  if(!rect) cardY=Math.max(m,vh-cardH-m);
+  else {
+    var below=rect.t+rect.h+pad+m;
+    var above=rect.t-pad-m-cardH;
+    if(below+cardH+m<=vh) cardY=below;
+    else if(above>=m) cardY=above;
+    else cardY=Math.max(m,vh-cardH-m);
+  }
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:70,pointerEvents:'none'}}>
+      {rect && !cur.open && (
+        <React.Fragment>
+          <div style={{position:'fixed',left:0,right:0,top:0,height:Math.max(0,rect.t-pad),background:dim,pointerEvents:'auto'}} />
+          <div style={{position:'fixed',left:0,right:0,top:rect.t+rect.h+pad,bottom:0,background:dim,pointerEvents:'auto'}} />
+          <div style={{position:'fixed',left:0,top:rect.t-pad,width:Math.max(0,rect.l-pad),height:rect.h+pad*2,background:dim,pointerEvents:'auto'}} />
+          <div style={{position:'fixed',left:rect.l+rect.w+pad,right:0,top:rect.t-pad,height:rect.h+pad*2,background:dim,pointerEvents:'auto'}} />
+        </React.Fragment>
+      )}
+      {rect && (
+        <div style={{position:'fixed',left:rect.l-pad,top:rect.t-pad,width:rect.w+pad*2,height:rect.h+pad*2,
+          border:'3px solid var(--accent2)',borderRadius:14,pointerEvents:'none',
+          boxShadow:'0 0 0 3px rgba(62,160,138,.35), 0 0 0 6px rgba(255,255,255,.55)',
+          animation:'tutPulse 1.6s ease-in-out infinite'}} />
+      )}
+      {!rect && !cur.open && (
+        <div style={{position:'fixed',inset:0,background:dim,pointerEvents:'auto'}} />
+      )}
+
+      {/* Centred with auto margins, not translateX: the .fade-in keyframe ends
+          on `transform:none`, which wipes out an inline transform. */}
+      <div ref={cardRef} className="fade-in" style={{position:'fixed',left:12,right:12,margin:'0 auto',
+        top:cardY,maxWidth:456,
+        background:'var(--surface)',borderRadius:20,padding:'13px 16px 14px',
+        boxShadow:'0 8px 32px rgba(26,46,42,.35)',pointerEvents:'auto'}}>
+
+        <div className="flex items-center gap-3" style={{marginBottom:8}}>
+          <div style={{flex:1,height:6,background:'var(--surface2)',borderRadius:4,overflow:'hidden'}}>
+            <div style={{height:'100%',width:((step+1)/steps.length*100)+'%',background:'var(--accent)',borderRadius:4,transition:'width .25s'}} />
+          </div>
+          <span style={{fontSize:fsr(11),fontWeight:800,color:'var(--muted)',letterSpacing:'.05em',whiteSpace:'nowrap'}}>
+            {t.tutStepWord} {step+1} {t.tutOfWord} {steps.length}
+          </span>
+        </div>
+
+        <p style={{fontSize:fsr(19),fontWeight:800,color:'var(--ink)',marginBottom:6,lineHeight:1.25}}>{cur.title}</p>
+        {cur.body && <p style={{fontSize:fsr(15),color:'var(--ink2)',marginBottom:11,lineHeight:1.5}}>{cur.body}</p>}
+
+        {cur.action && (
+          <div style={{display:'flex',alignItems:'center',gap:9,background:'var(--surface2)',borderRadius:12,
+            padding:'9px 11px',marginBottom:11}}>
+            <span style={{fontSize:fsr(19),animation:'tutNudge 1.1s ease-in-out infinite'}}>👆</span>
+            <span style={{fontSize:fsr(14),fontWeight:700,color:'var(--accent)',lineHeight:1.35}}>{cur.hint||t.tutActionHint}</span>
+          </div>
+        )}
+
+        <div className="flex gap-3" style={{alignItems:'center'}}>
+          {step>0 && <button onClick={back} className="btn btn-ghost" style={{flex:1}}>{t.tutBack}</button>}
+          {!cur.action && <button onClick={next} className="btn btn-accent" style={{flex:2}}>{last?t.tutDone:t.tutNext}</button>}
+        </div>
+
+        <button onClick={onDone} style={{width:'100%',marginTop:6,padding:'6px',background:'none',border:'none',
+          color:'var(--muted)',fontSize:fsr(13),fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif',
+          textDecoration:'underline'}}>
+          {t.tutSkip}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── BOTTOM NAV ─────────────────────────────────────────────── */
 function BottomNav({tab,setTab,lang}){
   var t=T[lang];
@@ -2756,7 +3213,7 @@ function BottomNav({tab,setTab,lang}){
         {tabs.map(function(tb){
           var active=tab===tb.key;
           return (
-            <button key={tb.key} onClick={function(){setTab(tb.key);}}
+            <button key={tb.key} onClick={function(){setTab(tb.key);}} data-tut={'nav-'+tb.key}
               className="flex-1 flex flex-col items-center py-2 transition-colors"
               style={{minHeight:56,color:active?'var(--accent)':'var(--ink2)',background:'none',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
               <span style={{fontSize:fsr(22),lineHeight:1,marginBottom:3}}>{tb.icon}</span>
@@ -2875,7 +3332,9 @@ function HomeSetupScreen({lang,user,onHomeReady}){
     setLoading(true); setError('');
     var homeId='hm_'+uid();
     var inviteCode=Math.random().toString(36).slice(2,8).toUpperCase();
+    var myName=displayNameOf(user);
     var homeDoc={name:homeName.trim(),ownerId:user.uid,memberIds:[user.uid],
+      members:{[user.uid]:{name:myName,color:memberColor(user.uid)}},
       inviteCode:inviteCode,workingDays:26,roles:[],lang:lang};
     fbDb.collection('homes').doc(homeId).set(homeDoc)
       .then(function(){
@@ -2886,7 +3345,8 @@ function HomeSetupScreen({lang,user,onHomeReady}){
       .then(function(){
         saveHomes([{id:homeId,name:homeDoc.name}]);
         saveSettings({lang:lang,lastHomeId:homeId,workingDays:26});
-        onHomeReady([{id:homeId,name:homeDoc.name}],homeId);
+        seedDemoDataCloud(homeId,lang);
+        onHomeReady([{id:homeId,name:homeDoc.name}],homeId,true);
       })
       .catch(function(e){setError(e.message);setLoading(false);});
   }
@@ -2902,7 +3362,10 @@ function HomeSetupScreen({lang,user,onHomeReady}){
         var homeData=doc.data();
         var members=(homeData.memberIds||[]);
         if(!members.includes(user.uid)) members=members.concat([user.uid]);
-        return doc.ref.update({memberIds:members})
+        var patch={memberIds:members};
+        /* register this member's name so the others can attribute payments to them */
+        patch['members.'+user.uid]={name:displayNameOf(user),color:memberColor(user.uid)};
+        return doc.ref.update(patch)
           .then(function(){
             return fbDb.collection('users').doc(user.uid).set(
               {displayName:user.displayName||user.phoneNumber||'',
@@ -3057,12 +3520,14 @@ function App(){
   var [workingDays,setWorkingDays]=useState(30);
   var [fontSz,setFontSz]=useState('normal');
   var [menuOpen,setMenuOpen]=useState(false);
+  var [showTutorial,setShowTutorial]=useState(false);
   /* cloud state */
   var [user,setUser]=useState(undefined);   /* undefined=checking, null=no user */
   var [guestMode,setGuestMode]=useState(false);
   var [syncKey,setSyncKey]=useState(0);
   var [needsHome,setNeedsHome]=useState(false);
   var [migrating,setMigrating]=useState(false);
+  var [members,setMembers]=useState({});
 
   useEffect(function(){ applyFontSz(fontSz); },[fontSz]);
 
@@ -3070,8 +3535,9 @@ function App(){
   useEffect(function(){
     if(!FIREBASE_ENABLED){
       setGuestMode(true); setUser(null);
-      seedIfNeeded();
       var settings=getSettings();
+      seedIfNeeded(settings.lang||'en');
+      if(!settings.tutorialDone){ setShowTutorial(true); setTab('staff'); }
       setLang(settings.lang||'en');
       setWorkingDays(settings.workingDays||30);
       var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
@@ -3101,12 +3567,21 @@ function App(){
         var ud=doc.data();
         Promise.all((ud.homeIds||[]).map(function(id){ return fbDb.collection('homes').doc(id).get(); }))
           .then(function(docs){
-            var userHomes=docs.filter(function(d){return d.exists;}).map(function(d){
-              return {id:d.id,name:d.data().name};
-            });
+            var live=docs.filter(function(d){return d.exists;});
+            var userHomes=live.map(function(d){ return {id:d.id,name:d.data().name}; });
             var lid=ud.currentHomeId;
             var hid=(lid&&userHomes.find(function(x){return x.id===lid;}))?lid:(userHomes[0]?userHomes[0].id:'');
             setHomes(userHomes); setHomeId(hid); _activeHomeId=hid;
+            /* Self-heal: households created before member names existed have no
+               members map, so register ours (and refresh it if the name changed). */
+            live.forEach(function(d){
+              var mem=(d.data().members)||{};
+              var mine=mem[u.uid], nm=displayNameOf(u);
+              if(!mine||mine.name!==nm){
+                var patch={}; patch['members.'+u.uid]={name:nm,color:memberColor(u.uid)};
+                d.ref.update(patch).catch(function(){});
+              }
+            });
             if(lsGet(SK.homes,[]).length>0) setMigrating(true);
             setReady(true);
           }).catch(function(){ setReady(true); });
@@ -3114,6 +3589,20 @@ function App(){
     });
     return function(){ unsubAuth(); };
   },[]);
+
+  /* ── household member registry (names for "paid by") ── */
+  useEffect(function(){
+    if(!FIREBASE_ENABLED||!fbDb||!homeId||guestMode){ setMembers({}); return; }
+    var un=fbDb.collection('homes').doc(homeId).onSnapshot(function(d){
+      setMembers((d.exists&&d.data().members)||{});
+    },function(){});
+    return function(){ un(); };
+  },[homeId,guestMode]);
+
+  /* declared with the other hooks — the auth gating below returns early */
+  var memberCtx=useMemo(function(){
+    return {uid:(user&&user.uid)||'',members:members,guestMode:guestMode};
+  },[user,members,guestMode]);
 
   /* ── Firestore real-time listeners ── */
   useEffect(function(){
@@ -3170,8 +3659,9 @@ function App(){
   }
   function enterGuestMode(){
     setGuestMode(true);
-    seedIfNeeded();
     var settings=getSettings();
+    seedIfNeeded(settings.lang||'en');
+    if(!settings.tutorialDone){ setShowTutorial(true); setTab('staff'); }
     setLang(settings.lang||'en');
     setWorkingDays(settings.workingDays||30);
     var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
@@ -3188,12 +3678,18 @@ function App(){
   }
   if(!guestMode&&needsHome){
     return <HomeSetupScreen lang={lang} user={user}
-      onHomeReady={function(homesList,hid){
+      onHomeReady={function(homesList,hid,isNew){
         setHomes(homesList); setHomeId(hid); _activeHomeId=hid; setNeedsHome(false);
+        if(isNew&&!getSettings().tutorialDone){ setShowTutorial(true); setTab('staff'); }
       }} />;
   }
 
   var t=T[lang];
+
+  function finishTutorial(){
+    saveSettings(Object.assign({},getSettings(),{tutorialDone:true}));
+    setShowTutorial(false);
+  }
 
   if(migrating){
     return (
@@ -3213,6 +3709,7 @@ function App(){
 
   return (
     <SyncCtx.Provider value={syncKey}>
+    <MembersCtx.Provider value={memberCtx}>
     <div className="flex flex-col" style={{minHeight:'100vh'}}>
       <header className="shrink-0" style={{background:'var(--accent)',color:'#fff',padding:'12px 16px 10px'}}>
         <div className="flex items-center justify-between mb-2">
@@ -3235,7 +3732,7 @@ function App(){
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 14px',fontWeight:700,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
               {lang==='en'?'हिं':'EN'}
             </button>
-            <button onClick={function(){setMenuOpen(true);}} title="Menu"
+            <button onClick={function(){setMenuOpen(true);}} title="Menu" data-tut="menu"
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 11px',fontWeight:800,fontSize:fsr(17),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
               ☰
             </button>
@@ -3258,12 +3755,18 @@ function App(){
         {tab==='adv'      && <AdvancesTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='annual'   && <AnnualTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='voice'    && <VoiceTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
-        {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut} />}
+        {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut}
+          onReplayTutorial={function(){
+            saveSettings(Object.assign({},getSettings(),{tutorialDone:false}));
+            setTab('staff'); setShowTutorial(true);
+          }} />}
       </div>
 
       <BottomNav tab={tab} setTab={setTab} lang={lang} />
       <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={setTab} lang={lang} homeId={homeId} />
+      {showTutorial && <TutorialOverlay lang={lang} tab={tab} onNavigate={setTab} onDone={finishTutorial} />}
     </div>
+    </MembersCtx.Provider>
     </SyncCtx.Provider>
   );
 }
