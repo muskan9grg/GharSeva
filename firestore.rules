@@ -64,6 +64,33 @@ service cloud.firestore {
       }
     }
 
+    // ── Feedback ───────────────────────────────────────────────────
+    // App-level, not household-level: the only collection here that is not
+    // scoped to a home. Any signed-in user may send a message, and may read
+    // and withdraw their OWN messages — but never anyone else's.
+    //
+    // You read what people send in the Firebase console, which bypasses these
+    // rules, so no admin rule is needed yet. When upvoting is added, pinned
+    // ideas will need a public read path; the `pinned` field is written as
+    // false from the start so that will not require touching old documents.
+    match /feedback/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 2000
+        && request.resource.data.pinned == false
+        && request.resource.data.keys().hasOnly(
+             ['type','message','authorId','authorName','lang',
+              'createdAt','createdAtMs','pinned']);
+
+      allow read, delete: if request.auth != null
+                          && resource.data.authorId == request.auth.uid;
+
+      // Immutable once sent — withdraw and resend instead of editing.
+      allow update: if false;
+    }
+
     // ── Per-user profile ───────────────────────────────────────────
     // Yours alone. This is why member names are kept on the household
     // document instead: one member cannot read another's profile here.

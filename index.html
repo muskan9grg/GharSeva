@@ -269,6 +269,22 @@ en:{
   tutRecordsHint:'Tap 💳 Pay — third from the left, at the bottom',
   tutPayT:'Salary is worked out for you',
   tutPayB:'Pick a person and month, then tap Calculate — leaves and advances are already subtracted. Reports and settings sit in the ☰ menu, top right.',
+  hmFeedback:'Feedback & Ideas',
+  fbTitle:'Tell me what would help',
+  fbIntro:'This app is still growing. If something is missing, awkward, or broken, say so here — it goes straight to the person building it.',
+  fbWhatKind:'What is this about?',
+  fbIdea:'Idea',fbProblem:'Problem',fbOther:'Other',
+  fbYourMessage:'Your message',
+  fbMessageHint:'The more specific, the more useful. What were you trying to do?',
+  fbPlaceholder:'For example: I would like to see last year\'s salary total for each person on one screen.',
+  fbSend:'Send feedback',fbSending:'Sending…',
+  fbThanks:'Thank you — this has been received.',
+  fbQueued:'Saved. It will send as soon as you are back online.',
+  fbError:'Could not send. Please try again.',
+  fbYours:'WHAT YOU HAVE SENT',
+  fbWithdraw:'Withdraw',
+  fbNeedAccount:'Sign in to send feedback',
+  fbNeedAccountWhy:'Feedback has to travel to the cloud to reach us, so it needs an account. Everything else in the app keeps working without one.',
   paidBy:'Paid by',paidByHint:'Who actually gave the money — change it if someone else paid',
   paidByYou:'you',allMembers:'Everyone',notRecorded:'Not recorded',memberUnknown:'Member',
   whoPaid:'Who paid what',whoPaidHint:'Money paid out this year, split by household member',
@@ -387,6 +403,22 @@ hi:{
   tutRecordsHint:'💳 भुगतान दबाएं — सबसे नीचे, बाएं से तीसरा',
   tutPayT:'वेतन अपने आप गिना जाता है',
   tutPayB:'व्यक्ति और महीना चुनें, फिर गणना दबाएं — छुट्टियाँ और एडवांस पहले ही घटे होते हैं। रिपोर्ट और सेटिंग्स ऊपर दाईं ओर ☰ मेन्यू में हैं।',
+  hmFeedback:'सुझाव और राय',
+  fbTitle:'बताएं क्या बेहतर हो सकता है',
+  fbIntro:'यह एप्प अभी बन रहा है। कुछ कमी लगे, मुश्किल हो या काम न करे, तो यहाँ लिखें — यह सीधे बनाने वाले तक जाता है।',
+  fbWhatKind:'बात किस बारे में है?',
+  fbIdea:'सुझाव',fbProblem:'समस्या',fbOther:'अन्य',
+  fbYourMessage:'आपका संदेश',
+  fbMessageHint:'जितना साफ लिखेंगे, उतना काम आएगा। आप क्या करना चाह रहे थे?',
+  fbPlaceholder:'जैसे: हर व्यक्ति का पिछले साल का कुल वेतन एक ही स्क्रीन पर दिखे।',
+  fbSend:'भेजें',fbSending:'भेज रहे हैं…',
+  fbThanks:'धन्यवाद — आपका संदेश मिल गया।',
+  fbQueued:'सहेज लिया। इंटरनेट आते ही भेज दिया जाएगा।',
+  fbError:'भेजा नहीं जा सका। फिर कोशिश करें।',
+  fbYours:'आपके भेजे संदेश',
+  fbWithdraw:'वापस लें',
+  fbNeedAccount:'भेजने के लिए साइन इन करें',
+  fbNeedAccountWhy:'संदेश हम तक पहुँचने के लिए क्लाउड से जाता है, इसलिए खाता ज़रूरी है। एप्प का बाकी सब कुछ बिना खाते भी चलता रहेगा।',
   paidBy:'किसने दिया',paidByHint:'पैसे असल में किसने दिए — कोई और हो तो बदल दें',
   paidByYou:'आप',allMembers:'सभी',notRecorded:'दर्ज नहीं',memberUnknown:'सदस्य',
   whoPaid:'किसने कितना दिया',whoPaidHint:'इस साल दिए गए पैसे, हर सदस्य के हिसाब से',
@@ -2975,6 +3007,182 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   );
 }
 
+/* ── FEEDBACK TAB ───────────────────────────────────────────────
+   Feedback is about the app, not about one household, so it lives in a
+   top-level /feedback collection rather than under /homes — the first thing
+   in the app that crosses the household boundary.
+
+   Sending needs a signed-in account. An open write path on a global
+   collection would be a spam target with no way to reply, so guests are
+   shown an explanation instead. You can read back only your own messages;
+   the rules keep everyone else's private. */
+function FeedbackTab({lang,guestMode,user}){
+  var t=T[lang];
+  var TYPES=[
+    {key:'idea',    icon:'💡', label:t.fbIdea},
+    {key:'problem', icon:'⚠️', label:t.fbProblem},
+    {key:'other',   icon:'💬', label:t.fbOther},
+  ];
+  var [type,setType]=useState('idea');
+  var [msg,setMsg]=useState('');
+  var [sending,setSending]=useState(false);
+  var [sent,setSent]=useState('');          /* '' | 'ok' | 'queued' */
+  var [err,setErr]=useState('');
+  var [mine,setMine]=useState(null);        /* null while loading */
+  var [confirmDel,setConfirmDel]=useState(null);
+
+  var canSend=!!(FIREBASE_ENABLED&&fbDb&&!guestMode&&user);
+
+  function loadMine(){
+    if(!canSend){ setMine([]); return; }
+    fbDb.collection('feedback').where('authorId','==',user.uid).get()
+      .then(function(snap){
+        var rows=snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+        rows.sort(function(a,b){ return (b.createdAtMs||0)-(a.createdAtMs||0); });
+        setMine(rows);
+      })
+      .catch(function(){ setMine([]); });
+  }
+  useEffect(loadMine,[canSend]);
+
+  function send(){
+    if(!msg.trim()||sending) return;
+    setSending(true); setErr(''); setSent('');
+    var rec={
+      type:type,
+      message:msg.trim().slice(0,2000),
+      authorId:user.uid,
+      authorName:displayNameOf(user),
+      lang:lang,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      createdAtMs:Date.now(),
+      pinned:false           /* reserved — upvoting lands here in a later version */
+    };
+    /* Offline, the add() promise stays pending until the network returns.
+       Firestore has already stored it durably, so after a short wait say so
+       rather than leaving the button spinning forever. */
+    var settled=false;
+    var timer=setTimeout(function(){
+      if(settled) return;
+      settled=true; setSending(false); setSent('queued'); setMsg('');
+    },4000);
+    fbDb.collection('feedback').add(rec)
+      .then(function(){
+        if(settled) return;
+        settled=true; clearTimeout(timer);
+        setSending(false); setSent('ok'); setMsg(''); loadMine();
+      })
+      .catch(function(e){
+        if(settled) return;
+        settled=true; clearTimeout(timer);
+        setSending(false); setErr((e&&e.message)||t.fbError);
+      });
+  }
+
+  function del(id){
+    fbDb.collection('feedback').doc(id).delete()
+      .then(function(){
+        setMine(function(r){ return (r||[]).filter(function(x){ return x.id!==id; }); });
+        setConfirmDel(null);
+      })
+      .catch(function(){ setConfirmDel(null); });
+  }
+
+  function typeOf(k){ return TYPES.find(function(x){return x.key===k;})||TYPES[2]; }
+
+  return (
+    <div className="p-4 scroll-area flex-1">
+      <div className="card mb-4">
+        <p style={{fontSize:fsr(19),fontWeight:800,color:'var(--ink)',marginBottom:6}}>{t.fbTitle}</p>
+        <p style={{fontSize:fsr(14),color:'var(--ink2)',lineHeight:1.55}}>{t.fbIntro}</p>
+      </div>
+
+      {!canSend ? (
+        <div className="card mb-4" style={{textAlign:'center'}}>
+          <div style={{fontSize:'2.2rem',marginBottom:10}}>🔐</div>
+          <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:8}}>{t.fbNeedAccount}</p>
+          <p style={{fontSize:fsr(13),color:'var(--ink2)',lineHeight:1.55}}>{t.fbNeedAccountWhy}</p>
+        </div>
+      ) : (
+        <div className="card mb-4">
+          {sent==='ok'&&(
+            <div className="mb-4" style={{background:'#D8EEE2',border:'1px solid var(--ok)',borderRadius:12,padding:'12px 14px'}}>
+              <p style={{fontSize:fsr(14),fontWeight:800,color:'var(--ok)'}}>✅ {t.fbThanks}</p>
+            </div>
+          )}
+          {sent==='queued'&&(
+            <div className="mb-4" style={{background:'#FDF3DC',border:'1px solid var(--warn)',borderRadius:12,padding:'12px 14px'}}>
+              <p style={{fontSize:fsr(14),fontWeight:800,color:'#8B5E08'}}>📶 {t.fbQueued}</p>
+            </div>
+          )}
+          {err&&<p style={{fontSize:fsr(13),color:'var(--danger)',fontWeight:700,marginBottom:10}}>{err}</p>}
+
+          <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:8}}>{t.fbWhatKind}</label>
+          <div className="flex gap-2 mb-4">
+            {TYPES.map(function(o){
+              var on=type===o.key;
+              return (
+                <button key={o.key} onClick={function(){setType(o.key);}}
+                  style={{flex:1,padding:'12px 6px',borderRadius:12,cursor:'pointer',
+                    border:'2px solid '+(on?'var(--accent)':'var(--border)'),
+                    background:on?'#D8EEE8':'var(--surface2)',
+                    color:on?'var(--accent)':'var(--ink2)',fontWeight:800,fontSize:fsr(13),
+                    fontFamily:'Nunito,sans-serif',display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                  <span style={{fontSize:fsr(19),lineHeight:1}}>{o.icon}</span>
+                  <span>{o.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <FLabel label={t.fbYourMessage} hint={t.fbMessageHint}>
+            <textarea value={msg} onChange={function(e){setMsg(e.target.value);}}
+              placeholder={t.fbPlaceholder} className="ta" style={{height:130}} maxLength={2000} />
+          </FLabel>
+          <p style={{fontSize:fsr(12),color:'var(--muted)',textAlign:'right',marginBottom:12}}>{msg.length}/2000</p>
+
+          <PrimaryBtn onClick={send} full={true} disabled={!msg.trim()||sending}>
+            {sending?t.fbSending:t.fbSend}
+          </PrimaryBtn>
+        </div>
+      )}
+
+      {canSend&&mine&&mine.length>0&&(
+        <div>
+          <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.fbYours}</p>
+          {mine.map(function(f){
+            var ty=typeOf(f.type);
+            return (
+              <div key={f.id} className="card mb-3">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className="pill pill-accent">{ty.icon} {ty.label}</span>
+                  <span style={{fontSize:fsr(12),color:'var(--muted)',fontWeight:700,whiteSpace:'nowrap'}}>
+                    {f.createdAtMs?fmtD(new Date(f.createdAtMs).toISOString().slice(0,10)):''}
+                  </span>
+                </div>
+                <p style={{fontSize:fsr(14),color:'var(--ink)',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{f.message}</p>
+                {confirmDel===f.id ? (
+                  <div className="flex gap-2 mt-3">
+                    <PrimaryBtn onClick={function(){setConfirmDel(null);}} color="gray" small={true} full={true}>{t.cancel}</PrimaryBtn>
+                    <PrimaryBtn onClick={function(){del(f.id);}} color="red" small={true} full={true}>{t.del}</PrimaryBtn>
+                  </div>
+                ) : (
+                  <button onClick={function(){setConfirmDel(f.id);}}
+                    style={{marginTop:10,fontSize:fsr(12),color:'var(--danger)',border:'1px solid #F5C6C6',
+                      borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',
+                      cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+                    {t.fbWithdraw}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── HAMBURGER MENU ─────────────────────────────────────────── */
 function HamburgerMenu({open,onClose,setTab,lang,homeId}){
   var t=T[lang];
@@ -2989,6 +3197,7 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId}){
     {icon:'📊',label:t.hmAnnual,   action:function(){go('annual');}},
     {icon:'🎤',label:t.hmVoice,    action:function(){go('voice');}},
     {icon:'📤',label:t.hmExportMonth, action:function(){setShowExport(function(v){return !v;});}},
+    {icon:'💬',label:t.hmFeedback, action:function(){go('feedback');}},
     {icon:'⚙️',label:t.hmSettings, action:function(){go('settings');}},
   ];
 
@@ -3827,6 +4036,7 @@ function App(){
         {tab==='adv'      && <AdvancesTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='annual'   && <AnnualTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='voice'    && <VoiceTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
+        {tab==='feedback' && <FeedbackTab lang={lang} guestMode={guestMode} user={user} />}
         {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut}
           onReplayTutorial={function(){
             saveSettings(Object.assign({},getSettings(),{tutorialDone:false}));
