@@ -3370,6 +3370,12 @@ function HomeSetupScreen({lang,user,onHomeReady}){
       inviteCode:inviteCode,workingDays:26,roles:[],lang:lang};
     fbDb.collection('homes').doc(homeId).set(homeDoc)
       .then(function(){
+        /* Publish the code to its own lookup document. Joiners read this
+           instead of searching /homes, which they have no permission to do
+           until they are already a member. */
+        return fbDb.collection('invites').doc(inviteCode).set({homeId:homeId});
+      })
+      .then(function(){
         return fbDb.collection('users').doc(user.uid).set(
           {displayName:user.displayName||user.phoneNumber||'',homeIds:[homeId],currentHomeId:homeId},
           {merge:true});
@@ -3383,34 +3389,45 @@ function HomeSetupScreen({lang,user,onHomeReady}){
       .catch(function(e){setError(e.message);setLoading(false);});
   }
 
+  /* Joining cannot search /homes: the rules only permit reading a household
+     you already belong to, which is the very thing you are trying to become.
+     So resolve the code through /invites/{CODE} — a single known document that
+     reveals nothing but a household id — then append yourself. Reading the
+     household itself is deferred until after that, when it is permitted. */
   function joinHome(){
     if(code.length!==6) return;
     setLoading(true); setError('');
-    fbDb.collection('homes').where('inviteCode','==',code.toUpperCase()).get()
-      .then(function(snap){
-        if(snap.empty){setError(t.codeNotFound);setLoading(false);return;}
-        var doc=snap.docs[0];
-        var homeId=doc.id;
-        var homeData=doc.data();
-        var members=(homeData.memberIds||[]);
-        if(!members.includes(user.uid)) members=members.concat([user.uid]);
-        var patch={memberIds:members};
-        /* register this member's name so the others can attribute payments to them */
+    var CODE=code.toUpperCase(), homeId='';
+    fbDb.collection('invites').doc(CODE).get()
+      .then(function(inv){
+        if(!inv.exists||!inv.data().homeId) throw new Error('__notfound');
+        homeId=inv.data().homeId;
+        /* arrayUnion so we never have to read memberIds first */
+        var patch={memberIds:firebase.firestore.FieldValue.arrayUnion(user.uid)};
         patch['members.'+user.uid]={name:displayNameOf(user),color:memberColor(user.uid)};
-        return doc.ref.update(patch)
-          .then(function(){
-            return fbDb.collection('users').doc(user.uid).set(
-              {displayName:user.displayName||user.phoneNumber||'',
-               homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),currentHomeId:homeId},
-              {merge:true});
-          })
-          .then(function(){
-            saveHomes([{id:homeId,name:homeData.name}]);
-            saveSettings({lang:lang,lastHomeId:homeId,workingDays:homeData.workingDays||26});
-            onHomeReady([{id:homeId,name:homeData.name}],homeId);
-          });
+        return fbDb.collection('homes').doc(homeId).update(patch);
       })
-      .catch(function(e){setError(e.message);setLoading(false);});
+      .then(function(){
+        return fbDb.collection('homes').doc(homeId).get();   /* now a member */
+      })
+      .then(function(doc){
+        var hd=(doc.exists&&doc.data())||{};
+        return fbDb.collection('users').doc(user.uid).set(
+          {displayName:displayNameOf(user),
+           homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),currentHomeId:homeId},
+          {merge:true}).then(function(){ return hd; });
+      })
+      .then(function(hd){
+        var entry={id:homeId,name:hd.name||''};
+        saveHomes([entry]);
+        saveSettings({lang:lang,lastHomeId:homeId,workingDays:hd.workingDays||26});
+        onHomeReady([entry],homeId);
+      })
+      .catch(function(e){
+        var notFound=e&&e.message==='__notfound';
+        setError(notFound?t.codeNotFound:((e&&e.message)||t.codeNotFound));
+        setLoading(false);
+      });
   }
 
   return (
@@ -3620,11 +3637,20 @@ function App(){
             /* Self-heal: households created before member names existed have no
                members map, so register ours (and refresh it if the name changed). */
             live.forEach(function(d){
-              var mem=(d.data().members)||{};
+              var data=d.data();
+              var mem=data.members||{};
               var mine=mem[u.uid], nm=displayNameOf(u);
               if(!mine||mine.name!==nm){
                 var patch={}; patch['members.'+u.uid]={name:nm,color:memberColor(u.uid)};
                 d.ref.update(patch).catch(function(){});
+              }
+              /* Households created before the invites lookup existed have no
+                 /invites document, so their code would never resolve. */
+              if(data.inviteCode){
+                var ref=fbDb.collection('invites').doc(data.inviteCode);
+                ref.get().then(function(s){
+                  if(!s.exists) return ref.set({homeId:d.id});
+                }).catch(function(){});
               }
             });
             if(lsGet(SK.homes,[]).length>0) setMigrating(true);
