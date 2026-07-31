@@ -137,9 +137,40 @@ function memberLabel(uid,members,t){
   var m=members&&members[uid];
   return (m&&m.name)||(t?t.memberUnknown:'Member');
 }
+/* Resolves who paid, including someone outside the household's member list
+   (paidBy:'other' + a free-text paidByName). Prefer this over memberLabel
+   directly wherever the full record (not just a uid) is available. */
+function payerLabel(rec,members,t){
+  if(!rec||!rec.paidBy) return t?t.notRecorded:'—';
+  if(rec.paidBy==='other') return (rec.paidByName&&rec.paidByName.trim())||(t?t.paidBySomeoneElse:'Someone else');
+  return memberLabel(rec.paidBy,members,t);
+}
 function displayNameOf(user){
   if(!user) return '';
   return user.displayName||user.phoneNumber||user.email||'Member';
+}
+
+/* Phone numbers pasted from a contacts app carry a country code, spaces,
+   dashes or a leading +. Strip everything but digits as the user types
+   (native maxLength would otherwise truncate a paste before this ever runs),
+   then collapse the common Indian prefixes down to a bare 10-digit number
+   at save time so the rest of the app (WhatsApp links, display) stays
+   consistent with what it already assumes. Anything that doesn't match
+   is kept as typed rather than mangled. */
+function cleanPhoneDigits(raw){ return (raw||'').replace(/\D/g,'').slice(0,15); }
+function normalizePhone(digits){
+  if(digits.length===12&&digits.slice(0,2)==='91') return digits.slice(2);
+  if(digits.length===11&&digits.charAt(0)==='0') return digits.slice(1);
+  return digits;
+}
+
+/* Names typed for "someone else" paid this, offered back as suggestions so
+   the same person doesn't end up spelled three different ways. */
+function getExternalPayerNames(homeId){
+  var names={};
+  getLedger(homeId).forEach(function(e){ if(e.paidBy==='other'&&e.paidByName) names[e.paidByName.trim()]=true; });
+  getPayments(homeId).forEach(function(p){ if(p.paidBy==='other'&&p.paidByName) names[p.paidByName.trim()]=true; });
+  return Object.keys(names).sort();
 }
 
 /* Current home for write helpers that don't receive homeId in scope */
@@ -181,6 +212,7 @@ const TC={
   loan_repay: {icon:'💰',pillCls:'pill-ok',   bg:'#D8EEE2'},
   extra_work: {icon:'⏰',pillCls:'pill-ok',   bg:'#D8EEE2'},
   short_hours:{icon:'⏱️',pillCls:'pill-warn', bg:'#FDF3DC'},
+  extra_help: {icon:'🤝',pillCls:'pill-purple',bg:'#EAE4F5'},
 };
 
 /* ── TRANSLATIONS ───────────────────────────────────────────── */
@@ -287,7 +319,15 @@ en:{
   fbNeedAccountWhy:'Feedback has to travel to the cloud to reach us, so it needs an account. Everything else in the app keeps working without one.',
   paidBy:'Paid by',paidByHint:'Who actually gave the money — change it if someone else paid',
   paidByYou:'you',allMembers:'Everyone',notRecorded:'Not recorded',memberUnknown:'Member',
+  paidBySomeoneElse:'Someone else…',
+  paidByNameLabel:'Their name',paidByNameHint:'So you can tell them apart later',paidByNamePh:'e.g. Rita (neighbour)',
+  errPayerName:'Please enter their name',
   whoPaid:'Who paid what',whoPaidHint:'Money paid out this year, split by household member',
+  tExtraHelp:'Extra Help',
+  fHelperName:'Helper’s Name',fHelperNameHint:'Optional — who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
+  generalNoStaff:'General (not linked to a staff member)',
+  aTotExtraHelp:'Extra Help Cost',
+  fphoneHint:'You can paste a number straight from your contacts — spaces and the country code are removed automatically',
   tutActionHint:'Press the highlighted button to continue',
   tutStepWord:'STEP',tutOfWord:'OF',
   tutNext:'Next',tutBack:'Back',tutSkip:'Skip the guide',tutDone:'Finish',tutReplayBtn:'Show Tutorial Again',
@@ -421,7 +461,15 @@ hi:{
   fbNeedAccountWhy:'संदेश हम तक पहुँचने के लिए क्लाउड से जाता है, इसलिए खाता ज़रूरी है। एप्प का बाकी सब कुछ बिना खाते भी चलता रहेगा।',
   paidBy:'किसने दिया',paidByHint:'पैसे असल में किसने दिए — कोई और हो तो बदल दें',
   paidByYou:'आप',allMembers:'सभी',notRecorded:'दर्ज नहीं',memberUnknown:'सदस्य',
+  paidBySomeoneElse:'कोई और…',
+  paidByNameLabel:'उनका नाम',paidByNameHint:'ताकि बाद में पहचान सकें',paidByNamePh:'जैसे: रीता (पड़ोसी)',
+  errPayerName:'कृपया नाम लिखें',
   whoPaid:'किसने कितना दिया',whoPaidHint:'इस साल दिए गए पैसे, हर सदस्य के हिसाब से',
+  tExtraHelp:'अतिरिक्त मदद',
+  fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक — मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
+  generalNoStaff:'सामान्य (किसी स्टाफ से नहीं जुड़ा)',
+  aTotExtraHelp:'अतिरिक्त मदद खर्च',
+  fphoneHint:'संपर्कों से सीधे नंबर पेस्ट कर सकते हैं — स्पेस और कंट्री कोड अपने आप हट जाएंगे',
   tutActionHint:'आगे बढ़ने के लिए चमकता हुआ बटन दबाएं',
   tutStepWord:'चरण',tutOfWord:'/',
   tutNext:'आगे',tutBack:'पीछे',tutSkip:'गाइड छोड़ें',tutDone:'समाप्त',tutReplayBtn:'ट्यूटोरियल फिर से देखें',
@@ -856,12 +904,43 @@ function FSelect({value,onChange,children,tut}){
   </select>;
 }
 
-function FLabel({label,hint,children}){
+function FLabel({label,hint,children,req}){
   return (
     <div className="mb-4">
-      <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:5}}>{label}</label>
+      <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:5}}>
+        {label}{req && <span style={{color:'var(--danger)'}}> *</span>}
+      </label>
       {hint && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:5}}>{hint}</p>}
       {children}
+    </div>
+  );
+}
+
+/* Shared by every "who paid this" picker (entries, salary payments): a
+   household member, or "Someone else" with a free-text name suggested from
+   names already used in this household, so the same person doesn't end up
+   spelled three different ways across records. */
+function PaidBySelector({t,mc,memberIds,value,nameValue,onChange,onNameChange,suggestions,idSuffix}){
+  var listId='ext-payer-names-'+(idSuffix||'x');
+  return (
+    <div>
+      <FLabel label={t.paidBy} hint={t.paidByHint}>
+        <FSelect value={value} onChange={onChange}>
+          {memberIds.map(function(id){
+            return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
+          })}
+          <option value="other">{t.paidBySomeoneElse}</option>
+        </FSelect>
+      </FLabel>
+      {value==='other' && (
+        <FLabel label={t.paidByNameLabel} hint={t.paidByNameHint} req={true}>
+          <input list={listId} value={nameValue||''} onChange={function(e){onNameChange(e.target.value);}}
+            placeholder={t.paidByNamePh} className="inp" maxLength={60} />
+          <datalist id={listId}>
+            {(suggestions||[]).map(function(n){return <option key={n} value={n} />;})}
+          </datalist>
+        </FLabel>
+      )}
     </div>
   );
 }
@@ -883,7 +962,11 @@ function WACard({message,phone,t}){
     }
   }
   function doWA(){
-    var ph=phone&&phone.length===10?'91'+phone:'';
+    /* phone is stored normalized to a bare 10-digit number where possible
+       (see normalizePhone), but older records or a foreign number may still
+       be longer — don't blindly prepend 91 on top of an existing code. */
+    var digits=(phone||'').replace(/\D/g,'');
+    var ph=digits.length===10?'91'+digits:digits.length>10?digits:'';
     window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(message),'_blank');
   }
   return (
@@ -942,7 +1025,7 @@ function StaffModal({lang,onClose,onSave,existing}){
   var [errMsg,setErrMsg]=useState('');
   function handleSave(){
     if(!form.name.trim()){setErrMsg(t.errName);return;}
-    onSave(Object.assign({},form,{id:existing?existing.id:uid(),salary:Number(form.salary)||0}));
+    onSave(Object.assign({},form,{id:existing?existing.id:uid(),salary:Number(form.salary)||0,phone:normalizePhone(form.phone||'')}));
   }
 
   return (
@@ -962,7 +1045,7 @@ function StaffModal({lang,onClose,onSave,existing}){
         </label>
       </div>
 
-      <FLabel label={t.fname}><FInput tut="staff-name" value={form.name} onChange={function(v){set('name',v);}} placeholder={t.fnamePh} /></FLabel>
+      <FLabel label={t.fname} req={true}><FInput tut="staff-name" value={form.name} onChange={function(v){set('name',v);}} placeholder={t.fnamePh} /></FLabel>
       <FLabel label={t.nickname}><FInput value={form.nickname} onChange={function(v){set('nickname',v);}} placeholder={t.nicknamePh} /></FLabel>
       <FLabel label={t.frole}>
         <select className="sel" data-tut="staff-role" value={addingRole?'__add__':form.role} onChange={function(e){handleRoleChange(e.target.value);}}>
@@ -980,7 +1063,7 @@ function StaffModal({lang,onClose,onSave,existing}){
         )}
       </FLabel>
       <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder="0" /></FLabel>
-      <FLabel label={t.fphone}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',v);}} placeholder={t.fphonePh} maxLength={10} /></FLabel>
+      <FLabel label={t.fphone} hint={t.fphoneHint}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
       <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
       <FLabel label={t.fpay} hint={t.hintPayDay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
       <FLabel label={t.fnotes}>
@@ -1145,6 +1228,9 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   var memberIds=Object.keys(mc.members||{});
   var showPaidBy=!mc.guestMode&&memberIds.length>0;
   var [payer,setPayer]=useState(mc.uid||'');
+  var [payerName,setPayerName]=useState('');
+  var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(homeId):[]; },[showPaidBy,homeId]);
+  var [payerErr,setPayerErr]=useState('');
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
   var calc=calcSalary(staff,year,month,ledger,workingDays);
@@ -1158,10 +1244,15 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   if(calc.shortHours>0) rows.push({label:t.rShortHours,val:-calc.shortHours,color:'var(--warn)'});
   function doConfirm(){
     if(paidRec||done) return;
+    if(showPaidBy&&payer==='other'&&!payerName.trim()){setPayerErr(t.errPayerName);return;}
+    setPayerErr('');
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
     var rec={key:payKey,staffId:staff.id,year:year,month:month,amount:calc.netPayable,date:pDate};
-    if(showPaidBy&&payer) rec.paidBy=payer;
+    if(showPaidBy&&payer){
+      rec.paidBy=payer;
+      if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
+    }
     var newPays=payments.concat([rec]);
     var newLed=ledger.map(function(e){
       if(e.staffId===staff.id&&e.type==='loan'&&e.status==='active'){
@@ -1199,20 +1290,19 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
         </div>
       </div>
       {!(done||paidRec)&&showPaidBy&&(
-        <FLabel label={t.paidBy} hint={t.paidByHint}>
-          <FSelect value={payer} onChange={setPayer}>
-            {memberIds.map(function(id){
-              return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
-            })}
-          </FSelect>
-        </FLabel>
+        <div>
+          {payerErr&&<p style={{fontSize:fsr(13),color:'var(--danger)',fontWeight:700,marginBottom:8}}>{payerErr}</p>}
+          <PaidBySelector t={t} mc={mc} memberIds={memberIds} idSuffix="salarypay"
+            value={payer} nameValue={payerName} suggestions={payerSuggestions}
+            onChange={setPayer} onNameChange={setPayerName} />
+        </div>
       )}
       {(done||paidRec)
         ? <div className="text-center">
             <p style={{color:'var(--ok)',fontSize:fsr(18),fontWeight:800,padding:'8px 0'}}>✅ {t.paidOk}</p>
             {paidRec&&paidRec.paidBy&&(
               <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:8}}>
-                {t.paidBy}: <b>{memberLabel(paidRec.paidBy,mc.members,t)}</b>
+                {t.paidBy}: <b>{payerLabel(paidRec,mc.members,t)}</b>
               </p>
             )}
             {waMsg&&<WACard message={waMsg} phone={staff.phone} t={t} />}
@@ -1658,6 +1748,9 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
   var memberIds=Object.keys(mc.members||{});
   var showPaidBy=!mc.guestMode&&memberIds.length>0;
   var [payer,setPayer]=useState(mc.uid||'');
+  var [payerName,setPayerName]=useState('');
+  var [payerErr,setPayerErr]=useState('');
+  var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(homeId):[]; },[showPaidBy,homeId]);
   var [staff,setStaff]=useState([]);
   var [ledger,setLedger]=useState([]);
   var [payments,setPayments]=useState([]);
@@ -1684,12 +1777,17 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
   function doMarkPaid(){
     var s=staff.find(function(x){return x.id===selStaff;});
     if(!s||!calc) return;
+    if(showPaidBy&&payer==='other'&&!payerName.trim()){setPayerErr(t.errPayerName);return;}
+    setPayerErr('');
     var key=selStaff+'_'+selYear+'_'+selMonth;
     if(payments.find(function(p){return p.key===key;})) return;
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
     var rec={key:key,staffId:selStaff,year:selYear,month:selMonth,amount:calc.netPayable,date:pDate};
-    if(showPaidBy&&payer) rec.paidBy=payer;
+    if(showPaidBy&&payer){
+      rec.paidBy=payer;
+      if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
+    }
     var newPays=[...payments,rec];
     var newLed=ledger.map(function(e){
       if(e.staffId===selStaff&&e.type==='loan'&&e.status==='active'){
@@ -1714,7 +1812,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
       {toast && <Toast msg={toast} onDone={function(){setToast('');}} />}
 
       <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface2)'}}>
-        <FLabel label={t.selStaff}>
+        <FLabel label={t.selStaff} req={true}>
           <FSelect tut="salary-staff" value={selStaff} onChange={function(v){setSelStaff(v);setCalc(null);setWAMsg('');}}>
             <option value="">{t.selStaff}</option>
             {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
@@ -1790,19 +1888,18 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
                 <p style={{color:'var(--ok)',fontSize:fsr(13),marginTop:4}}>{fmt(paidRec.amount)}</p>
                 {showPaidBy&&paidRec.paidBy&&(
                   <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:6}}>
-                    {t.paidBy}: <b>{memberLabel(paidRec.paidBy,mc.members,t)}</b>
+                    {t.paidBy}: <b>{payerLabel(paidRec,mc.members,t)}</b>
                   </p>
                 )}
               </div>
             : <div>
                 {showPaidBy&&(
-                  <FLabel label={t.paidBy} hint={t.paidByHint}>
-                    <FSelect value={payer} onChange={setPayer}>
-                      {memberIds.map(function(id){
-                        return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
-                      })}
-                    </FSelect>
-                  </FLabel>
+                  <div>
+                    {payerErr&&<p style={{fontSize:fsr(13),color:'var(--danger)',fontWeight:700,marginBottom:8}}>{payerErr}</p>}
+                    <PaidBySelector t={t} mc={mc} memberIds={memberIds} idSuffix="salarytab"
+                      value={payer} nameValue={payerName} suggestions={payerSuggestions}
+                      onChange={setPayer} onNameChange={setPayerName} />
+                  </div>
                 )}
                 <PrimaryBtn onClick={doMarkPaid} color="green" full={true}>{t.markPaid}</PrimaryBtn>
               </div>
@@ -1993,10 +2090,11 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
   var mc=React.useContext(MembersCtx);
   var memberIds=Object.keys(mc.members||{});
   /* only for money actually leaving someone's hand, and only once signed in */
-  var CASH_OUT=['advance','loan','expense','bonus','extra_work'];
-  var [form,setForm]=useState({staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:'',paidBy:mc.uid||''});
+  var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
+  var [form,setForm]=useState({staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:'',paidBy:mc.uid||'',paidByName:'',helperName:''});
   function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
   var showPaidBy=!mc.guestMode&&memberIds.length>0&&CASH_OUT.indexOf(form.type)>-1;
+  var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(_activeHomeId):[]; },[showPaidBy]);
 
   var isTimeBased=form.type==='extra_work';
   var isHalfDay=form.type==='short_hours';
@@ -2023,20 +2121,28 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
     if(form.type==='loan'){entry.installment=Number(form.installment)||0;entry.totalInstallments=Number(form.totalInstallments)||0;entry.paidInstallments=0;entry.status='active';}
     if(form.type==='loan_repay') entry.targetLoanId=form.targetLoanId;
     if(isTimeBased){entry.hours=Number(form.hours);entry.rate=effectiveRate;}
-    if(showPaidBy&&form.paidBy) entry.paidBy=form.paidBy;
+    if(form.type==='extra_help'&&form.helperName.trim()) entry.helperName=form.helperName.trim();
+    if(showPaidBy&&form.paidBy){
+      entry.paidBy=form.paidBy;
+      if(form.paidBy==='other'&&form.paidByName.trim()) entry.paidByName=form.paidByName.trim();
+    }
     return entry;
   }
 
   function handleSave(){
-    if(!form.staffId){setErrMsg(t.errStaff);return;}
+    /* extra_help is the one type that isn't necessarily anyone's own —
+       a substitute for someone absent, or extra hands beyond the regular
+       staff — so it's the only type that can be saved with no staff picked */
+    if(form.type!=='extra_help'&&!form.staffId){setErrMsg(t.errStaff);return;}
     if(!form.date) return;
     if(isTimeBased&&(!form.hours||computedAmount<=0)){setErrMsg(t.errAmount);return;}
     if(!isTimeBased&&form.type!=='loan_repay'&&!form.amount){setErrMsg(t.errAmount);return;}
     if(form.type==='loan_repay'&&(!form.amount||!form.targetLoanId)){setErrMsg(t.errAmount);return;}
+    if(showPaidBy&&form.paidBy==='other'&&!form.paidByName.trim()){setErrMsg(t.errPayerName);return;}
     var finalAmount=isTimeBased?computedAmount:Number(form.amount);
-    var needsConfirm=(form.type==='advance'||form.type==='loan')&&finalAmount>=1000;
+    var needsConfirm=(form.type==='advance'||form.type==='loan'||form.type==='extra_help')&&finalAmount>=1000;
     if(needsConfirm){
-      var sName=(staffList.find(function(s){return s.id===form.staffId;})||{}).name||'';
+      var sName=(staffList.find(function(s){return s.id===form.staffId;})||{}).name||t.generalNoStaff;
       setConfirmEntry({type:typeLabels[form.type]||form.type,amount:finalAmount,name:sName});
       return;
     }
@@ -2052,9 +2158,10 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
     loan_repay: {active:{background:'#D8EEE2',border:'2px solid var(--ok)',color:'var(--ok)'},inactive:inactive},
     extra_work: {active:{background:'#D8EEE2',border:'2px solid var(--ok)',color:'var(--ok)'},inactive:inactive},
     short_hours:{active:{background:'#FDF3DC',border:'2px solid var(--warn)',color:'#8B5E08'},inactive:inactive},
+    extra_help: {active:{background:'#EAE4F5',border:'2px solid var(--purple)',color:'#3A2E7A'},inactive:inactive},
   };
-  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
-  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours};
+  var otherTypes=['loan','expense','short_hours','bonus','extra_work','extra_help','loan_repay'];
+  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
   function typeBtn(key,full){
     var active=form.type===key;
@@ -2065,9 +2172,9 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
   return (
     <Modal onClose={onClose} title={t.addEntry}>
       {errMsg&&<Toast msg={errMsg} onDone={function(){setErrMsg('');}} />}
-      <FLabel label={t.selStaff}>
+      <FLabel label={t.selStaff} req={form.type!=='extra_help'}>
         <FSelect value={form.staffId} onChange={function(v){set('staffId',v);}}>
-          <option value="">{t.selStaff}</option>
+          <option value="">{form.type==='extra_help'?t.generalNoStaff:t.selStaff}</option>
           {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
         </FSelect>
       </FLabel>
@@ -2082,7 +2189,7 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
       {isTimeBased ? (
         <div>
           <div className="flex gap-3">
-            <FLabel label={t.fhours} style={{flex:1}}><FInput type="number" value={form.hours} onChange={function(v){set('hours',v);}} placeholder="e.g. 2.5" /></FLabel>
+            <FLabel label={t.fhours} req={true} style={{flex:1}}><FInput type="number" value={form.hours} onChange={function(v){set('hours',v);}} placeholder="e.g. 2.5" /></FLabel>
             <FLabel label={t.frate} style={{flex:1}}><FInput type="number" value={form.rate} onChange={function(v){set('rate',v);}} placeholder={String(defaultRate)} /></FLabel>
           </div>
           {computedAmount>0 && (
@@ -2094,7 +2201,7 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
         </div>
       ) : (
         <div>
-          <FLabel label={t.famount}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder="0" /></FLabel>
+          <FLabel label={t.famount} req={true}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder="0" /></FLabel>
           {isHalfDay&&dailyRate>0&&(
             <div className="mb-4 px-3 py-2 rounded-xl flex justify-between items-center" style={{background:'#FDF3DC',marginTop:-8}}>
               <span style={{fontSize:fsr(13),fontWeight:700,color:'#8B5E08'}}>{t.perDayCost}</span>
@@ -2104,14 +2211,15 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
         </div>
       )}
       <FLabel label={t.fdate}><FInput type="date" value={form.date} onChange={function(v){set('date',v);}} /></FLabel>
-      {showPaidBy && (
-        <FLabel label={t.paidBy} hint={t.paidByHint}>
-          <FSelect value={form.paidBy} onChange={function(v){set('paidBy',v);}}>
-            {memberIds.map(function(id){
-              return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
-            })}
-          </FSelect>
+      {form.type==='extra_help' && (
+        <FLabel label={t.fHelperName} hint={t.fHelperNameHint}>
+          <FInput value={form.helperName} onChange={function(v){set('helperName',v);}} placeholder={t.fHelperNamePh} />
         </FLabel>
+      )}
+      {showPaidBy && (
+        <PaidBySelector t={t} mc={mc} memberIds={memberIds} idSuffix="entry"
+          value={form.paidBy} nameValue={form.paidByName} suggestions={payerSuggestions}
+          onChange={function(v){set('paidBy',v);}} onNameChange={function(v){set('paidByName',v);}} />
       )}
       <FLabel label={t.freason}><FInput value={form.reason} onChange={function(v){set('reason',v);}} placeholder={t.freasonPh} /></FLabel>
 
@@ -2206,12 +2314,13 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
     .filter(function(e){
       if(filterMember==='all') return true;
       if(filterMember==='none') return !e.paidBy;
+      if(filterMember==='other') return e.paidBy==='other';
       return e.paidBy===filterMember;
     })
     .sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
 
   var home=homes.find(function(h){return h.id===homeId;})||{name:''};
-  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours};
+  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -2222,8 +2331,8 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
 
       <div className="px-4 pt-3 shrink-0">
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {['all','advance','loan','loan_repay','expense','bonus','extra_work','short_hours'].map(function(f){
-            var labels={all:t.filterAll,advance:t.tAdv,loan:t.tLoan,loan_repay:t.tLoanRepay,expense:t.tExp,bonus:t.tBonus,extra_work:t.tExtraWork,short_hours:t.tShortHours};
+          {['all','advance','loan','loan_repay','expense','bonus','extra_work','short_hours','extra_help'].map(function(f){
+            var labels={all:t.filterAll,advance:t.tAdv,loan:t.tLoan,loan_repay:t.tLoanRepay,expense:t.tExp,bonus:t.tBonus,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
             var active=filter===f;
             var tc=TC[f];
             var pillCls='pill '+(active?(tc?tc.pillCls:'pill-accent'):'pill-muted');
@@ -2246,9 +2355,9 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
         )}
         {showMembers && memberIds.length>1 && (
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {['all'].concat(memberIds,['none']).map(function(mid){
+            {['all'].concat(memberIds,['other','none']).map(function(mid){
               var active=filterMember===mid;
-              var label=mid==='all'?t.allMembers:mid==='none'?t.notRecorded:memberLabel(mid,mc.members,t);
+              var label=mid==='all'?t.allMembers:mid==='none'?t.notRecorded:mid==='other'?t.paidBySomeoneElse:memberLabel(mid,mc.members,t);
               return (
                 <button key={mid} onClick={function(){setFilterMember(mid);}}
                   className={'pill '+(active?'pill-accent':'pill-muted')}
@@ -2267,7 +2376,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
           : filtered.map(function(entry){
               var tc=TC[entry.type]||TC.advance;
               var sObj=staff.find(function(s){return s.id===entry.staffId;});
-              var sName=sObj?sObj.name:'?';
+              var sName=sObj?sObj.name:(entry.type==='extra_help'?t.generalNoStaff:'?');
               var loanBal=entry.type==='loan'?Math.max(0,entry.amount-(entry.paidInstallments||0)*(entry.installment||0)-(entry.manualRepaid||0)):null;
               return (
                 <div key={entry.id} className="rounded-2xl p-3 mb-3 fade-in" style={{background:tc.bg,border:'1px solid var(--border)'}}>
@@ -2286,14 +2395,17 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                         <span style={{display:'inline-flex',alignItems:'center',gap:4,marginTop:4,
                           fontSize:fsr(11),fontWeight:800,color:'var(--ink2)'}}>
                           <span style={{width:15,height:15,borderRadius:'50%',display:'inline-grid',placeItems:'center',
-                            background:(mc.members[entry.paidBy]||{}).color||'var(--muted)',color:'#fff',fontSize:fsr(8)}}>
-                            {memberLabel(entry.paidBy,mc.members,t).charAt(0).toUpperCase()}
+                            background:entry.paidBy==='other'?'var(--muted)':(mc.members[entry.paidBy]||{}).color||'var(--muted)',color:'#fff',fontSize:fsr(8)}}>
+                            {entry.paidBy==='other'?'👤':payerLabel(entry,mc.members,t).charAt(0).toUpperCase()}
                           </span>
-                          {memberLabel(entry.paidBy,mc.members,t)}
+                          {payerLabel(entry,mc.members,t)}
                         </span>
                       )}
                     </div>
                   </div>
+                  {entry.type==='extra_help'&&entry.helperName&&(
+                    <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8,fontWeight:700}}>🤝 {t.fHelperName}: {entry.helperName}</p>
+                  )}
                   {entry.reason ? <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8,fontStyle:'italic'}}>"{entry.reason}"</p> : null}
                   {entry.type==='loan' && (
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -2380,10 +2492,14 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     var tBon  =yLed.filter(function(e){return e.type==='bonus';      }).reduce(function(a,e){return a+e.amount;},0);
     var tExtra=yLed.filter(function(e){return e.type==='extra_work'; }).reduce(function(a,e){return a+e.amount;},0);
     var tShort=yLed.filter(function(e){return e.type==='short_hours';}).reduce(function(a,e){return a+e.amount;},0);
+    /* informational only — never subtracted from this staff member's own
+       pay; extra_help can also carry no staffId at all (see calcSalary's
+       filter, which only ever matches by staffId so this never applies) */
+    var tExtraHelp=yLed.filter(function(e){return e.type==='extra_help';}).reduce(function(a,e){return a+e.amount;},0);
     var aLoan=sLed.filter(function(e){return e.type==='loan'&&e.status==='active';});
     var lBal=aLoan.reduce(function(a,e){return a+Math.max(0,e.amount-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));},0);
     var paid=payments.filter(function(p){return p.staffId===s.id&&p.year===selYear;}).reduce(function(a,p){return a+p.amount;},0);
-    return {id:s.id,name:s.name,role:s.role,tSal:paid||s.salary*12,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort};
+    return {id:s.id,name:s.name,role:s.role,tSal:paid||s.salary*12,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort,tExtraHelp:tExtraHelp};
   });
 
   /* ── who in the household actually paid for what ──
@@ -2395,19 +2511,33 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
   var showMembers=!mc.guestMode&&memberIds.length>0;
   var spendSummary=useMemo(function(){
     if(!showMembers) return null;
-    var CASH_OUT=['advance','loan','expense','bonus','extra_work'];
+    var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
     var yPfx=selYear+'-';
     var buckets={};
     memberIds.forEach(function(id){ buckets[id]={uid:id,salary:0,records:0,total:0}; });
     buckets.none={uid:'none',salary:0,records:0,total:0};
-    function bucket(id){ return buckets[id]||buckets.none; }
+    /* External payers are grouped by name, case/space-insensitively, so
+       "Rita" and "rita" land in one bucket even without perfectly consistent
+       typing — the autocomplete on the input is the first line of defence,
+       this is the safety net. The first-seen casing is kept for display. */
+    function bucket(rec){
+      var paidBy=rec.paidBy;
+      if(paidBy&&paidBy!=='other'&&buckets[paidBy]) return buckets[paidBy];
+      if(paidBy==='other'&&rec.paidByName&&rec.paidByName.trim()){
+        var trimmed=rec.paidByName.trim();
+        var key='ext:'+trimmed.toLowerCase();
+        if(!buckets[key]) buckets[key]={uid:key,displayName:trimmed,isExternal:true,salary:0,records:0,total:0};
+        return buckets[key];
+      }
+      return buckets.none;
+    }
     payments.filter(function(p){return p.year===selYear;}).forEach(function(p){
-      var b=bucket(p.paidBy); b.salary+=(p.amount||0); b.total+=(p.amount||0);
+      var b=bucket(p); b.salary+=(p.amount||0); b.total+=(p.amount||0);
     });
     ledger.filter(function(e){
       return e.date&&e.date.startsWith(yPfx)&&CASH_OUT.indexOf(e.type)>-1;
     }).forEach(function(e){
-      var b=bucket(e.paidBy); b.records+=(e.amount||0); b.total+=(e.amount||0);
+      var b=bucket(e); b.records+=(e.amount||0); b.total+=(e.amount||0);
     });
     var rows=Object.keys(buckets).map(function(k){return buckets[k];})
       .filter(function(b){return b.total>0||b.uid!=='none';})
@@ -2417,7 +2547,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
   },[payments,ledger,selYear,memberIds.join(','),showMembers]);
 
   var years=[now.getFullYear()-1,now.getFullYear()];
-  var statColors={tSal:'var(--accent)',tAdv:'var(--warn)',tExp:'var(--ink2)',tBon:'var(--ok)',lBal:'var(--purple)',tExtra:'var(--ok)',tShort:'var(--warn)'};
+  var statColors={tSal:'var(--accent)',tAdv:'var(--warn)',tExp:'var(--ink2)',tBon:'var(--ok)',lBal:'var(--purple)',tExtra:'var(--ok)',tShort:'var(--warn)',tExtraHelp:'var(--purple)'};
 
   return (
     <div className="p-4 scroll-area flex-1">
@@ -2453,15 +2583,16 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
           <p style={{fontSize:fsr(12),color:'var(--ink2)',marginBottom:14}}>{t.whoPaidHint}</p>
           {spendSummary.rows.map(function(r){
             var isNone=r.uid==='none';
-            var name=isNone?t.notRecorded:memberLabel(r.uid,mc.members,t);
-            var col=isNone?'var(--muted)':((mc.members[r.uid]||{}).color||'var(--accent)');
+            var isExternal=!!r.isExternal;
+            var name=isNone?t.notRecorded:isExternal?r.displayName:memberLabel(r.uid,mc.members,t);
+            var col=isNone||isExternal?'var(--muted)':((mc.members[r.uid]||{}).color||'var(--accent)');
             var pct=spendSummary.grand>0?Math.round(r.total/spendSummary.grand*100):0;
             return (
               <div key={r.uid} style={{marginBottom:14}}>
                 <div className="flex items-center gap-2" style={{marginBottom:6}}>
                   <span style={{width:26,height:26,borderRadius:'50%',display:'grid',placeItems:'center',
                     background:col,color:'#fff',fontWeight:800,fontSize:fsr(11),flex:'none'}}>
-                    {isNone?'?':name.charAt(0).toUpperCase()}
+                    {isNone?'?':isExternal?'👤':name.charAt(0).toUpperCase()}
                   </span>
                   <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(14),flex:1}}>
                     {name}{r.uid===mc.uid?' ('+t.paidByYou+')':''}
@@ -2508,6 +2639,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
                 {l:t.aTotLoan,  v:s.lBal,   k:'lBal'},
                 {l:t.aTotExtra, v:s.tExtra, k:'tExtra'},
                 {l:t.aTotShort, v:s.tShort, k:'tShort'},
+                {l:t.aTotExtraHelp, v:s.tExtraHelp, k:'tExtraHelp'},
               ].map(function(row){
                 return (
                   <div key={row.l} className="rounded-xl p-2" style={{background:'var(--surface2)'}}>
@@ -3135,7 +3267,7 @@ function FeedbackTab({lang,guestMode,user}){
             })}
           </div>
 
-          <FLabel label={t.fbYourMessage} hint={t.fbMessageHint}>
+          <FLabel label={t.fbYourMessage} hint={t.fbMessageHint} req={true}>
             <textarea value={msg} onChange={function(e){setMsg(e.target.value);}}
               placeholder={t.fbPlaceholder} className="ta" style={{height:130}} maxLength={2000} />
           </FLabel>
@@ -3668,7 +3800,7 @@ function HomeSetupScreen({lang,user,onHomeReady}){
       {mode==='create'&&(
         <div className="card">
           {error&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{error}</p>}
-          <FLabel label={t.homeName}>
+          <FLabel label={t.homeName} req={true}>
             <FInput value={homeName} onChange={setHomeName} placeholder={t.homeEx} />
           </FLabel>
           <button className="btn btn-accent btn-full" disabled={!homeName.trim()||loading}
@@ -3683,7 +3815,7 @@ function HomeSetupScreen({lang,user,onHomeReady}){
       {mode==='join'&&(
         <div className="card">
           {error&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{error}</p>}
-          <FLabel label={t.enterCode}>
+          <FLabel label={t.enterCode} req={true}>
             <input className="inp" value={code} maxLength={6}
               onChange={function(e){setCode(e.target.value.toUpperCase());}}
               placeholder="ABC123"
