@@ -226,6 +226,7 @@ en:{
   hmMenu:'Menu',hmReports:'Reports',hmTools:'Tools',hmConfig:'Configuration',
   hmAnnual:'Annual Summary',hmVoice:'Voice Entry',hmSettings:'App Settings',hmHomes:'Manage Homes',hmRoles:'Manage Roles',
   hmData:'Data',hmExportMonth:'Export This Month (CSV)',hmExportYear:'Export Full Year (CSV)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
+  exportSummaryTitle:'Household Summary',exportGeneratedOn:'Generated On',exportStaffCount:'Total Staff',exportMonthCol:'Month',
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'✅ Restored! Reloading…',hmRestoreErr:'Invalid backup file.',
   addStaff:'+ Add Staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly Salary (₹)',
@@ -262,7 +263,7 @@ en:{
   voiceCompleteEntry:'Complete This Entry',voiceRerecord:'Re-record',voiceStaffIs:'Detected:',voiceStaffChange:'Change',voiceSaveEntry:'Save Entry',
   tDays:'days',tType:'Type',tAction:'Action',loanDue:'due',perMonth:'/month',perDayCost:'1 day cost:',tLeave:'Leave',tPresent:'Present',tHoliday:'Holiday',
   loanActive:'Active',loanClosed:'Closed',loanBal:'Remaining Balance',rLoanBal:'Total Loan Outstanding',
-  annTitle:'Annual Report',annYear:'Year',annTotal:'Total Household Spend',annPer:'Per Staff Summary',
+  annTitle:'Annual Report',annYear:'Year',annTotal:'Total Household Spend',annEstTotal:'Estimated Salary This Year',annPer:'Per Staff Summary',
   aTotSal:'Salary',aTotAdv:'Advances',aTotExp:'Expenses',aTotBon:'Bonuses',aTotLoan:'Loan Balance',
   months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
   mFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
@@ -327,6 +328,7 @@ en:{
   fHelperName:'Helper’s Name',fHelperNameHint:'Optional — who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
   generalNoStaff:'General (not linked to a staff member)',
   aTotExtraHelp:'Extra Help Cost',
+  extraHelpCardTitle:'Extra Help',extraHelpCardSubtitle:'times used this year',extraHelpEntryCount:'Number of Entries',
   fphoneHint:'You can paste a number straight from your contacts — spaces and the country code are removed automatically',
   tutActionHint:'Press the highlighted button to continue',
   tutStepWord:'STEP',tutOfWord:'OF',
@@ -368,6 +370,7 @@ hi:{
   hmMenu:'मेनू',hmReports:'रिपोर्ट',hmTools:'टूल्स',hmConfig:'सेटिंग्स',
   hmAnnual:'वार्षिक सारांश',hmVoice:'आवाज़ एंट्री',hmSettings:'एप्प सेटिंग्स',hmHomes:'घर प्रबंधन',hmRoles:'भूमिकाएं',
   hmData:'डेटा',hmExportMonth:'इस महीने का CSV',hmExportYear:'पूरे साल का CSV',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
+  exportSummaryTitle:'घर का सारांश',exportGeneratedOn:'जनरेट किया गया',exportStaffCount:'कुल स्टाफ',exportMonthCol:'महीना',
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'✅ रिस्टोर हो गया! लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
   addStaff:'+ स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन (₹)',
@@ -404,7 +407,7 @@ hi:{
   voiceCompleteEntry:'एंट्री पूरी करें',voiceRerecord:'फिर से बोलें',voiceStaffIs:'मिला:',voiceStaffChange:'बदलें',voiceSaveEntry:'एंट्री सहेजें',
   tDays:'दिन',tType:'प्रकार',tAction:'क्रिया',loanDue:'बकाया',perMonth:'/महीना',perDayCost:'1 दिन का वेतन:',tLeave:'छुट्टी',tPresent:'उपस्थित',tHoliday:'अवकाश',
   loanActive:'सक्रिय',loanClosed:'बंद',loanBal:'बकाया',rLoanBal:'कुल लोन बकाया',
-  annTitle:'वार्षिक रिपोर्ट',annYear:'साल',annTotal:'कुल वार्षिक खर्च',annPer:'स्टाफ-वार सारांश',
+  annTitle:'वार्षिक रिपोर्ट',annYear:'साल',annTotal:'कुल वार्षिक खर्च',annEstTotal:'इस साल का अनुमानित वेतन',annPer:'स्टाफ-वार सारांश',
   aTotSal:'वेतन',aTotAdv:'अग्रिम',aTotExp:'खर्च',aTotBon:'बोनस',aTotLoan:'लोन बकाया',
   months:['जन','फर','मार','अप्र','मई','जून','जुल','अग','सित','अक्त','नव','दिस'],
   mFull:['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्तूबर','नवंबर','दिसंबर'],
@@ -469,6 +472,7 @@ hi:{
   fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक — मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
   generalNoStaff:'सामान्य (किसी स्टाफ से नहीं जुड़ा)',
   aTotExtraHelp:'अतिरिक्त मदद खर्च',
+  extraHelpCardTitle:'अतिरिक्त मदद',extraHelpCardSubtitle:'बार इस साल इस्तेमाल हुई',extraHelpEntryCount:'कितनी बार',
   fphoneHint:'संपर्कों से सीधे नंबर पेस्ट कर सकते हैं — स्पेस और कंट्री कोड अपने आप हट जाएंगे',
   tutActionHint:'आगे बढ़ने के लिए चमकता हुआ बटन दबाएं',
   tutStepWord:'चरण',tutOfWord:'/',
@@ -523,24 +527,127 @@ function downloadBlob(content,mime,filename){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
   document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},200);
 }
-function exportCSV(homeId,period){
+/* Quotes on comma, quote, OR newline — the old inline version only checked
+   for comma/quote, so a reason containing a line break silently corrupted
+   the row structure. */
+function csvCell(v){
+  var s=String(v==null?'':v);
+  return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+/* A single CSV, five sections separated by a blank line, covering
+   everything the old flat ledger dump left out: staff details, actual
+   salary payments, attendance, and who paid for what — not just raw
+   ledger rows. Headers and type labels run through T[lang] so the export
+   matches whatever language the app is currently in. */
+function exportCSV(homeId,period,lang,members,workingDays){
+  var t=T[lang]||T.en;
   var staff=getStaff(homeId);
   var ledger=getLedger(homeId);
+  var payments=getPayments(homeId);
+  var home=getHomes().find(function(h){return h.id===homeId;})||{name:''};
   var now=new Date();
-  var entries=ledger.filter(function(e){
-    if(!e.date) return false;
-    if(period==='month') return e.date.startsWith(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
-    if(period==='year')  return e.date.startsWith(String(now.getFullYear()));
+  var year=now.getFullYear(), month=now.getMonth()+1;
+  var inPeriod=function(dateStr){
+    if(!dateStr) return false;
+    if(period==='month') return dateStr.startsWith(year+'-'+String(month).padStart(2,'0'));
+    if(period==='year') return dateStr.startsWith(String(year));
     return true;
+  };
+  var monthsInPeriod = period==='month' ? [month] : Array.from({length:12},function(_,i){return i+1;});
+  var label = period==='month' ? (year+'-'+String(month).padStart(2,'0')) : String(year);
+
+  var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,
+    extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
+
+  var out=[];
+  function section(rows){ out.push(rows.map(function(r){return r.map(csvCell).join(',');}).join('\n')); }
+
+  var periodLedger=ledger.filter(function(e){return inPeriod(e.date);});
+  var periodPayments=payments.filter(function(p){
+    return period==='year' ? p.year===year : (p.year===year&&p.month===month);
   });
-  var rows=[['Date','Staff','Type','Amount','Reason']];
-  entries.forEach(function(e){
-    var name=(staff.find(function(s){return s.id===e.staffId;})||{name:''}).name;
-    var cell=function(v){var s=String(v||'');return (s.includes(',')||s.includes('"'))?'"'+s.replace(/"/g,'""')+'"':s;};
-    rows.push([cell(e.date),cell(name),cell(e.type),cell(e.amount||0),cell(e.reason)]);
+  var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
+  var totalSpend=periodPayments.reduce(function(a,p){return a+(p.amount||0);},0)
+    +periodLedger.filter(function(e){return CASH_OUT.indexOf(e.type)>-1;}).reduce(function(a,e){return a+(e.amount||0);},0);
+
+  /* 1. Household summary */
+  section([
+    [t.exportSummaryTitle],
+    [t.homeName, home.name],
+    [t.annYear, label],
+    [t.exportGeneratedOn, todayStr()],
+    [t.exportStaffCount, staff.length],
+    [t.annTotal, totalSpend],
+  ]);
+
+  /* helper: this staff member's salary for one month — actual payment if
+     recorded, otherwise the same estimate the Annual chart now uses */
+  function monthSalary(s,m){
+    var real=payments.filter(function(p){return p.staffId===s.id&&p.year===year&&p.month===m;})
+                      .reduce(function(a,p){return a+(p.amount||0);},0);
+    if(real>0) return real;
+    var first=new Date(year,m-1,1);
+    return first>now ? 0 : calcSalary(s,year,m,ledger,workingDays).netPayable;
+  }
+  function monthAttendance(staffId,m){
+    var lv=getLeaves(staffId,padYM(year,m));
+    var vals=Object.keys(lv).map(function(k){return lv[k];});
+    var leaveD=vals.filter(function(v){return v==='leave';}).length;
+    var holidayD=vals.filter(function(v){return v==='holiday';}).length;
+    var first=new Date(year,m-1,1);
+    var daysInMonth=new Date(year,m,0).getDate();
+    var considered = first>now ? 0 : (year===now.getFullYear()&&m===now.getMonth()+1 ? now.getDate() : daysInMonth);
+    var presentD=Math.max(0,considered-leaveD-holidayD);
+    return {present:presentD,leave:leaveD,holiday:holidayD};
+  }
+
+  /* 2. Per-staff period summary */
+  var staffRows=[[t.fname,t.frole,t.aTotSal,t.aTotAdv,t.aTotExp,t.aTotBon,t.aTotExtra,t.aTotShort,
+    t.aTotLoan,t.tPresent,t.tLeave,t.tHoliday]];
+  staff.forEach(function(s){
+    var paidSum=0,present=0,leave=0,holiday=0;
+    monthsInPeriod.forEach(function(m){
+      paidSum+=monthSalary(s,m);
+      var att=monthAttendance(s.id,m);
+      present+=att.present; leave+=att.leave; holiday+=att.holiday;
+    });
+    var sLed=ledger.filter(function(e){return e.staffId===s.id&&inPeriod(e.date);});
+    var sum=function(type){return sLed.filter(function(e){return e.type===type;}).reduce(function(a,e){return a+(e.amount||0);},0);};
+    staffRows.push([s.name,roleLabel(s.role,lang),paidSum,sum('advance'),sum('expense'),sum('bonus'),
+      sum('extra_work'),sum('short_hours'),getLoanBal(s.id,ledger),present,leave,holiday]);
   });
-  var label=period==='month'?(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')):String(now.getFullYear());
-  downloadBlob(rows.map(function(r){return r.join(',');}).join('\n'),'text/csv','GharSeva_'+label+'.csv');
+  section(staffRows);
+
+  /* 3. Salary payments detail */
+  var payRows=[[t.fdate,t.fname,t.famount,t.paidBy]];
+  periodPayments.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).forEach(function(p){
+    var s=staff.find(function(x){return x.id===p.staffId;});
+    payRows.push([fmtD(p.date),s?s.name:t.generalNoStaff,p.amount||0,payerLabel(p,members,t)]);
+  });
+  section(payRows);
+
+  /* 4. All ledger entries detail */
+  var ledRows=[[t.fdate,t.fname,t.tType,t.famount,t.paidBy,t.freason]];
+  periodLedger.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).forEach(function(e){
+    var s=staff.find(function(x){return x.id===e.staffId;});
+    var name=s?s.name:(e.type==='extra_help'?t.generalNoStaff:'—');
+    if(e.type==='extra_help'&&e.helperName) name+=' ('+e.helperName+')';
+    ledRows.push([fmtD(e.date),name,typeLabels[e.type]||e.type,e.amount||0,payerLabel(e,members,t),e.reason||'']);
+  });
+  section(ledRows);
+
+  /* 5. Attendance summary */
+  var attRows=[[t.fname,t.exportMonthCol,t.tPresent,t.tLeave,t.tHoliday]];
+  staff.forEach(function(s){
+    monthsInPeriod.forEach(function(m){
+      var att=monthAttendance(s.id,m);
+      attRows.push([s.name,t.months[m-1]+' '+year,att.present,att.leave,att.holiday]);
+    });
+  });
+  section(attRows);
+
+  /* UTF-8 BOM so Hindi text opens correctly in Excel */
+  downloadBlob('﻿'+out.join('\n\n'),'text/csv;charset=utf-8','GharSeva_'+label+'.csv');
 }
 function downloadBackup(){
   var data={};
@@ -599,10 +706,13 @@ function fbSaveLedger(homeId, newLedger){
   batch.commit().catch(function(e){console.warn('fbSaveLedger:',e);});
 }
 function fbSavePayments(homeId, newPays){
+  var old=getPayments(homeId);
   savePayments(homeId,newPays);
   if(!FIREBASE_ENABLED||!fbDb) return;
   var batch=fbDb.batch();
   newPays.forEach(function(p){ batch.set(fbDb.doc('homes/'+homeId+'/payments/'+p.key),p); });
+  var newKeys=newPays.map(function(p){return p.key;});
+  old.forEach(function(p){ if(!newKeys.includes(p.key)) batch.delete(fbDb.doc('homes/'+homeId+'/payments/'+p.key)); });
   batch.commit().catch(function(e){console.warn('fbSavePayments:',e);});
 }
 function fbSaveLeaves(homeId, staffId, ym, dates){
@@ -922,6 +1032,15 @@ function FLabel({label,hint,children,req}){
    spelled three different ways across records. */
 function PaidBySelector({t,mc,memberIds,value,nameValue,onChange,onNameChange,suggestions,idSuffix}){
   var listId='ext-payer-names-'+(idSuffix||'x');
+  /* Native <datalist> barely works on the phones this app targets — iOS
+     Safari doesn't show it at all, mobile Chrome shows at most one inline
+     hint above the keyboard. Tappable pills are the real suggestion UI;
+     the datalist stays too, harmless for anyone typing on a desktop. */
+  var filtered=useMemo(function(){
+    var q=(nameValue||'').trim().toLowerCase();
+    var list=suggestions||[];
+    return q?list.filter(function(n){return n.toLowerCase().indexOf(q)>-1;}):list;
+  },[suggestions,nameValue]);
   return (
     <div>
       <FLabel label={t.paidBy} hint={t.paidByHint}>
@@ -939,6 +1058,19 @@ function PaidBySelector({t,mc,memberIds,value,nameValue,onChange,onNameChange,su
           <datalist id={listId}>
             {(suggestions||[]).map(function(n){return <option key={n} value={n} />;})}
           </datalist>
+          {filtered.length>0 && (
+            <div className="flex flex-wrap gap-2" style={{marginTop:8}}>
+              {filtered.map(function(n){
+                return (
+                  <button key={n} type="button" onClick={function(){onNameChange(n);}}
+                    className="pill pill-muted"
+                    style={{border:'1px solid var(--border)',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </FLabel>
       )}
     </div>
@@ -1698,6 +1830,10 @@ function StaffTab({lang,homeId,homes,workingDays,onStaffChange,syncKey}){
     fbDeleteStaffCascade(homeId,id);
     var nextLedger=getLedger(homeId).filter(function(e){return e.staffId!==id;});
     fbSaveLedger(homeId,nextLedger);
+    /* salary payment history for this staff member, so no trace of them
+       lingers in Annual Summary totals after deletion */
+    var nextPayments=getPayments(homeId).filter(function(p){return p.staffId!==id;});
+    fbSavePayments(homeId,nextPayments);
     setSelectedStaff(null);
     onStaffChange && onStaffChange();
   }
@@ -2465,20 +2601,22 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     setPayments(getPayments(homeId));
   },[homeId,syncKey]);
 
+  /* Per month, not per year: a real payment recorded for THIS month uses that
+     amount; otherwise (if the month isn't in the future) fall back to an
+     estimate. The old version gated on the whole year at once, so recording
+     one single payment anywhere made every OTHER month silently show ₹0
+     instead of an estimate. */
   var monthlyData=useMemo(function(){
     var data=[];
-    for(var i=0;i<12;i++) data.push(0);
-    var yearPays=payments.filter(function(p){return p.year===selYear;});
-    yearPays.forEach(function(p){if(p.month>=1&&p.month<=12) data[p.month-1]+=(p.amount||0);});
-    if(data.every(function(v){return v===0;})){
-      staff.forEach(function(s){
-        for(var m=1;m<=12;m++){
-          var first=new Date(selYear,m-1,1);
-          if(first>now) return;
-          var c=calcSalary(s,selYear,m,ledger,workingDays);
-          data[m-1]+=c.netPayable;
-        }
-      });
+    for(var m=1;m<=12;m++){
+      var real=payments.filter(function(p){return p.year===selYear&&p.month===m;})
+                        .reduce(function(a,p){return a+(p.amount||0);},0);
+      if(real>0){ data.push(real); continue; }
+      var first=new Date(selYear,m-1,1);
+      if(first>now){ data.push(0); continue; }
+      var est=0;
+      staff.forEach(function(s){ est+=calcSalary(s,selYear,m,ledger,workingDays).netPayable; });
+      data.push(est);
     }
     return data;
   },[staff,ledger,payments,selYear,workingDays]);
@@ -2505,6 +2643,31 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     var paid=payments.filter(function(p){return p.staffId===s.id&&p.year===selYear;}).reduce(function(a,p){return a+p.amount;},0);
     return {id:s.id,name:s.name,role:s.role,tSal:paid||s.salary*12,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort,tExtraHelp:tExtraHelp};
   });
+
+  /* Extra Help entries not tied to any current staff member (no staffId, or
+     one that no longer matches — e.g. that staff member was later deleted)
+     never get counted in any card above, so they'd otherwise be invisible
+     as a category. One combined card covers them all, broken down by
+     helper name when more than one has been used. */
+  var unlinkedExtraHelp=useMemo(function(){
+    var yPfx=selYear+'-';
+    var staffIds=staff.map(function(s){return s.id;});
+    var entries=ledger.filter(function(e){
+      return e.type==='extra_help'&&e.date&&e.date.startsWith(yPfx)
+        &&(!e.staffId||staffIds.indexOf(e.staffId)===-1);
+    });
+    if(entries.length===0) return null;
+    var total=entries.reduce(function(a,e){return a+(e.amount||0);},0);
+    var buckets={};
+    entries.forEach(function(e){
+      var raw=(e.helperName&&e.helperName.trim())||null;
+      var key=raw?raw.toLowerCase():'__unnamed__';
+      if(!buckets[key]) buckets[key]={name:raw||t.generalNoStaff,total:0};
+      buckets[key].total+=(e.amount||0);
+    });
+    var names=Object.keys(buckets).map(function(k){return buckets[k];}).sort(function(a,b){return b.total-a.total;});
+    return {total:total,count:entries.length,names:names};
+  },[ledger,staff,selYear]);
 
   /* ── who in the household actually paid for what ──
      Counts money that left someone's hand: salary payments plus cash-out
@@ -2563,7 +2726,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
       </div>
 
       <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
-        <p style={{fontSize:fsr(12),color:'var(--ink2)',fontWeight:700,marginBottom:4}}>{t.annTotal}</p>
+        <p style={{fontSize:fsr(12),color:'var(--ink2)',fontWeight:700,marginBottom:4}}>{t.annEstTotal}</p>
         <p style={{fontSize:fsr(30),fontWeight:800,color:'var(--ink)',marginBottom:16}}>{fmt(yearTotal)}</p>
         <svg viewBox={'-2 0 '+(W+4)+' '+(H+28)} className="w-full">
           {monthlyData.map(function(val,i){
@@ -2656,6 +2819,40 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
           </div>
         );
       })}
+      {unlinkedExtraHelp && (
+        <div className="rounded-2xl p-4 mb-3" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style={{background:'var(--purple)'}}>
+              🤝
+            </div>
+            <div>
+              <p style={{fontWeight:800,color:'var(--ink)',margin:0}}>{t.extraHelpCardTitle}</p>
+              <p style={{fontSize:fsr(12),color:'var(--ink2)',margin:0}}>{unlinkedExtraHelp.count+' '+t.extraHelpCardSubtitle}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl p-2" style={{background:'var(--surface2)'}}>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{t.aTotExtraHelp}</p>
+              <p style={{fontSize:fsr(15),fontWeight:700,color:statColors.tExtraHelp,margin:0}}>{fmt(unlinkedExtraHelp.total)}</p>
+            </div>
+            <div className="rounded-xl p-2" style={{background:'var(--surface2)'}}>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{t.extraHelpEntryCount}</p>
+              <p style={{fontSize:fsr(15),fontWeight:700,color:'var(--ink)',margin:0}}>{unlinkedExtraHelp.count}</p>
+            </div>
+          </div>
+          {unlinkedExtraHelp.names.length>1 && (
+            <div style={{marginTop:10,borderTop:'1px dashed var(--border)',paddingTop:8}}>
+              {unlinkedExtraHelp.names.map(function(n){
+                return (
+                  <div key={n.name} className="flex justify-between" style={{fontSize:fsr(12),color:'var(--ink2)',fontWeight:700,marginBottom:4}}>
+                    <span>{n.name}</span><span>{fmt(n.total)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
       {staffSummary.length===0 && <p className="text-center mt-8" style={{color:'var(--muted)'}}>{t.noStaff}</p>}
     </div>
   );
@@ -3320,8 +3517,9 @@ function FeedbackTab({lang,guestMode,user}){
 }
 
 /* ── HAMBURGER MENU ─────────────────────────────────────────── */
-function HamburgerMenu({open,onClose,setTab,lang,homeId}){
+function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
   var t=T[lang];
+  var mc=React.useContext(MembersCtx);
   var [showExport,setShowExport]=useState(false);
   var fileRef=useRef(null);
 
@@ -3362,8 +3560,8 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId}){
               {rowBtn(item)}
               {isExport&&showExport&&(
                 <div className="fade-in flex gap-3 px-4 py-3" style={{background:'var(--surface2)',borderBottom:'1px solid var(--border)'}}>
-                  <button onClick={function(){exportCSV(homeId,'month');onClose();}} style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportMonth}</button>
-                  <button onClick={function(){exportCSV(homeId,'year');onClose();}}  style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportYear}</button>
+                  <button onClick={function(){exportCSV(homeId,'month',lang,mc.members,workingDays);onClose();}} style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportMonth}</button>
+                  <button onClick={function(){exportCSV(homeId,'year',lang,mc.members,workingDays);onClose();}}  style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportYear}</button>
                 </div>
               )}
             </div>
@@ -4187,7 +4385,7 @@ function App(){
       </div>
 
       <BottomNav tab={tab} setTab={setTab} lang={lang} />
-      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={setTab} lang={lang} homeId={homeId} />
+      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={setTab} lang={lang} homeId={homeId} workingDays={workingDays} />
       {showTutorial && <TutorialOverlay lang={lang} tab={tab} onNavigate={setTab} onDone={finishTutorial} />}
     </div>
     </MembersCtx.Provider>
