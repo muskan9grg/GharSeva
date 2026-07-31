@@ -39,7 +39,19 @@ service cloud.firestore {
 
     // ── The household document ─────────────────────────────────────
     match /homes/{homeId} {
-      allow read, write: if isMember(homeId);
+
+      // Creating a household. isMember() cannot be used here: it reads the
+      // very document being created, which does not exist yet, so the rule
+      // would error and deny every creation — you could never make a first
+      // household. Instead, require that the creator puts themselves in as
+      // owner and member, so nobody can create a household they are locked
+      // out of or that names someone else as owner.
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.auth.uid in request.resource.data.memberIds;
+
+      allow read, delete: if isMember(homeId);
+      allow update: if isMember(homeId);
 
       // Joining. A signed-in non-member may add THEMSELVES and nothing else.
       // Every clause matters:
