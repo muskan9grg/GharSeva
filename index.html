@@ -4071,7 +4071,13 @@ function App(){
     if(fbAuth) fbAuth.signOut().then(function(){ window.location.reload(); });
   }
   function doMigrate(){
-    migrateFromLocalStorage(homeId).then(function(){ setMigrating(false); });
+    /* Clear the local household list either way once the user has answered —
+       otherwise this same leftover data trips the check on every future
+       load and the prompt never stops reappearing. */
+    migrateFromLocalStorage(homeId).then(function(){ saveHomes([]); setMigrating(false); });
+  }
+  function skipMigrate(){
+    saveHomes([]); setMigrating(false);
   }
   function enterGuestMode(){
     setGuestMode(true);
@@ -4117,7 +4123,7 @@ function App(){
           <p style={{fontSize:fsr(14),color:'var(--ink2)',marginBottom:20}}>{t.migratePrompt}</p>
           <div className="flex gap-3">
             <button className="btn btn-accent flex-1" onClick={doMigrate}>{t.migrateYes}</button>
-            <button className="btn btn-ghost flex-1" onClick={function(){setMigrating(false);}}>{t.migrateSkip}</button>
+            <button className="btn btn-ghost flex-1" onClick={skipMigrate}>{t.migrateSkip}</button>
           </div>
         </div>
       </div>
