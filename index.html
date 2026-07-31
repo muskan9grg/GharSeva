@@ -2160,7 +2160,10 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
     short_hours:{active:{background:'#FDF3DC',border:'2px solid var(--warn)',color:'#8B5E08'},inactive:inactive},
     extra_help: {active:{background:'#EAE4F5',border:'2px solid var(--purple)',color:'#3A2E7A'},inactive:inactive},
   };
-  var otherTypes=['loan','expense','short_hours','bonus','extra_work','extra_help','loan_repay'];
+  /* extra_help renders as its own full-width row at the end (see JSX below),
+     not in this grid, since it's the odd one out — not tied to a specific
+     staff member's regular pay the way the rest of these are. */
+  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
   var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
   function typeBtn(key,full){
@@ -2181,9 +2184,10 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
 
       <div className="mb-4">
         <div className="mb-2">{typeBtn('advance',true)}</div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 mb-2">
           {otherTypes.map(function(key){return typeBtn(key,false);})}
         </div>
+        <div>{typeBtn('extra_help',true)}</div>
       </div>
 
       {isTimeBased ? (
