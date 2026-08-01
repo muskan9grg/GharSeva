@@ -252,7 +252,9 @@ en:{
   days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   tlLeave:'Leave Days',tlDed:'Deduction',
   Ps:'P',Ls:'L',Hs:'H',
-  addEntry:'+ Add Entry',filterAll:'All',
+  addEntry:'+ Add Entry',editEntry:'Edit Entry',tapToEdit:'Tap to view or edit',
+  loanLockedHint:'Repayment has started, so the amount and instalment are locked. Date and note can still be changed.',
+  filterAll:'All',
   tAdv:'Advance',tLoan:'Loan',tExp:'Expense',tBonus:'Bonus',
   famount:'Amount (₹)',fdate:'Date',freason:'Reason / Note',freasonPh:'e.g. Medical emergency',
   finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
@@ -396,7 +398,9 @@ hi:{
   days:['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'],
   tlLeave:'छुट्टी के दिन',tlDed:'कटौती',
   Ps:'उ',Ls:'छ',Hs:'अ',
-  addEntry:'+ एंट्री जोड़ें',filterAll:'सभी',
+  addEntry:'+ एंट्री जोड़ें',editEntry:'एंट्री बदलें',tapToEdit:'देखने या बदलने के लिए दबाएं',
+  loanLockedHint:'चुकाना शुरू हो चुका है, इसलिए राशि और किस्त बदली नहीं जा सकतीं। तारीख और नोट अब भी बदल सकते हैं।',
+  filterAll:'सभी',
   tAdv:'अग्रिम',tLoan:'लोन',tExp:'खर्च',tBonus:'बोनस',
   famount:'राशि (₹)',fdate:'तारीख',freason:'कारण / नोट',freasonPh:'जैसे: चिकित्सा आपात',
   finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
@@ -1063,9 +1067,10 @@ function PrimaryBtn({onClick,children,disabled,color,full,small,tut}){
   return <button onClick={disabled?undefined:onClick} className={cls} disabled={!!disabled} data-tut={tut} style={{minHeight:small?36:48}}>{children}</button>;
 }
 
-function FInput({value,onChange,placeholder,type,maxLength,tut}){
+function FInput({value,onChange,placeholder,type,maxLength,tut,disabled}){
   return <input type={type||'text'} value={value||''} onChange={function(e){onChange(e.target.value);}}
-    placeholder={placeholder} maxLength={maxLength} data-tut={tut} className="inp" />;
+    placeholder={placeholder} maxLength={maxLength} data-tut={tut} disabled={!!disabled} className="inp"
+    style={disabled?{opacity:.55,cursor:'not-allowed'}:undefined} />;
 }
 
 function FSelect({value,onChange,children,tut}){
@@ -2281,14 +2286,27 @@ function LeavesTab({lang,homeId,workingDays,syncKey}){
 }
 
 /* ── ADD ENTRY MODAL ────────────────────────────────────────── */
-function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillStaffId,prefillType}){
+function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,prefillStaffId,prefillType,existing}){
   var t=T[lang];
   var mc=React.useContext(MembersCtx);
   var memberIds=Object.keys(mc.members||{});
   /* only for money actually leaving someone's hand, and only once signed in */
   var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
-  var [form,setForm]=useState({staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:'',paidBy:mc.uid||'',paidByName:'',helperName:''});
+  var blank={staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:'',paidBy:mc.uid||'',paidByName:'',helperName:''};
+  var [form,setForm]=useState(existing?{
+    staffId:existing.staffId||'',type:existing.type,amount:String(existing.amount||''),
+    date:existing.date||todayStr(),reason:existing.reason||'',
+    installment:String(existing.installment||''),totalInstallments:String(existing.totalInstallments||''),
+    targetLoanId:existing.targetLoanId||'',hours:String(existing.hours||''),rate:String(existing.rate||''),
+    paidBy:existing.paidBy||'',paidByName:existing.paidByName||'',helperName:existing.helperName||''
+  }:blank);
   function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
+  /* Once a loan has been repaid against — by instalment or by hand — its
+     amount and instalment lock, so the principal can't be edited below what
+     has already come back and leave the balance impossible to reconcile.
+     Date and reason stay editable. */
+  var loanLocked=!!(existing&&existing.type==='loan'
+    &&((existing.paidInstallments||0)>0||(existing.manualRepaid||0)>0));
   var showPaidBy=!mc.guestMode&&memberIds.length>0&&CASH_OUT.indexOf(form.type)>-1;
   var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(_activeHomeId):[]; },[showPaidBy]);
 
@@ -2301,7 +2319,12 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
   var effectiveRate=Number(form.rate)||defaultRate;
   var computedAmount=isTimeBased&&form.hours?Math.round(Number(form.hours)*effectiveRate):0;
 
+  /* Skip on the first pass when editing, otherwise opening a saved overtime
+     or half-day entry would immediately overwrite its rate/amount with the
+     defaults and quietly discard what was actually recorded. */
+  var autoFillReady=useRef(!existing);
   useEffect(function(){
+    if(!autoFillReady.current){ autoFillReady.current=true; return; }
     if(isTimeBased&&form.staffId&&defaultRate) set('rate',String(defaultRate));
     if(isHalfDay&&form.staffId&&halfDayAmt) set('amount',String(halfDayAmt));
   },[form.staffId,form.type]);
@@ -2310,11 +2333,21 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
 
   var [errMsg,setErrMsg]=useState('');
   var [confirmEntry,setConfirmEntry]=useState(null);
+  var [confirmDelete,setConfirmDelete]=useState(false);
 
   function buildEntry(){
     var finalAmount=isTimeBased?computedAmount:Number(form.amount);
-    var entry={id:uid(),staffId:form.staffId,type:form.type,amount:finalAmount,date:form.date,reason:form.reason};
-    if(form.type==='loan'){entry.installment=Number(form.installment)||0;entry.totalInstallments=Number(form.totalInstallments)||0;entry.paidInstallments=0;entry.status='active';}
+    var entry={id:existing?existing.id:uid(),staffId:form.staffId,type:form.type,amount:finalAmount,date:form.date,reason:form.reason};
+    if(form.type==='loan'){
+      entry.installment=Number(form.installment)||0;
+      entry.totalInstallments=Number(form.totalInstallments)||0;
+      /* editing a loan must not wipe how much has already been repaid */
+      var wasLoan=existing&&existing.type==='loan';
+      entry.paidInstallments=(wasLoan&&existing.paidInstallments)||0;
+      if(wasLoan&&existing.manualRepaid) entry.manualRepaid=existing.manualRepaid;
+      var repaid=entry.paidInstallments*entry.installment+(entry.manualRepaid||0);
+      entry.status=repaid>=entry.amount?'closed':'active';
+    }
     if(form.type==='loan_repay') entry.targetLoanId=form.targetLoanId;
     if(isTimeBased){entry.hours=Number(form.hours);entry.rate=effectiveRate;}
     if(form.type==='extra_help'&&form.helperName.trim()) entry.helperName=form.helperName.trim();
@@ -2336,7 +2369,9 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
     if(form.type==='loan_repay'&&(!form.amount||!form.targetLoanId)){setErrMsg(t.errAmount);return;}
     if(showPaidBy&&form.paidBy==='other'&&!form.paidByName.trim()){setErrMsg(t.errPayerName);return;}
     var finalAmount=isTimeBased?computedAmount:Number(form.amount);
-    var needsConfirm=(form.type==='advance'||form.type==='loan'||form.type==='extra_help')&&finalAmount>=1000;
+    /* the large-amount check guards against a slip while entering something
+       new; correcting an existing record is already a deliberate act */
+    var needsConfirm=!existing&&(form.type==='advance'||form.type==='loan'||form.type==='extra_help')&&finalAmount>=1000;
     if(needsConfirm){
       var sName=(staffList.find(function(s){return s.id===form.staffId;})||{}).name||t.generalNoStaff;
       setConfirmEntry({type:typeLabels[form.type]||form.type,amount:finalAmount,name:sName});
@@ -2362,15 +2397,29 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
   var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
   var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
+  /* Loans and repayments are entangled — a repayment mutates the loan it
+     points at — so when editing, the type can move freely among the simple
+     types but never into or out of those two. */
+  function typeChangeBlocked(key){
+    if(!existing) return false;
+    var tangled=['loan','loan_repay'];
+    return tangled.indexOf(existing.type)>-1 || tangled.indexOf(key)>-1;
+  }
   function typeBtn(key,full){
     var active=form.type===key;
-    var st=Object.assign({},active?typeStyles[key].active:typeStyles[key].inactive,{borderRadius:12,padding:full?'14px 12px':'10px 8px',cursor:'pointer',fontWeight:700,fontFamily:'Nunito,sans-serif',fontSize:fsr(full?15:13),transition:'all .15s',textAlign:'center',width:'100%',display:'block'});
-    return <button key={key} onClick={function(){set('type',key);}} style={st}>{TC[key]?TC[key].icon+' ':''}{typeLabels[key]}</button>;
+    var blocked=typeChangeBlocked(key)&&!active;
+    var st=Object.assign({},active?typeStyles[key].active:typeStyles[key].inactive,{borderRadius:12,padding:full?'14px 12px':'10px 8px',cursor:blocked?'not-allowed':'pointer',opacity:blocked?0.4:1,fontWeight:700,fontFamily:'Nunito,sans-serif',fontSize:fsr(full?15:13),transition:'all .15s',textAlign:'center',width:'100%',display:'block'});
+    return <button key={key} disabled={blocked} onClick={function(){ if(!blocked) set('type',key); }} style={st}>{TC[key]?TC[key].icon+' ':''}{typeLabels[key]}</button>;
   }
 
   return (
-    <Modal onClose={onClose} title={t.addEntry}>
+    <Modal onClose={onClose} title={existing?t.editEntry:t.addEntry}>
       {errMsg&&<Toast msg={errMsg} onDone={function(){setErrMsg('');}} />}
+      {loanLocked && (
+        <div className="mb-4 px-3 py-2 rounded-xl" style={{background:'#EAE4F5',border:'1px solid var(--purple)'}}>
+          <p style={{fontSize:fsr(13),color:'#3A2E7A',fontWeight:700}}>🔒 {t.loanLockedHint}</p>
+        </div>
+      )}
       <FLabel label={t.selStaff} req={form.type!=='extra_help'}>
         <FSelect value={form.staffId} onChange={function(v){set('staffId',v);}}>
           <option value="">{form.type==='extra_help'?t.generalNoStaff:t.selStaff}</option>
@@ -2401,7 +2450,7 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
         </div>
       ) : (
         <div>
-          <FLabel label={t.famount} req={true}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder="0" /></FLabel>
+          <FLabel label={t.famount} req={true}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder="0" disabled={loanLocked} /></FLabel>
           {isHalfDay&&dailyRate>0&&(
             <div className="mb-4 px-3 py-2 rounded-xl flex justify-between items-center" style={{background:'#FDF3DC',marginTop:-8}}>
               <span style={{fontSize:fsr(13),fontWeight:700,color:'#8B5E08'}}>{t.perDayCost}</span>
@@ -2425,8 +2474,8 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
 
       {form.type==='loan' && (
         <div>
-          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){set('installment',v);}} placeholder="0" /></FLabel>
-          <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" /></FLabel>
+          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){set('installment',v);}} placeholder="0" disabled={loanLocked} /></FLabel>
+          <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" disabled={loanLocked} /></FLabel>
         </div>
       )}
 
@@ -2466,6 +2515,26 @@ function EntryModal({lang,staffList,onClose,onSave,ledger,workingDays,prefillSta
         <PrimaryBtn onClick={onClose} color="gray" full={true}>{t.cancel}</PrimaryBtn>
         <PrimaryBtn onClick={handleSave} full={true}>{t.save}</PrimaryBtn>
       </div>
+
+      {existing&&onDelete&&(
+        <div className="mt-4" style={{borderTop:'1px solid var(--border)',paddingTop:14}}>
+          {confirmDelete ? (
+            <div>
+              <p style={{fontSize:fsr(14),fontWeight:700,color:'var(--ink)',marginBottom:10,textAlign:'center'}}>{t.delEntry}</p>
+              <div className="flex gap-3">
+                <PrimaryBtn onClick={function(){setConfirmDelete(false);}} color="gray" full={true}>{t.cancel}</PrimaryBtn>
+                <PrimaryBtn onClick={function(){onDelete(existing.id);}} color="red" full={true}>{t.del}</PrimaryBtn>
+              </div>
+            </div>
+          ) : (
+            <button onClick={function(){setConfirmDelete(true);}}
+              style={{width:'100%',padding:'10px',background:'none',border:'none',color:'var(--danger)',
+                fontSize:fsr(14),fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+              🗑️ {t.del}
+            </button>
+          )}
+        </div>
+      )}
     </Modal>
   );
 }
@@ -2484,28 +2553,43 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
   var showMembers=!mc.guestMode&&memberIds.length>0;
   var [toast,setToast]=useState('');
   var [activeWA,setActiveWA]=useState(null);
-  var [confirmDel,setConfirmDel]=useState(null);
+  var [editing,setEditing]=useState(null);
 
   useEffect(function(){setStaff(getStaff(homeId));setLedger(getLedger(homeId));},[homeId,syncKey]);
 
-  function onSave(entry){
-    var next=[...ledger,entry];
-    if(entry.type==='loan_repay'&&entry.targetLoanId){
-      next=next.map(function(e){
-        if(e.id===entry.targetLoanId){
-          var newRepaid=(e.manualRepaid||0)+entry.amount;
-          var totalPaid=(e.paidInstallments||0)*(e.installment||0)+newRepaid;
-          return Object.assign({},e,{manualRepaid:newRepaid,status:totalPaid>=e.amount?'closed':'active'});
-        }
-        return e;
-      });
-    }
-    setLedger(next); fbSaveLedger(homeId,next);
-    setShowAdd(false); setToast(t.savedOk);
+  /* A repayment doesn't just sit in the ledger — it moves the loan it points
+     at. So any time one is added, changed or removed, the loan it targets has
+     to be adjusted by the same delta, and its closed/active state recomputed.
+     Without this, deleting a repayment left the loan permanently looking more
+     repaid than it was. */
+  function applyRepayDelta(list, loanId, delta){
+    if(!loanId||!delta) return list;
+    return list.map(function(e){
+      if(e.id!==loanId) return e;
+      var repaid=Math.max(0,(e.manualRepaid||0)+delta);
+      var totalPaid=(e.paidInstallments||0)*(e.installment||0)+repaid;
+      return Object.assign({},e,{manualRepaid:repaid,status:totalPaid>=e.amount?'closed':'active'});
+    });
   }
+
+  function onSave(entry){
+    var prev=editing;
+    var next=prev
+      ? ledger.map(function(e){return e.id===entry.id?entry:e;})
+      : ledger.concat([entry]);
+    /* undo whatever the previous version contributed, then apply the new one */
+    if(prev&&prev.type==='loan_repay') next=applyRepayDelta(next,prev.targetLoanId,-(prev.amount||0));
+    if(entry.type==='loan_repay')      next=applyRepayDelta(next,entry.targetLoanId, (entry.amount||0));
+    setLedger(next); fbSaveLedger(homeId,next);
+    setShowAdd(false); setEditing(null); setToast(t.savedOk);
+  }
+
   function onDelete(id){
+    var gone=ledger.find(function(e){return e.id===id;});
     var next=ledger.filter(function(e){return e.id!==id;});
-    setLedger(next); fbSaveLedger(homeId,next); setConfirmDel(null);
+    if(gone&&gone.type==='loan_repay') next=applyRepayDelta(next,gone.targetLoanId,-(gone.amount||0));
+    setLedger(next); fbSaveLedger(homeId,next);
+    setEditing(null);
   }
 
   var filtered=ledger
@@ -2579,7 +2663,8 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
               var sName=sObj?sObj.name:(entry.type==='extra_help'?t.generalNoStaff:'?');
               var loanBal=entry.type==='loan'?Math.max(0,entry.amount-(entry.paidInstallments||0)*(entry.installment||0)-(entry.manualRepaid||0)):null;
               return (
-                <div key={entry.id} className="rounded-2xl p-3 mb-3 fade-in" style={{background:tc.bg,border:'1px solid var(--border)'}}>
+                <div key={entry.id} onClick={function(){setEditing(entry);}}
+                  className="rounded-2xl p-3 mb-3 fade-in" style={{background:tc.bg,border:'1px solid var(--border)',cursor:'pointer'}}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <span style={{fontSize:fsr(20)}}>{tc.icon}</span>
@@ -2616,24 +2701,18 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                       {loanBal!==null && <span className="pill pill-purple">{t.loanBal}: {fmt(loanBal)}</span>}
                     </div>
                   )}
-                  <div className="mt-2 flex gap-2 flex-wrap">
+                  {/* stopPropagation so these don't also open the editor */}
+                  <div className="mt-2 flex gap-2 flex-wrap" onClick={function(e){e.stopPropagation();}}>
                     {sObj && <button onClick={function(){setActiveWA(entry.id===activeWA?null:entry.id);}}
                       style={{fontSize:fsr(12),color:'#1A6E5E',border:'1px solid #A8D4C4',borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
                       📲 WhatsApp
                     </button>}
-                    <button onClick={function(){setConfirmDel(entry.id===confirmDel?null:entry.id);}}
-                      style={{fontSize:fsr(12),color:'var(--danger)',border:'1px solid #F5C6C6',borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-                      {t.del}
-                    </button>
+                    <span style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,alignSelf:'center'}}>{t.tapToEdit}</span>
                   </div>
-                  {confirmDel===entry.id && (
-                    <div className="mt-2 flex gap-2">
-                      <PrimaryBtn onClick={function(){setConfirmDel(null);}} color="gray" small={true} full={true}>{t.cancel}</PrimaryBtn>
-                      <PrimaryBtn onClick={function(){onDelete(entry.id);}} color="red" small={true} full={true}>{t.del}</PrimaryBtn>
-                    </div>
-                  )}
                   {activeWA===entry.id && sObj && (
-                    <WACard message={waTemplate(entry.type,sObj,entry.amount,entry.date,home.name,lang)} phone={sObj.phone} t={t} />
+                    <div onClick={function(e){e.stopPropagation();}}>
+                      <WACard message={waTemplate(entry.type,sObj,entry.amount,entry.date,home.name,lang)} phone={sObj.phone} t={t} />
+                    </div>
                   )}
                 </div>
               );
@@ -2642,6 +2721,8 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
       </div>
 
       {showAdd && <EntryModal lang={lang} staffList={staff} ledger={ledger} workingDays={workingDays} onClose={function(){setShowAdd(false);}} onSave={onSave} />}
+      {editing && <EntryModal lang={lang} staffList={staff} ledger={ledger} workingDays={workingDays}
+        existing={editing} onClose={function(){setEditing(null);}} onSave={onSave} onDelete={onDelete} />}
     </div>
   );
 }
