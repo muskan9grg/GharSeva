@@ -829,6 +829,66 @@ function seedDemoDataCloud(homeId, lang){
   fbSaveLeaves(homeId,demo.leaves.staffId,demo.leaves.ym,demo.leaves.dates);
 }
 
+/* ── CLOUD HOUSEHOLD CREATE / JOIN ─────────────────────────────
+   The Firestore half only — resolving to the new {id,name,workingDays}.
+   Saving to localStorage and switching the active household is left to
+   the caller, because first-time setup replaces the whole list while
+   adding a second household from Settings appends to it.
+
+   homeIds uses arrayUnion in both: a plain array with {merge:true} would
+   overwrite, so creating a second household would drop the first. */
+function cloudCreateHome(user, name, lang){
+  var homeId='hm_'+uid();
+  var inviteCode=Math.random().toString(36).slice(2,8).toUpperCase();
+  var myName=displayNameOf(user);
+  var homeDoc={name:name.trim(),ownerId:user.uid,memberIds:[user.uid],
+    members:{[user.uid]:{name:myName,color:memberColor(user.uid)}},
+    inviteCode:inviteCode,workingDays:26,roles:[],lang:lang};
+  return fbDb.collection('homes').doc(homeId).set(homeDoc)
+    .then(function(){
+      /* Publish the code to its own lookup document. Joiners read this
+         instead of searching /homes, which they have no permission to do
+         until they are already a member. */
+      return fbDb.collection('invites').doc(inviteCode).set({homeId:homeId});
+    })
+    .then(function(){
+      return fbDb.collection('users').doc(user.uid).set(
+        {displayName:myName,
+         homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),
+         currentHomeId:homeId},{merge:true});
+    })
+    .then(function(){ return {id:homeId,name:homeDoc.name,workingDays:26}; });
+}
+
+/* Joining cannot search /homes: the rules only permit reading a household
+   you already belong to, which is the very thing you are trying to become.
+   So resolve the code through /invites/{CODE} — a single known document that
+   reveals nothing but a household id — then append yourself. Reading the
+   household itself is deferred until after that, when it is permitted. */
+function cloudJoinHome(user, code){
+  var CODE=(code||'').toUpperCase(), homeId='';
+  return fbDb.collection('invites').doc(CODE).get()
+    .then(function(inv){
+      if(!inv.exists||!inv.data().homeId) throw new Error('__notfound');
+      homeId=inv.data().homeId;
+      /* arrayUnion so we never have to read memberIds first */
+      var patch={memberIds:firebase.firestore.FieldValue.arrayUnion(user.uid)};
+      patch['members.'+user.uid]={name:displayNameOf(user),color:memberColor(user.uid)};
+      return fbDb.collection('homes').doc(homeId).update(patch);
+    })
+    .then(function(){
+      return fbDb.collection('homes').doc(homeId).get();   /* now a member */
+    })
+    .then(function(doc){
+      var hd=(doc.exists&&doc.data())||{};
+      return fbDb.collection('users').doc(user.uid).set(
+        {displayName:displayNameOf(user),
+         homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),
+         currentHomeId:homeId},{merge:true}).then(function(){ return hd; });
+    })
+    .then(function(hd){ return {id:homeId,name:hd.name||'',workingDays:hd.workingDays||26}; });
+}
+
 /* ── UTILS ──────────────────────────────────────────────────── */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function fmt(n){return '₹'+Number(n||0).toLocaleString('en-IN');}
@@ -3129,13 +3189,20 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
 }
 
 /* ── SETTINGS TAB ───────────────────────────────────────────── */
-function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut,onReplayTutorial}){
+function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut,onReplayTutorial,onCloudHomeAdded}){
   var t=T[lang];
   var [allRoles,setAllRoles]=useState(function(){return getRoles();});
   var [newRoleName,setNewRoleName]=useState('');
   var [confirmDelRole,setConfirmDelRole]=useState(null);
   var [newHomeName,setNewHomeName]=useState('');
   var [confirmDelHome,setConfirmDelHome]=useState(null);
+  /* Joining an existing household by code needs the cloud — there is
+     nothing to join in guest mode, where households are local only. */
+  var cloudHomes=!guestMode&&!!user&&FIREBASE_ENABLED&&!!fbDb;
+  var [homeMode,setHomeMode]=useState('create');   /* 'create' | 'join' */
+  var [joinCode,setJoinCode]=useState('');
+  var [homeBusy,setHomeBusy]=useState(false);
+  var [homeErr,setHomeErr]=useState('');
   var [wdInput,setWdInput]=useState(String(workingDays));
   var [wdSaved,setWdSaved]=useState(false);
   var [restoreConfirm,setRestoreConfirm]=useState(null);
@@ -3182,15 +3249,52 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   }
 
   function addHome(){
-    if(!newHomeName.trim()) return;
-    onHomesChange([...homes,{id:uid(),name:newHomeName.trim()}]);
-    setNewHomeName('');
+    if(!newHomeName.trim()||homeBusy) return;
+    if(!cloudHomes){
+      /* guest mode: households live only on this device */
+      onHomesChange([...homes,{id:uid(),name:newHomeName.trim()}]);
+      setNewHomeName('');
+      return;
+    }
+    /* Signed in, so the household has to be created in Firestore too —
+       a local-only one would have no invite code, would never sync, and
+       the rules would reject every write into it. */
+    setHomeBusy(true); setHomeErr('');
+    cloudCreateHome(user,newHomeName,lang)
+      .then(function(entry){
+        onCloudHomeAdded(entry);
+        setNewHomeName(''); setHomeBusy(false);
+      })
+      .catch(function(e){ setHomeErr((e&&e.message)||''); setHomeBusy(false); });
+  }
+
+  function joinByCode(){
+    if(joinCode.length!==6||homeBusy) return;
+    setHomeBusy(true); setHomeErr('');
+    cloudJoinHome(user,joinCode)
+      .then(function(entry){
+        onCloudHomeAdded(entry);   /* switches to it; ignores a duplicate */
+        setJoinCode(''); setHomeBusy(false);
+      })
+      .catch(function(e){
+        var notFound=e&&e.message==='__notfound';
+        setHomeErr(notFound?t.codeNotFound:((e&&e.message)||t.codeNotFound));
+        setHomeBusy(false);
+      });
   }
 
   function delHome(id){
     var st=getStaff(id);
     st.forEach(function(s){lsKeys().filter(function(k){return k.startsWith('gs_lv_'+s.id+'_');}).forEach(lsDel);});
     lsDel(SK.staff(id)); lsDel(SK.ledger(id)); lsDel(SK.payments(id));
+    /* For a cloud household this means "leave", not "destroy" — drop it from
+       your own list so it stops coming back on the next sign-in. The
+       household itself and everyone else's access are untouched, and your
+       name stays in its members map so past entries still say who paid. */
+    if(cloudHomes){
+      fbDb.collection('users').doc(user.uid).set(
+        {homeIds:firebase.firestore.FieldValue.arrayRemove(id)},{merge:true}).catch(function(){});
+    }
     onHomesChange(homes.filter(function(h){return h.id!==id;}));
     setConfirmDelHome(null);
   }
@@ -3260,12 +3364,52 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
       {/* Section B: Homes */}
       <div className="card mb-4">
         <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.manageHomes}</p>
-        <div className="flex gap-2 mb-3">
-          <input value={newHomeName} onChange={function(e){setNewHomeName(e.target.value);}}
-            onKeyDown={function(e){if(e.key==='Enter')addHome();}}
-            placeholder={t.homeEx} className="inp" style={{flex:1}} />
-          <button onClick={addHome} className="btn btn-accent btn-sm" style={{whiteSpace:'nowrap'}}>{t.addHome}</button>
-        </div>
+
+        {cloudHomes && (
+          <div className="flex gap-2 mb-3">
+            {[{k:'create',label:'🏗️ '+t.createHome},{k:'join',label:'🔑 '+t.joinHome}].map(function(o){
+              var on=homeMode===o.k;
+              return (
+                <button key={o.k} onClick={function(){setHomeMode(o.k);setHomeErr('');}}
+                  style={{flex:1,padding:'10px 6px',borderRadius:12,cursor:'pointer',
+                    border:'2px solid '+(on?'var(--accent)':'var(--border)'),
+                    background:on?'#D8EEE8':'var(--surface2)',
+                    color:on?'var(--accent)':'var(--ink2)',fontWeight:800,fontSize:fsr(13),
+                    fontFamily:'Nunito,sans-serif'}}>
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {homeErr && <p style={{fontSize:fsr(13),color:'var(--danger)',fontWeight:700,marginBottom:8}}>{homeErr}</p>}
+
+        {(!cloudHomes||homeMode==='create') ? (
+          <div className="flex gap-2 mb-3">
+            <input value={newHomeName} onChange={function(e){setNewHomeName(e.target.value);}}
+              onKeyDown={function(e){if(e.key==='Enter')addHome();}}
+              placeholder={t.homeEx} className="inp" style={{flex:1}} />
+            <button onClick={addHome} disabled={homeBusy} className="btn btn-accent btn-sm" style={{whiteSpace:'nowrap'}}>
+              {homeBusy?t.creating:t.addHome}
+            </button>
+          </div>
+        ) : (
+          <div className="mb-3">
+            <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:6}}>{t.enterCode}</p>
+            <div className="flex gap-2">
+              <input value={joinCode} maxLength={6}
+                onChange={function(e){setJoinCode(e.target.value.toUpperCase());}}
+                onKeyDown={function(e){if(e.key==='Enter')joinByCode();}}
+                placeholder="ABC123" className="inp"
+                style={{flex:1,textTransform:'uppercase',letterSpacing:'0.18em',textAlign:'center',fontSize:fsr(18)}} />
+              <button onClick={joinByCode} disabled={joinCode.length!==6||homeBusy}
+                className="btn btn-accent btn-sm" style={{whiteSpace:'nowrap'}}>
+                {homeBusy?t.joining:t.joinHome}
+              </button>
+            </div>
+          </div>
+        )}
         {homes.length===0 && <p style={{textAlign:'center',color:'var(--muted)',fontSize:fsr(13)}}>{t.noHomes}</p>}
         {homes.map(function(h){return (
           <div key={h.id} className="flex items-center justify-between p-3 rounded-xl mb-2" style={{background:'var(--surface2)'}}>
@@ -3905,66 +4049,24 @@ function HomeSetupScreen({lang,user,onHomeReady}){
   function createHome(){
     if(!homeName.trim()) return;
     setLoading(true); setError('');
-    var homeId='hm_'+uid();
-    var inviteCode=Math.random().toString(36).slice(2,8).toUpperCase();
-    var myName=displayNameOf(user);
-    var homeDoc={name:homeName.trim(),ownerId:user.uid,memberIds:[user.uid],
-      members:{[user.uid]:{name:myName,color:memberColor(user.uid)}},
-      inviteCode:inviteCode,workingDays:26,roles:[],lang:lang};
-    fbDb.collection('homes').doc(homeId).set(homeDoc)
-      .then(function(){
-        /* Publish the code to its own lookup document. Joiners read this
-           instead of searching /homes, which they have no permission to do
-           until they are already a member. */
-        return fbDb.collection('invites').doc(inviteCode).set({homeId:homeId});
-      })
-      .then(function(){
-        return fbDb.collection('users').doc(user.uid).set(
-          {displayName:user.displayName||user.phoneNumber||'',homeIds:[homeId],currentHomeId:homeId},
-          {merge:true});
-      })
-      .then(function(){
-        saveHomes([{id:homeId,name:homeDoc.name}]);
-        saveSettings({lang:lang,lastHomeId:homeId,workingDays:26});
-        seedDemoDataCloud(homeId,lang);
-        onHomeReady([{id:homeId,name:homeDoc.name}],homeId,true);
+    cloudCreateHome(user,homeName,lang)
+      .then(function(entry){
+        saveHomes([entry]);
+        saveSettings({lang:lang,lastHomeId:entry.id,workingDays:entry.workingDays});
+        seedDemoDataCloud(entry.id,lang);
+        onHomeReady([entry],entry.id,true);
       })
       .catch(function(e){setError(e.message);setLoading(false);});
   }
 
-  /* Joining cannot search /homes: the rules only permit reading a household
-     you already belong to, which is the very thing you are trying to become.
-     So resolve the code through /invites/{CODE} — a single known document that
-     reveals nothing but a household id — then append yourself. Reading the
-     household itself is deferred until after that, when it is permitted. */
   function joinHome(){
     if(code.length!==6) return;
     setLoading(true); setError('');
-    var CODE=code.toUpperCase(), homeId='';
-    fbDb.collection('invites').doc(CODE).get()
-      .then(function(inv){
-        if(!inv.exists||!inv.data().homeId) throw new Error('__notfound');
-        homeId=inv.data().homeId;
-        /* arrayUnion so we never have to read memberIds first */
-        var patch={memberIds:firebase.firestore.FieldValue.arrayUnion(user.uid)};
-        patch['members.'+user.uid]={name:displayNameOf(user),color:memberColor(user.uid)};
-        return fbDb.collection('homes').doc(homeId).update(patch);
-      })
-      .then(function(){
-        return fbDb.collection('homes').doc(homeId).get();   /* now a member */
-      })
-      .then(function(doc){
-        var hd=(doc.exists&&doc.data())||{};
-        return fbDb.collection('users').doc(user.uid).set(
-          {displayName:displayNameOf(user),
-           homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),currentHomeId:homeId},
-          {merge:true}).then(function(){ return hd; });
-      })
-      .then(function(hd){
-        var entry={id:homeId,name:hd.name||''};
+    cloudJoinHome(user,code)
+      .then(function(entry){
         saveHomes([entry]);
-        saveSettings({lang:lang,lastHomeId:homeId,workingDays:hd.workingDays||26});
-        onHomeReady([entry],homeId);
+        saveSettings({lang:lang,lastHomeId:entry.id,workingDays:entry.workingDays});
+        onHomeReady([entry],entry.id);
       })
       .catch(function(e){
         var notFound=e&&e.message==='__notfound';
@@ -4265,6 +4367,15 @@ function App(){
     saveHomes(h); setHomes(h);
     if(h.length>0&&!h.find(function(x){return x.id===homeId;})) changeHome(h[0].id);
   }
+  /* A household created or joined from Settings: append it and switch to it.
+     Joining one already in the list is not an error — just go there. */
+  function cloudHomeAdded(entry){
+    var known=homes.find(function(x){return x.id===entry.id;});
+    var next=known?homes:homes.concat([{id:entry.id,name:entry.name}]);
+    if(!known){ saveHomes(next); setHomes(next); }
+    if(entry.workingDays) setWorkingDays(entry.workingDays);
+    changeHome(entry.id);
+  }
   function signOut(){
     if(fbAuth) fbAuth.signOut().then(function(){ window.location.reload(); });
   }
@@ -4378,6 +4489,7 @@ function App(){
         {tab==='voice'    && <VoiceTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='feedback' && <FeedbackTab lang={lang} guestMode={guestMode} user={user} />}
         {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut}
+          onCloudHomeAdded={cloudHomeAdded}
           onReplayTutorial={function(){
             saveSettings(Object.assign({},getSettings(),{tutorialDone:false}));
             setTab('staff'); setShowTutorial(true);
