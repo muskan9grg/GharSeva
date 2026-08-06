@@ -225,8 +225,10 @@ en:{
   navSettings:'Settings',navSettingsTitle:'App Settings',
   hmMenu:'Menu',hmReports:'Reports',hmTools:'Tools',hmConfig:'Configuration',
   hmAnnual:'Annual Summary',hmVoice:'Voice Entry',hmSettings:'App Settings',hmHomes:'Manage Homes',hmRoles:'Manage Roles',
-  hmData:'Data',hmExportMonth:'Export This Month (CSV)',hmExportYear:'Export Full Year (CSV)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
+  hmData:'Data',hmExportMonth:'This Month (Excel)',hmExportYear:'Full Year (Excel)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
   exportSummaryTitle:'Household Summary',exportGeneratedOn:'Generated On',exportStaffCount:'Total Staff',exportMonthCol:'Month',
+  exportNone:'Nothing recorded for this period',exportWorking:'Preparing…',
+  exportSheetPayments:'Salary Payments',exportSheetEntries:'Records',
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'✅ Restored! Reloading…',hmRestoreErr:'Invalid backup file.',
   addStaff:'+ Add Staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly Salary (₹)',
@@ -371,8 +373,10 @@ hi:{
   navSettings:'सेटिंग',navSettingsTitle:'एप्प सेटिंग्स',
   hmMenu:'मेनू',hmReports:'रिपोर्ट',hmTools:'टूल्स',hmConfig:'सेटिंग्स',
   hmAnnual:'वार्षिक सारांश',hmVoice:'आवाज़ एंट्री',hmSettings:'एप्प सेटिंग्स',hmHomes:'घर प्रबंधन',hmRoles:'भूमिकाएं',
-  hmData:'डेटा',hmExportMonth:'इस महीने का CSV',hmExportYear:'पूरे साल का CSV',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
+  hmData:'डेटा',hmExportMonth:'इस महीने की Excel',hmExportYear:'पूरे साल की Excel',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
   exportSummaryTitle:'घर का सारांश',exportGeneratedOn:'जनरेट किया गया',exportStaffCount:'कुल स्टाफ',exportMonthCol:'महीना',
+  exportNone:'इस अवधि में कुछ दर्ज नहीं',exportWorking:'तैयार हो रहा है…',
+  exportSheetPayments:'वेतन भुगतान',exportSheetEntries:'रिकॉर्ड',
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'✅ रिस्टोर हो गया! लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
   addStaff:'+ स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन (₹)',
@@ -524,8 +528,25 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 function lsKeys(){try{return Object.keys(localStorage);}catch(e){return [];}}
 
+/* ExcelJS is only needed when someone actually exports, and it is far bigger
+   than anything else here — so it is fetched on first use rather than on
+   every app load. Resolves to window.ExcelJS. */
+var _exceljsPromise=null;
+function loadExcelJS(){
+  if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  if(_exceljsPromise) return _exceljsPromise;
+  _exceljsPromise=new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+    s.onload=function(){ window.ExcelJS?resolve(window.ExcelJS):reject(new Error('ExcelJS did not load')); };
+    s.onerror=function(){ _exceljsPromise=null; reject(new Error('offline')); };
+    document.head.appendChild(s);
+  });
+  return _exceljsPromise;
+}
+
 function downloadBlob(content,mime,filename){
-  var blob=new Blob([content],{type:mime});
+  var blob=content instanceof Blob?content:new Blob([content],{type:mime});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
@@ -543,7 +564,9 @@ function csvCell(v){
    salary payments, attendance, and who paid for what — not just raw
    ledger rows. Headers and type labels run through T[lang] so the export
    matches whatever language the app is currently in. */
-function exportCSV(homeId,period,lang,members,workingDays){
+/* Everything the report needs, gathered once so the spreadsheet and the
+   plain-text fallback can never disagree about the numbers. */
+function buildReportData(homeId,period,lang,members,workingDays){
   var t=T[lang]||T.en;
   var staff=getStaff(homeId);
   var ledger=getLedger(homeId);
@@ -551,20 +574,19 @@ function exportCSV(homeId,period,lang,members,workingDays){
   var home=getHomes().find(function(h){return h.id===homeId;})||{name:''};
   var now=new Date();
   var year=now.getFullYear(), month=now.getMonth()+1;
-  var inPeriod=function(dateStr){
+  function inPeriod(dateStr){
     if(!dateStr) return false;
-    if(period==='month') return dateStr.startsWith(year+'-'+String(month).padStart(2,'0'));
-    if(period==='year') return dateStr.startsWith(String(year));
-    return true;
-  };
-  var monthsInPeriod = period==='month' ? [month] : Array.from({length:12},function(_,i){return i+1;});
+    return period==='month' ? dateStr.startsWith(year+'-'+String(month).padStart(2,'0'))
+                            : dateStr.startsWith(String(year));
+  }
+  /* months that have actually happened — padding the rest with zeroes just
+     filled the old report with meaningless rows */
+  var allMonths = period==='month' ? [month] : Array.from({length:12},function(_,i){return i+1;});
+  var monthsInPeriod=allMonths.filter(function(m){ return new Date(year,m-1,1)<=now; });
   var label = period==='month' ? (year+'-'+String(month).padStart(2,'0')) : String(year);
-
   var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,
     extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
-
-  var out=[];
-  function section(rows){ out.push(rows.map(function(r){return r.map(csvCell).join(',');}).join('\n')); }
+  function toDate(s){ if(!s) return null; var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 
   var periodLedger=ledger.filter(function(e){return inPeriod(e.date);});
   var periodPayments=payments.filter(function(p){
@@ -574,41 +596,23 @@ function exportCSV(homeId,period,lang,members,workingDays){
   var totalSpend=periodPayments.reduce(function(a,p){return a+(p.amount||0);},0)
     +periodLedger.filter(function(e){return CASH_OUT.indexOf(e.type)>-1;}).reduce(function(a,e){return a+(e.amount||0);},0);
 
-  /* 1. Household summary */
-  section([
-    [t.exportSummaryTitle],
-    [t.homeName, home.name],
-    [t.annYear, label],
-    [t.exportGeneratedOn, todayStr()],
-    [t.exportStaffCount, staff.length],
-    [t.annTotal, totalSpend],
-  ]);
-
-  /* helper: this staff member's salary for one month — actual payment if
-     recorded, otherwise the same estimate the Annual chart now uses */
   function monthSalary(s,m){
     var real=payments.filter(function(p){return p.staffId===s.id&&p.year===year&&p.month===m;})
                       .reduce(function(a,p){return a+(p.amount||0);},0);
     if(real>0) return real;
-    var first=new Date(year,m-1,1);
-    return first>now ? 0 : calcSalary(s,year,m,ledger,workingDays).netPayable;
+    return new Date(year,m-1,1)>now ? 0 : calcSalary(s,year,m,ledger,workingDays).netPayable;
   }
   function monthAttendance(staffId,m){
     var lv=getLeaves(staffId,padYM(year,m));
     var vals=Object.keys(lv).map(function(k){return lv[k];});
     var leaveD=vals.filter(function(v){return v==='leave';}).length;
     var holidayD=vals.filter(function(v){return v==='holiday';}).length;
-    var first=new Date(year,m-1,1);
     var daysInMonth=new Date(year,m,0).getDate();
-    var considered = first>now ? 0 : (year===now.getFullYear()&&m===now.getMonth()+1 ? now.getDate() : daysInMonth);
-    var presentD=Math.max(0,considered-leaveD-holidayD);
-    return {present:presentD,leave:leaveD,holiday:holidayD};
+    var considered = year===now.getFullYear()&&m===now.getMonth()+1 ? now.getDate() : daysInMonth;
+    return {present:Math.max(0,considered-leaveD-holidayD),leave:leaveD,holiday:holidayD};
   }
 
-  /* 2. Per-staff period summary */
-  var staffRows=[[t.fname,t.frole,t.aTotSal,t.aTotAdv,t.aTotExp,t.aTotBon,t.aTotExtra,t.aTotShort,
-    t.aTotLoan,t.tPresent,t.tLeave,t.tHoliday]];
-  staff.forEach(function(s){
+  var staffRows=staff.map(function(s){
     var paidSum=0,present=0,leave=0,holiday=0;
     monthsInPeriod.forEach(function(m){
       paidSum+=monthSalary(s,m);
@@ -616,42 +620,286 @@ function exportCSV(homeId,period,lang,members,workingDays){
       present+=att.present; leave+=att.leave; holiday+=att.holiday;
     });
     var sLed=ledger.filter(function(e){return e.staffId===s.id&&inPeriod(e.date);});
-    var sum=function(type){return sLed.filter(function(e){return e.type===type;}).reduce(function(a,e){return a+(e.amount||0);},0);};
-    staffRows.push([s.name,roleLabel(s.role,lang),paidSum,sum('advance'),sum('expense'),sum('bonus'),
-      sum('extra_work'),sum('short_hours'),getLoanBal(s.id,ledger),present,leave,holiday]);
+    function sum(type){return sLed.filter(function(e){return e.type===type;}).reduce(function(a,e){return a+(e.amount||0);},0);}
+    var spend=paidSum+sum('advance')+sum('expense')+sum('bonus')+sum('extra_work');
+    return {name:s.name,role:roleLabel(s.role,lang),salary:paidSum,advances:sum('advance'),
+      expenses:sum('expense'),bonuses:sum('bonus'),overtime:sum('extra_work'),halfDays:sum('short_hours'),
+      loanBal:getLoanBal(s.id,ledger),present:present,leave:leave,holiday:holiday,spend:spend};
   });
-  section(staffRows);
 
-  /* 3. Salary payments detail */
-  var payRows=[[t.fdate,t.fname,t.famount,t.paidBy]];
-  periodPayments.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).forEach(function(p){
-    var s=staff.find(function(x){return x.id===p.staffId;});
-    payRows.push([fmtD(p.date),s?s.name:t.generalNoStaff,p.amount||0,payerLabel(p,members,t)]);
-  });
-  section(payRows);
+  var payRows=periodPayments.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');})
+    .map(function(p){
+      var s=staff.find(function(x){return x.id===p.staffId;});
+      return {date:toDate(p.date),name:s?s.name:t.generalNoStaff,amount:p.amount||0,paidBy:payerLabel(p,members,t)};
+    });
 
-  /* 4. All ledger entries detail */
-  var ledRows=[[t.fdate,t.fname,t.tType,t.famount,t.paidBy,t.freason]];
-  periodLedger.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).forEach(function(e){
-    var s=staff.find(function(x){return x.id===e.staffId;});
-    var name=s?s.name:(e.type==='extra_help'?t.generalNoStaff:'—');
-    if(e.type==='extra_help'&&e.helperName) name+=' ('+e.helperName+')';
-    ledRows.push([fmtD(e.date),name,typeLabels[e.type]||e.type,e.amount||0,payerLabel(e,members,t),e.reason||'']);
-  });
-  section(ledRows);
+  var entryRows=periodLedger.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');})
+    .map(function(e){
+      var s=staff.find(function(x){return x.id===e.staffId;});
+      var name=s?s.name:(e.type==='extra_help'?t.generalNoStaff:'—');
+      if(e.type==='extra_help'&&e.helperName) name+=' ('+e.helperName+')';
+      return {date:toDate(e.date),name:name,typeKey:e.type,type:typeLabels[e.type]||e.type,
+        amount:e.amount||0,paidBy:payerLabel(e,members,t),reason:e.reason||''};
+    });
 
-  /* 5. Attendance summary */
-  var attRows=[[t.fname,t.exportMonthCol,t.tPresent,t.tLeave,t.tHoliday]];
+  var attRows=[];
   staff.forEach(function(s){
     monthsInPeriod.forEach(function(m){
       var att=monthAttendance(s.id,m);
-      attRows.push([s.name,t.months[m-1]+' '+year,att.present,att.leave,att.holiday]);
+      attRows.push({name:s.name,month:t.months[m-1]+' '+year,present:att.present,leave:att.leave,holiday:att.holiday});
     });
   });
-  section(attRows);
 
+  /* chart series: monthly totals across a year, per-person for a single month */
+  var chart = period==='year'
+    ? {title:t.annEstTotal,
+       labels:monthsInPeriod.map(function(m){return t.months[m-1];}),
+       values:monthsInPeriod.map(function(m){
+         return staff.reduce(function(a,s){return a+monthSalary(s,m);},0);
+       })}
+    : {title:t.annTotal,
+       labels:staffRows.map(function(r){return r.name;}),
+       values:staffRows.map(function(r){return r.spend;})};
+
+  return {t:t,lang:lang,home:home,label:label,period:period,year:year,
+    generatedOn:todayStr(),staffCount:staff.length,totalSpend:totalSpend,
+    staffRows:staffRows,payRows:payRows,entryRows:entryRows,attRows:attRows,chart:chart};
+}
+
+/* Bar chart drawn to a canvas and embedded as a picture — ExcelJS cannot
+   write native chart objects, and hand-building the chart XML is far more
+   fragile than it is worth here. The in-cell data bars stay live; this is
+   for the at-a-glance view on the Summary tab. */
+function renderChartPNG(chart){
+  var W=1040,H=520,padL=110,padR=30,padT=70,padB=90;
+  var c=document.createElement('canvas'); c.width=W; c.height=H;
+  var x=c.getContext('2d');
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,H);
+  x.fillStyle='#1A2E2A'; x.font='bold 30px Nunito, Arial, sans-serif';
+  x.fillText(chart.title,padL,46);
+  var vals=chart.values, labels=chart.labels;
+  var max=Math.max.apply(Math,vals.concat([1]));
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+  /* gridlines + axis labels */
+  x.strokeStyle='#E5EDE6'; x.fillStyle='#7A998C'; x.font='16px Nunito, Arial, sans-serif'; x.lineWidth=1;
+  for(var g=0;g<=4;g++){
+    var gy=padT+plotH-(plotH*g/4);
+    x.beginPath(); x.moveTo(padL,gy); x.lineTo(W-padR,gy); x.stroke();
+    var gv=Math.round(max*g/4);
+    x.textAlign='right';
+    x.fillText(gv>=1000?Math.round(gv/1000)+'k':String(gv),padL-12,gy+5);
+  }
+  var slot=plotW/vals.length, bw=Math.min(64,slot*0.6);
+  vals.forEach(function(v,i){
+    var bh=max>0?Math.round(plotH*v/max):0;
+    var bx=padL+slot*i+(slot-bw)/2, by=padT+plotH-bh;
+    var grad=x.createLinearGradient(0,by,0,padT+plotH);
+    grad.addColorStop(0,'#3EA08A'); grad.addColorStop(1,'#1A6E5E');
+    x.fillStyle=grad; x.fillRect(bx,by,bw,bh);
+    x.fillStyle='#7A998C'; x.font='16px Nunito, Arial, sans-serif'; x.textAlign='center';
+    x.fillText(labels[i],bx+bw/2,padT+plotH+26);
+    if(v>0){
+      x.fillStyle='#1A2E2A'; x.font='bold 15px Nunito, Arial, sans-serif';
+      x.fillText(v>=1000?Math.round(v/1000)+'k':String(v),bx+bw/2,by-9);
+    }
+  });
+  x.strokeStyle='#C4D4C6'; x.beginPath(); x.moveTo(padL,padT+plotH); x.lineTo(W-padR,padT+plotH); x.stroke();
+  return c.toDataURL('image/png');
+}
+
+/* ── Styled Excel workbook ───────────────────────────────────── */
+function exportExcel(homeId,period,lang,members,workingDays){
+  var d=buildReportData(homeId,period,lang,members,workingDays);
+  var t=d.t;
+  return loadExcelJS().then(function(ExcelJS){
+    var wb=new ExcelJS.Workbook();
+    wb.creator='GharSeva'; wb.created=new Date();
+
+    var GREEN='FF1A6E5E', MINT='FFE5EDE6', LINE='FFC4D4C6', INK='FF1A2E2A';
+    var MONEY='"₹"#,##0', DATEF='dd/mm/yyyy';
+
+    function headerRow(ws,rowNo){
+      var row=ws.getRow(rowNo);
+      row.height=24;
+      row.eachCell(function(cell){
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREEN}};
+        cell.font={bold:true,color:{argb:'FFFFFFFF'},size:11,name:'Calibri'};
+        cell.alignment={vertical:'middle',horizontal:'left'};
+        cell.border={bottom:{style:'thin',color:{argb:GREEN}}};
+      });
+    }
+    /* zebra striping + borders, so long lists stay readable */
+    function dressBody(ws,firstRow){
+      for(var r=firstRow;r<=ws.rowCount;r++){
+        var row=ws.getRow(r);
+        row.eachCell(function(cell){
+          cell.border={bottom:{style:'hair',color:{argb:LINE}}};
+          cell.alignment=Object.assign({vertical:'middle'},cell.alignment||{});
+          if((r-firstRow)%2===1) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
+        });
+      }
+    }
+    function sheet(name,columns){
+      var ws=wb.addWorksheet(name,{views:[{state:'frozen',ySplit:1}]});
+      ws.columns=columns;
+      headerRow(ws,1);
+      return ws;
+    }
+    /* in-cell proportional bars. cfvo (the min/max bounds) is required —
+       without it ExcelJS throws while writing the rule. */
+    function dataBar(ws,ref,argb,priority){
+      ws.addConditionalFormatting({ref:ref,rules:[{
+        type:'dataBar',cfvo:[{type:'min'},{type:'max'}],color:{argb:argb},priority:priority
+      }]});
+    }
+
+    /* ── Summary ── */
+    var sum=wb.addWorksheet(t.exportSummaryTitle);
+    sum.columns=[{width:28},{width:34}];
+    sum.mergeCells('A1:B1');
+    var title=sum.getCell('A1');
+    title.value='GharSeva — '+d.home.name;
+    title.font={bold:true,size:18,color:{argb:'FFFFFFFF'},name:'Calibri'};
+    title.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREEN}};
+    title.alignment={vertical:'middle',horizontal:'center'};
+    sum.getRow(1).height=38;
+    [[t.annYear,d.label],[t.exportGeneratedOn,d.generatedOn],
+     [t.exportStaffCount,d.staffCount],[t.annTotal,d.totalSpend]].forEach(function(pair,i){
+      var r=sum.addRow(pair); r.height=22;
+      r.getCell(1).font={bold:true,color:{argb:INK}};
+      r.getCell(2).alignment={horizontal:'left'};
+      if(i===3){ r.getCell(2).numFmt=MONEY; r.getCell(2).font={bold:true,size:13,color:{argb:GREEN}}; }
+      r.eachCell(function(c){ c.border={bottom:{style:'hair',color:{argb:LINE}}}; });
+    });
+
+    /* ── Staff ── */
+    var st=sheet(t.annPer,[
+      {header:t.fname,key:'name',width:22},{header:t.frole,key:'role',width:16},
+      {header:t.aTotSal,key:'salary',width:14,style:{numFmt:MONEY}},
+      {header:t.aTotAdv,key:'advances',width:13,style:{numFmt:MONEY}},
+      {header:t.aTotExp,key:'expenses',width:13,style:{numFmt:MONEY}},
+      {header:t.aTotBon,key:'bonuses',width:13,style:{numFmt:MONEY}},
+      {header:t.aTotExtra,key:'overtime',width:13,style:{numFmt:MONEY}},
+      {header:t.aTotShort,key:'halfDays',width:13,style:{numFmt:MONEY}},
+      {header:t.aTotLoan,key:'loanBal',width:14,style:{numFmt:MONEY}},
+      {header:t.tPresent,key:'present',width:11},{header:t.tLeave,key:'leave',width:10},
+      {header:t.tHoliday,key:'holiday',width:11}
+    ]);
+    d.staffRows.forEach(function(r){ st.addRow(r); });
+    dressBody(st,2);
+    if(d.staffRows.length){
+      /* bars make each person's share of the salary bill obvious at a glance */
+      dataBar(st,'C2:C'+st.rowCount,'FF3EA08A',1);
+      dataBar(st,'I2:I'+st.rowCount,'FF5B4A9B',2);
+    }
+
+    /* ── Payments ── */
+    var pay=sheet(t.exportSheetPayments,[
+      {header:t.fdate,key:'date',width:14,style:{numFmt:DATEF}},
+      {header:t.fname,key:'name',width:22},
+      {header:t.famount,key:'amount',width:15,style:{numFmt:MONEY}},
+      {header:t.paidBy,key:'paidBy',width:20}
+    ]);
+    d.payRows.forEach(function(r){ pay.addRow(r); });
+    if(!d.payRows.length){ pay.addRow([t.exportNone]).getCell(1).font={italic:true,color:{argb:'FF7A998C'}}; }
+    dressBody(pay,2);
+    if(d.payRows.length) dataBar(pay,'C2:C'+pay.rowCount,'FF3EA08A',1);
+
+    /* ── Entries ── */
+    var TYPE_TINT={advance:'FFFDF3DC',loan:'FFEAE4F5',expense:'FFD8EEE8',bonus:'FFD8EEE2',
+      loan_repay:'FFD8EEE2',extra_work:'FFD8EEE2',short_hours:'FFFDF3DC',extra_help:'FFEAE4F5'};
+    var ent=sheet(t.exportSheetEntries,[
+      {header:t.fdate,key:'date',width:14,style:{numFmt:DATEF}},
+      {header:t.fname,key:'name',width:24},
+      {header:t.tType,key:'type',width:17},
+      {header:t.famount,key:'amount',width:15,style:{numFmt:MONEY}},
+      {header:t.paidBy,key:'paidBy',width:18},
+      {header:t.freason,key:'reason',width:40}
+    ]);
+    d.entryRows.forEach(function(r){
+      var row=ent.addRow(r);
+      /* tint the Type cell to match the colour the app uses for it */
+      var tint=TYPE_TINT[r.typeKey];
+      if(tint) row.getCell(3).fill={type:'pattern',pattern:'solid',fgColor:{argb:tint}};
+    });
+    if(!d.entryRows.length){ ent.addRow([t.exportNone]).getCell(1).font={italic:true,color:{argb:'FF7A998C'}}; }
+    for(var er=2;er<=ent.rowCount;er++){
+      ent.getRow(er).eachCell(function(cell,cn){
+        cell.border={bottom:{style:'hair',color:{argb:LINE}}};
+        if(cn===6) cell.alignment={wrapText:true,vertical:'middle'};
+      });
+    }
+
+    /* ── Attendance ── */
+    var att=sheet(t.profAttend,[
+      {header:t.fname,key:'name',width:22},{header:t.exportMonthCol,key:'month',width:16},
+      {header:t.tPresent,key:'present',width:12},{header:t.tLeave,key:'leave',width:11},
+      {header:t.tHoliday,key:'holiday',width:12}
+    ]);
+    d.attRows.forEach(function(r){ att.addRow(r); });
+    if(!d.attRows.length){ att.addRow([t.exportNone]).getCell(1).font={italic:true,color:{argb:'FF7A998C'}}; }
+    dressBody(att,2);
+    if(d.attRows.length){
+      dataBar(att,'C2:C'+att.rowCount,'FF1C7A48',1);
+      dataBar(att,'D2:D'+att.rowCount,'FFC0393B',2);
+    }
+
+    /* chart last, so a canvas failure can't cost us the whole workbook */
+    try{
+      if(d.chart.values.some(function(v){return v>0;})){
+        var png=renderChartPNG(d.chart);
+        var imgId=wb.addImage({base64:png.split(',')[1],extension:'png'});
+        sum.addImage(imgId,{tl:{col:0,row:6},ext:{width:660,height:330}});
+      }
+    }catch(e){ console.warn('chart skipped:',e); }
+
+    return wb.xlsx.writeBuffer();
+  }).then(function(buf){
+    downloadBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+      null,'GharSeva_'+d.label+'.xlsx');
+  });
+}
+
+/* Plain-text fallback, used when the spreadsheet library can't be fetched
+   (offline). Same numbers, just without any of the presentation. */
+function exportCSV(homeId,period,lang,members,workingDays){
+  var d=buildReportData(homeId,period,lang,members,workingDays), t=d.t;
+  var out=[];
+  function section(title,rows){
+    out.push([[title]].concat(rows).map(function(r){return r.map(csvCell).join(',');}).join('\n'));
+  }
+  section(t.exportSummaryTitle,[
+    [t.homeName,d.home.name],[t.annYear,d.label],[t.exportGeneratedOn,d.generatedOn],
+    [t.exportStaffCount,d.staffCount],[t.annTotal,d.totalSpend]
+  ]);
+  section(t.annPer,[[t.fname,t.frole,t.aTotSal,t.aTotAdv,t.aTotExp,t.aTotBon,t.aTotExtra,t.aTotShort,
+    t.aTotLoan,t.tPresent,t.tLeave,t.tHoliday]].concat(
+    d.staffRows.map(function(r){return [r.name,r.role,r.salary,r.advances,r.expenses,r.bonuses,
+      r.overtime,r.halfDays,r.loanBal,r.present,r.leave,r.holiday];})));
+  section(t.exportSheetPayments,[[t.fdate,t.fname,t.famount,t.paidBy]].concat(
+    d.payRows.length?d.payRows.map(function(r){return [fmtD(r.date?r.date.toISOString().slice(0,10):''),r.name,r.amount,r.paidBy];})
+                    :[[t.exportNone]]));
+  section(t.exportSheetEntries,[[t.fdate,t.fname,t.tType,t.famount,t.paidBy,t.freason]].concat(
+    d.entryRows.length?d.entryRows.map(function(r){return [fmtD(r.date?r.date.toISOString().slice(0,10):''),r.name,r.type,r.amount,r.paidBy,r.reason];})
+                      :[[t.exportNone]]));
+  section(t.profAttend,[[t.fname,t.exportMonthCol,t.tPresent,t.tLeave,t.tHoliday]].concat(
+    d.attRows.length?d.attRows.map(function(r){return [r.name,r.month,r.present,r.leave,r.holiday];})
+                    :[[t.exportNone]]));
   /* UTF-8 BOM so Hindi text opens correctly in Excel */
-  downloadBlob('﻿'+out.join('\n\n'),'text/csv;charset=utf-8','GharSeva_'+label+'.csv');
+  downloadBlob('﻿'+out.join('\n\n'),'text/csv;charset=utf-8','GharSeva_'+d.label+'.csv');
+}
+
+/* Excel by default; quietly fall back to CSV if the library can't be
+   fetched, so exporting still works with no connection. */
+function exportReport(homeId,period,lang,members,workingDays,onState){
+  onState&&onState('working');
+  return exportExcel(homeId,period,lang,members,workingDays)
+    .then(function(){ onState&&onState('done'); })
+    .catch(function(e){
+      console.warn('Excel export unavailable, falling back to CSV:',e);
+      exportCSV(homeId,period,lang,members,workingDays);
+      onState&&onState('csv');
+    });
 }
 function downloadBackup(){
   var data={};
@@ -3788,6 +4036,7 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
   var t=T[lang];
   var mc=React.useContext(MembersCtx);
   var [showExport,setShowExport]=useState(false);
+  var [busy,setBusy]=useState('');
   var fileRef=useRef(null);
 
   if(!open) return null;
@@ -3827,8 +4076,26 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
               {rowBtn(item)}
               {isExport&&showExport&&(
                 <div className="fade-in flex gap-3 px-4 py-3" style={{background:'var(--surface2)',borderBottom:'1px solid var(--border)'}}>
-                  <button onClick={function(){exportCSV(homeId,'month',lang,mc.members,workingDays);onClose();}} style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportMonth}</button>
-                  <button onClick={function(){exportCSV(homeId,'year',lang,mc.members,workingDays);onClose();}}  style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.hmExportYear}</button>
+                  {/* the spreadsheet library is fetched on first use, so show
+                      progress rather than letting the button look dead */}
+                  <button disabled={!!busy} onClick={function(){
+                      setBusy('month');
+                      exportReport(homeId,'month',lang,mc.members,workingDays,function(st){
+                        setBusy(''); if(st!=='working') onClose();
+                      });
+                    }}
+                    style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
+                    {busy==='month'?t.exportWorking:t.hmExportMonth}
+                  </button>
+                  <button disabled={!!busy} onClick={function(){
+                      setBusy('year');
+                      exportReport(homeId,'year',lang,mc.members,workingDays,function(st){
+                        setBusy(''); if(st!=='working') onClose();
+                      });
+                    }}
+                    style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
+                    {busy==='year'?t.exportWorking:t.hmExportYear}
+                  </button>
                 </div>
               )}
             </div>
