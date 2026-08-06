@@ -727,26 +727,68 @@ function fbSaveLeaves(homeId, staffId, ym, dates){
 }
 
 /* Migration: move existing localStorage data into the cloud household */
-function migrateFromLocalStorage(homeId){
-  if(!FIREBASE_ENABLED||!fbDb) return Promise.resolve();
-  var batch=fbDb.batch();
-  var existingHomes=lsGet(SK.homes,[]);
-  existingHomes.forEach(function(home){
-    lsGet(SK.staff(home.id),[]).forEach(function(s){
-      batch.set(fbDb.doc('homes/'+homeId+'/staff/'+s.id),s);
+/* Households on this device must stay separate in the cloud. The previous
+   version looped over every local household and wrote all of them into the
+   single target household, so unrelated staff ended up merged together —
+   and because leaves are keyed by staff member rather than by household,
+   they were dumped in the same way.
+
+   Now the household that was open goes into the one just set up, and every
+   other local household carrying data gets a cloud household of its own.
+   Resolves to the list of households newly created, so the caller can add
+   them to the switcher. */
+function migrateFromLocalStorage(targetHomeId, user, lang){
+  if(!FIREBASE_ENABLED||!fbDb) return Promise.resolve([]);
+  function hasData(h){
+    return lsGet(SK.staff(h.id),[]).length>0
+        || lsGet(SK.ledger(h.id),[]).length>0
+        || lsGet(SK.payments(h.id),[]).length>0;
+  }
+  /* an empty household is not worth recreating in the cloud */
+  var source=lsGet(SK.homes,[]).filter(hasData);
+  if(source.length===0) return Promise.resolve([]);
+
+  var active=getSettings().lastHomeId;
+  var primary=source.find(function(h){return h.id===active;})||source[0];
+
+  function copyInto(localId, cloudId){
+    var batch=fbDb.batch();
+    var staff=lsGet(SK.staff(localId),[]);
+    staff.forEach(function(s){ batch.set(fbDb.doc('homes/'+cloudId+'/staff/'+s.id),s); });
+    lsGet(SK.ledger(localId),[]).forEach(function(e){ batch.set(fbDb.doc('homes/'+cloudId+'/ledger/'+e.id),e); });
+    lsGet(SK.payments(localId),[]).forEach(function(p){ batch.set(fbDb.doc('homes/'+cloudId+'/payments/'+p.key),p); });
+    /* leaves carry no household of their own, so route each by its owner */
+    staff.forEach(function(s){
+      lsKeys().filter(function(k){return k.indexOf('gs_lv_'+s.id+'_')===0;}).forEach(function(k){
+        batch.set(fbDb.doc('homes/'+cloudId+'/leaves/'+k.slice(6)),{dates:lsGet(k,{})});
+      });
     });
-    lsGet(SK.ledger(home.id),[]).forEach(function(e){
-      batch.set(fbDb.doc('homes/'+homeId+'/ledger/'+e.id),e);
-    });
-    lsGet(SK.payments(home.id),[]).forEach(function(p){
-      batch.set(fbDb.doc('homes/'+homeId+'/payments/'+p.key),p);
-    });
-  });
-  lsKeys().filter(function(k){return k.startsWith('gs_lv_');}).forEach(function(k){
-    var ref=k.slice(6); /* strip gs_lv_ → staffId_YYYY-MM */
-    batch.set(fbDb.doc('homes/'+homeId+'/leaves/'+ref),{dates:lsGet(k,{})});
-  });
-  return batch.commit().catch(function(e){console.warn('Migration error:',e);});
+    return batch.commit();
+  }
+
+  var created=[];
+  return copyInto(primary.id,targetHomeId)
+    .then(function(){
+      return source.filter(function(h){return h.id!==primary.id;})
+        .reduce(function(chain,h){
+          return chain.then(function(){
+            return cloudCreateHome(user,h.name,lang).then(function(entry){
+              created.push({id:entry.id,name:entry.name});
+              return copyInto(h.id,entry.id);
+            });
+          });
+        },Promise.resolve());
+    })
+    .then(function(){
+      /* creating those moved currentHomeId onto the last one; put it back
+         on the household the user actually signed in to */
+      if(created.length&&user){
+        return fbDb.collection('users').doc(user.uid)
+          .set({currentHomeId:targetHomeId},{merge:true}).catch(function(){});
+      }
+    })
+    .then(function(){ return created; })
+    .catch(function(e){ console.warn('Migration error:',e); return created; });
 }
 
 /* ── SEED / DEMO DATA ──────────────────────────────────────────
@@ -4461,10 +4503,16 @@ function App(){
     if(fbAuth) fbAuth.signOut().then(function(){ window.location.reload(); });
   }
   function doMigrate(){
-    /* Clear the local household list either way once the user has answered —
-       otherwise this same leftover data trips the check on every future
-       load and the prompt never stops reappearing. */
-    migrateFromLocalStorage(homeId).then(function(){ saveHomes([]); setMigrating(false); });
+    migrateFromLocalStorage(homeId,user,lang).then(function(created){
+      /* households imported into their own new cloud household join the
+         switcher right away; on later sign-ins they come back from the
+         user's homeIds like any other */
+      if(created&&created.length) setHomes(homes.concat(created));
+      /* Clear the local household list either way once the user has answered —
+         otherwise this same leftover data trips the check on every future
+         load and the prompt never stops reappearing. */
+      saveHomes([]); setMigrating(false);
+    });
   }
   function skipMigrate(){
     saveHomes([]); setMigrating(false);
