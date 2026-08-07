@@ -341,6 +341,10 @@ en:{
   roleManagement:'Staff Roles',addRole:'Add new role…',addRolePh:'e.g. Ironing Maid',addRoleBtn:'Add',
   defaultRole:'Default (locked)',
   workingDaysLabel:'Working Days / Month',workingDaysHint:'Used for leave deduction calculation',
+  waLangLabel:'WhatsApp Message Language',
+  waLangHint:'The language your staff receive messages in. This is separate from the app language above.',
+  waLangBoth:'Hindi + English',waLangHi:'हिंदी only',waLangEn:'English only',
+  inviteWaText:'Join my household on GharSeva! Code: {code} 🏠 ({home})',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
@@ -489,6 +493,10 @@ hi:{
   roleManagement:'स्टाफ भूमिकाएं',addRole:'नई भूमिका जोड़ें…',addRolePh:'जैसे: प्रेस वाली',addRoleBtn:'जोड़ें',
   defaultRole:'डिफ़ॉल्ट (लॉक)',
   workingDaysLabel:'कार्य दिवस / माह',workingDaysHint:'छुट्टी कटौती के लिए उपयोग होता है',
+  waLangLabel:'व्हाट्सएप संदेश की भाषा',
+  waLangHint:'आपके स्टाफ को संदेश किस भाषा में जाएगा। यह ऊपर वाली ऐप भाषा से अलग है।',
+  waLangBoth:'हिंदी + अंग्रेज़ी',waLangHi:'सिर्फ़ हिंदी',waLangEn:'सिर्फ़ अंग्रेज़ी',
+  inviteWaText:'घरसेवा पर मेरे घर से जुड़ें! कोड: {code} 🏠 ({home})',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
@@ -1225,29 +1233,46 @@ function calcSalary(staff,year,month,ledger,workingDays){
           extraWork:extraWork,shortHours:shortHours,loanBal:loanBal,netPayable:Math.max(0,net)};
 }
 
-function waTemplate(type,staff,amount,date,homeName,lang){
-  var d=fmtD(date), hi=lang==='hi';
-  var msgs={
-    advance: hi?'नमस्ते! 🙏\n'+homeName+' से '+staff.name+' को ₹'+amount+' का अग्रिम '+d+' को दिया गया।\n— घरसेवा'
-               :'Hello! 🙏\nAdvance of ₹'+amount+' given to '+staff.name+' from '+homeName+' on '+d+'.\n— GharSeva',
-    loan:    hi?'नमस्ते! 🙏\n'+staff.name+' को ₹'+amount+' का लोन '+d+' को दिया गया।\n— घरसेवा'
-               :'Hello! 🙏\nLoan of ₹'+amount+' given to '+staff.name+' on '+d+'.\n— GharSeva',
-    leave:   hi?'नमस्ते! 🙏\n'+staff.name+' की छुट्टी '+d+' को दर्ज की गई।\n— घरसेवा'
-               :'Hello! 🙏\nLeave recorded for '+staff.name+' on '+d+'.\n— GharSeva',
-    bonus:   hi?'नमस्ते! 🙏\n'+staff.name+' को ₹'+amount+' का बोनस '+d+' को मिला। 🎉\n— घरसेवा'
-               :'Hello! 🙏\nBonus of ₹'+amount+' given to '+staff.name+' on '+d+'. 🎉\n— GharSeva',
-    expense: hi?'नमस्ते! 🙏\n'+staff.name+' के लिए ₹'+amount+' का खर्च '+d+' को हुआ।\n— घरसेवा'
-               :'Hello! 🙏\nExpense of ₹'+amount+' recorded for '+staff.name+' on '+d+'.\n— GharSeva',
-    salary:  hi?'नमस्ते! 🙏\n'+staff.name+' का वेतन ₹'+amount+' का भुगतान '+d+' को हो गया। ✅\n— घरसेवा'
-               :'Hello! 🙏\nSalary of ₹'+amount+' paid to '+staff.name+' on '+d+'. ✅\n— GharSeva',
-    loan_repay: hi?'नमस्ते! 🙏\n'+staff.name+' ने ₹'+amount+' का लोन '+d+' को वापस किया।\n— घरसेवा'
-                :'Hello! 🙏\nLoan repayment of ₹'+amount+' received from '+staff.name+' on '+d+'.\n— GharSeva',
-    extra_work: hi?'नमस्ते! 🙏\n'+staff.name+' के अतिरिक्त काम का ₹'+amount+' भत्ता '+d+' को दर्ज हुआ।\n— घरसेवा'
-                :'Hello! 🙏\nExtra work pay of ₹'+amount+' recorded for '+staff.name+' on '+d+'.\n— GharSeva',
-    short_hours:hi?'नमस्ते! 🙏\n'+staff.name+' के कम घंटों की ₹'+amount+' कटौती '+d+' को दर्ज हुई।\n— घरसेवा'
-                :'Hello! 🙏\nShort hours deduction of ₹'+amount+' recorded for '+staff.name+' on '+d+'.\n— GharSeva',
+/* The message goes to the staff member, so its language is about THEM — not
+   about which language the employer happens to run the app in. It used to
+   follow the app's UI setting, which meant an English-speaking employer's
+   Hindi-speaking staff received English. Default is now both languages,
+   Hindi first, so the message is understood either way and there is nothing
+   to configure. Settings can narrow it to one language when both sides
+   share one. */
+function waTemplate(type,staff,amount,date,homeName,lang,waLang){
+  var d=fmtD(date), amt=fmt(amount), n=(staff&&staff.name)||'', h=homeName||'';
+  var hi={
+    advance:    n+' को '+amt+' का अग्रिम '+d+' को दिया गया।',
+    loan:       n+' को '+amt+' का लोन '+d+' को दिया गया।',
+    leave:      n+' की छुट्टी '+d+' को दर्ज की गई।',
+    bonus:      n+' को '+amt+' का बोनस '+d+' को मिला। 🎉',
+    expense:    n+' के लिए '+amt+' का खर्च '+d+' को दर्ज हुआ।',
+    salary:     n+' का '+amt+' वेतन '+d+' को दिया गया। ✅',
+    loan_repay: n+' ने '+amt+' का लोन '+d+' को वापस किया।',
+    extra_work: n+' के अतिरिक्त काम का '+amt+' भत्ता '+d+' को दर्ज हुआ।',
+    short_hours:n+' के कम घंटों की '+amt+' कटौती '+d+' को दर्ज हुई।',
+    extra_help: (n?n+' की ':'')+'अतिरिक्त मदद का '+amt+' '+d+' को दर्ज हुआ।'
   };
-  return msgs[type]||'';
+  var en={
+    advance:    'Advance of '+amt+' given to '+n+' on '+d+'.',
+    loan:       'Loan of '+amt+' given to '+n+' on '+d+'.',
+    leave:      'Leave recorded for '+n+' on '+d+'.',
+    bonus:      'Bonus of '+amt+' given to '+n+' on '+d+'. 🎉',
+    expense:    'Expense of '+amt+' recorded for '+n+' on '+d+'.',
+    salary:     'Salary of '+amt+' paid to '+n+' on '+d+'. ✅',
+    loan_repay: 'Loan repayment of '+amt+' received from '+n+' on '+d+'.',
+    extra_work: 'Extra work pay of '+amt+' recorded for '+n+' on '+d+'.',
+    short_hours:'Short hours deduction of '+amt+' recorded for '+n+' on '+d+'.',
+    extra_help: 'Extra help of '+amt+(n?' by '+n:'')+' recorded on '+d+'.'
+  };
+  if(!hi[type]&&!en[type]) return '';
+  var mode=waLang||getSettings().waLang||'both';
+  var lines=[];
+  if(mode!=='en') lines.push('नमस्ते! 🙏\n'+hi[type]);
+  if(mode!=='hi') lines.push((mode==='en'?'Hello! 🙏\n':'')+en[type]);
+  var sign=mode==='hi'?'— घरसेवा':mode==='en'?'— GharSeva':'— घरसेवा · GharSeva';
+  return lines.join('\n\n')+'\n\n'+sign+(h?' · '+h:'');
 }
 
 function parseVoice(transcript,staffList){
@@ -3576,6 +3601,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   var [homeErr,setHomeErr]=useState('');
   var [wdInput,setWdInput]=useState(String(workingDays));
   var [wdSaved,setWdSaved]=useState(false);
+  var [waLangSel,setWaLangSel]=useState(getSettings().waLang||'both');
   var [restoreConfirm,setRestoreConfirm]=useState(null);
   var [restoreMsg,setRestoreMsg]=useState('');
   var restoreRef=useRef(null);
@@ -3814,6 +3840,31 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
             {wdSaved?'✓ '+t.save:t.save}
           </button>
         </div>
+
+        <label style={{display:'block',fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),marginTop:20,marginBottom:4}}>{t.waLangLabel}</label>
+        <p style={{fontSize:fsr(12),color:'var(--muted)',marginBottom:8}}>{t.waLangHint}</p>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {[['both',t.waLangBoth],['hi',t.waLangHi],['en',t.waLangEn]].map(function(o){
+            var on=waLangSel===o[0];
+            return (
+              <button key={o[0]} onClick={function(){
+                  setWaLangSel(o[0]);
+                  saveSettings(Object.assign({},getSettings(),{waLang:o[0]}));
+                }}
+                style={{width:'100%',padding:'11px 14px',borderRadius:12,cursor:'pointer',
+                  fontFamily:'Nunito,sans-serif',fontWeight:800,fontSize:fsr(14),
+                  border:on?'2px solid var(--accent)':'2px solid var(--border)',
+                  background:on?'var(--accent)':'none',color:on?'#fff':'var(--ink2)'}}>
+                {on?'✓ ':''}{o[1]}
+              </button>
+            );
+          })}
+        </div>
+        <pre style={{marginTop:10,padding:'10px 12px',borderRadius:12,background:'var(--bg)',
+          border:'1px solid var(--border)',color:'var(--ink2)',fontSize:fsr(12),
+          fontFamily:'Nunito,sans-serif',whiteSpace:'pre-wrap',lineHeight:1.5}}>
+          {waTemplate('salary',{name:lang==='hi'?'कमला':'Kamala'},5000,todayStr(),'',lang,waLangSel)}
+        </pre>
 
         <button onClick={onReplayTutorial} className="btn btn-ghost btn-full" style={{marginTop:16}}>
           🔄 {t.tutReplayBtn}
@@ -4542,7 +4593,9 @@ function InviteCard({lang,homeId,homes}){
 
   if(!FIREBASE_ENABLED||!code) return null;
   var home=homes.find(function(h){return h.id===homeId;})||{name:''};
-  var waText='Join my household on GharSeva! Code: '+code+' 🏠 ('+home.name+')';
+  /* Goes to a family member, not to staff, so it follows the app language
+     rather than the WhatsApp-message setting, which is about staff. */
+  var waText=t.inviteWaText.replace('{code}',code).replace('{home}',home.name);
 
   function copyCode(){
     navigator.clipboard&&navigator.clipboard.writeText(code).then(function(){
