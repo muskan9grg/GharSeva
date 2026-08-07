@@ -371,6 +371,14 @@ en:{
   raiseFromLabel:'Salary changed: {old} → {new}',
   raiseFromHint:'From which month does the new salary apply? Earlier months keep the old rate.',
   raiseSince:'since',
+  navHome:'Home',navMoney:'Money',navReports:'Reports',
+  moneyRecords:'📋 Records',moneyPay:'💳 Pay Salary',
+  layoutLabel:'App Layout',
+  layoutHint:'You can switch back at any time. Nothing is lost either way.',
+  layoutClassic:'Classic',
+  layoutClassicDesc:'Staff · Attendance · Pay · Records',
+  layoutSimple:'Simple (new)',
+  layoutSimpleDesc:'Home · Staff · Money · Reports — fewer tabs, home screen always reachable',
   markMany:'Mark several days at once',
   markManyHint:'Pick the first and last day, then choose what to mark them as. Useful for a trip to the village — and you can mark days ahead of time.',
   markFrom:'From',markTo:'To',
@@ -557,6 +565,14 @@ hi:{
   raiseFromLabel:'वेतन बदला: {old} → {new}',
   raiseFromHint:'नया वेतन किस महीने से लागू है? पिछले महीनों में पुराना वेतन ही रहेगा।',
   raiseSince:'से',
+  navHome:'होम',navMoney:'पैसा',navReports:'रिपोर्ट',
+  moneyRecords:'📋 रिकॉर्ड',moneyPay:'💳 वेतन भुगतान',
+  layoutLabel:'ऐप का लेआउट',
+  layoutHint:'आप कभी भी वापस बदल सकते हैं। किसी भी हाल में कुछ नहीं खोएगा।',
+  layoutClassic:'क्लासिक',
+  layoutClassicDesc:'स्टाफ · उपस्थिति · भुगतान · रिकॉर्ड',
+  layoutSimple:'सरल (नया)',
+  layoutSimpleDesc:'होम · स्टाफ · पैसा · रिपोर्ट — कम टैब, होम स्क्रीन हमेशा सामने',
   markMany:'एक साथ कई दिन दर्ज करें',
   markManyHint:'पहला और आखिरी दिन चुनें, फिर तय करें कि क्या दर्ज करना है। गाँव जाने जैसी छुट्टी के लिए — आप आने वाले दिन भी पहले से दर्ज कर सकते हैं।',
   markFrom:'से',markTo:'तक',
@@ -4231,7 +4247,7 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
 }
 
 /* ── SETTINGS TAB ───────────────────────────────────────────── */
-function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut,onReplayTutorial,onCloudHomeAdded}){
+function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut,onReplayTutorial,onCloudHomeAdded,onLayoutChange}){
   var t=T[lang];
   var [allRoles,setAllRoles]=useState(function(){return getRoles();});
   var [newRoleName,setNewRoleName]=useState('');
@@ -4248,6 +4264,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   var [wdInput,setWdInput]=useState(String(workingDays));
   var [wdSaved,setWdSaved]=useState(false);
   var [waLangSel,setWaLangSel]=useState(getSettings().waLang||'both');
+  var [layoutSel,setLayoutSel]=useState(getSettings().layout||'classic');
   var [restoreConfirm,setRestoreConfirm]=useState(null);
   var [restoreMsg,setRestoreMsg]=useState('');
   var restoreRef=useRef(null);
@@ -4485,6 +4502,24 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
           <button onClick={saveWD} className="btn btn-ok btn-sm">
             {wdSaved?'✓ '+t.save:t.save}
           </button>
+        </div>
+
+        <label style={{display:'block',fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),marginTop:20,marginBottom:4}}>{t.layoutLabel}</label>
+        <p style={{fontSize:fsr(12),color:'var(--muted)',marginBottom:8}}>{t.layoutHint}</p>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {[['classic',t.layoutClassic,t.layoutClassicDesc],['simple',t.layoutSimple,t.layoutSimpleDesc]].map(function(o){
+            var on=layoutSel===o[0];
+            return (
+              <button key={o[0]} onClick={function(){ setLayoutSel(o[0]); onLayoutChange&&onLayoutChange(o[0]); }}
+                style={{width:'100%',padding:'11px 14px',borderRadius:12,cursor:'pointer',textAlign:'left',
+                  fontFamily:'Nunito,sans-serif',
+                  border:on?'2px solid var(--accent)':'2px solid var(--border)',
+                  background:on?'var(--accent)':'none',color:on?'#fff':'var(--ink2)'}}>
+                <span style={{fontWeight:800,fontSize:fsr(14),display:'block'}}>{on?'✓ ':''}{o[1]}</span>
+                <span style={{fontSize:fsr(12),opacity:on?0.85:0.7,display:'block',marginTop:2}}>{o[2]}</span>
+              </button>
+            );
+          })}
         </div>
 
         <label style={{display:'block',fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),marginTop:20,marginBottom:4}}>{t.waLangLabel}</label>
@@ -4729,7 +4764,7 @@ function FeedbackTab({lang,guestMode,user}){
 }
 
 /* ── HAMBURGER MENU ─────────────────────────────────────────── */
-function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
+function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays,layout}){
   var t=T[lang];
   var mc=React.useContext(MembersCtx);
   var [showExport,setShowExport]=useState(false);
@@ -4747,6 +4782,9 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
     {icon:'💬',label:t.hmFeedback, action:function(){go('feedback');}},
     {icon:'⚙️',label:t.hmSettings, action:function(){go('settings');}},
   ];
+  /* Attendance has no bar of its own in the simple layout, so it is listed
+     here — nothing the classic layout can reach may become unreachable. */
+  if(layout==='simple') menuItems.unshift({icon:'🗓️',label:t.navLeaves,action:function(){go('leaves');}});
 
   function rowBtn(item){
     return (
@@ -5004,14 +5042,92 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
   );
 }
 
+/* ── SIMPLE LAYOUT: MONEY ───────────────────────────────────────
+   Everything that moved, in one place. The classic layout splits this across
+   a Pay tab and a Records tab, which asks the user to know that an advance is
+   filed under Records rather than Pay — a distinction the app understands and
+   nobody else does. Both screens are reused unchanged behind one switch. */
+function MoneyTab({lang,homeId,homes,workingDays,syncKey,refreshKey,defaultStaffId}){
+  var t=T[lang];
+  var [view,setView]=useState(defaultStaffId?'pay':'records');
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex gap-2 px-4 pt-3 shrink-0">
+        {[['records',t.moneyRecords],['pay',t.moneyPay]].map(function(o){
+          var on=view===o[0];
+          return (
+            <button key={o[0]} onClick={function(){setView(o[0]);}}
+              style={{flex:1,padding:'10px',borderRadius:12,cursor:'pointer',fontFamily:'Nunito,sans-serif',
+                fontWeight:800,fontSize:fsr(14),
+                border:on?'2px solid var(--accent)':'2px solid var(--border)',
+                background:on?'var(--accent)':'var(--surface)',color:on?'#fff':'var(--ink2)'}}>
+              {o[1]}
+            </button>
+          );
+        })}
+      </div>
+      {view==='records'
+        ? <AdvancesTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />
+        : <SalaryTab key={homeId+'-'+refreshKey+'-'+defaultStaffId} lang={lang} homeId={homeId} homes={homes}
+            refreshKey={refreshKey} workingDays={workingDays} syncKey={syncKey} defaultStaffId={defaultStaffId} />
+      }
+    </div>
+  );
+}
+
+/* ── SIMPLE LAYOUT: REPORTS ─────────────────────────────────────
+   The payoff for all that recording, which the classic layout files in the
+   menu next to Feedback. Annual and the export belong together: both answer
+   "what did the year come to". */
+function ReportsTab({lang,homeId,workingDays,syncKey}){
+  var t=T[lang];
+  var mc=React.useContext(MembersCtx);
+  var [busy,setBusy]=useState('');
+  function run(period){
+    setBusy(period);
+    exportReport(homeId,period,lang,mc.members,workingDays,function(){setBusy('');});
+  }
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="px-4 pt-3 shrink-0">
+        <div className="flex gap-2">
+          <button disabled={!!busy} onClick={function(){run('month');}}
+            style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',
+              color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
+              opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
+            {busy==='month'?t.exportWorking:'📤 '+t.hmExportMonth}
+          </button>
+          <button disabled={!!busy} onClick={function(){run('year');}}
+            style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',
+              color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
+              opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
+            {busy==='year'?t.exportWorking:'📤 '+t.hmExportYear}
+          </button>
+        </div>
+      </div>
+      <AnnualTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />
+    </div>
+  );
+}
+
 /* ── BOTTOM NAV ─────────────────────────────────────────────── */
-function BottomNav({tab,setTab,lang}){
+function BottomNav({tab,setTab,lang,layout}){
   var t=T[lang];
   var tabs=[
     {key:'staff',  icon:'👥',label:t.navStaff},
     {key:'leaves', icon:'🗓️',label:t.navLeaves},
     {key:'salary', icon:'💳',label:t.navSalary},
     {key:'adv',    icon:'📋',label:t.navAdv},
+  ];
+  /* The simple layout puts Home in the bar — in the classic one the most
+     useful screen in the app is reachable only through a small icon in the
+     header, competing with three others — and folds Pay and Records together
+     so there is no longer a guess to make about where an advance lives. */
+  if(layout==='simple') tabs=[
+    {key:'home',    icon:'🏠',label:t.navHome},
+    {key:'staff',   icon:'👥',label:t.navStaff},
+    {key:'money',   icon:'💰',label:t.navMoney},
+    {key:'reports', icon:'📊',label:t.navReports},
   ];
   return (
     <nav className="sticky bottom-0 z-20 shrink-0" style={{background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
@@ -5298,6 +5414,20 @@ function App(){
   var [homes,setHomes]=useState([]);
   var [homeId,setHomeId]=useState('');
   var [tab,setTab]=useState('home');
+  var [layout,setLayout]=useState(function(){return getSettings().layout||'classic';});
+  /* The simple layout has fewer, broader destinations, so several classic tab
+     keys have no bar of their own there. Everything still routes — the keys
+     are mapped to whichever tab now contains them, rather than each caller
+     having to know the current layout. */
+  function goTab(key,staffId){
+    var k=key;
+    if(layout==='simple'){
+      if(k==='salary'||k==='adv') k='money';
+      else if(k==='annual') k='reports';
+    }
+    setTab(k);
+    if(staffId!==undefined) setPreselectSalaryStaff(staffId||'');
+  }
   var [staffKey,setStaffKey]=useState(0);
   var [preselectSalaryStaff,setPreselectSalaryStaff]=useState('');
   var [workingDays,setWorkingDays]=useState(30);
@@ -5554,7 +5684,11 @@ function App(){
             </p>
           </div>
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
-            {tab!=='home'&&<button onClick={function(){setTab('home');}} title="Home"
+            {/* Home has its own place in the bar under the simple layout, and
+                language is a set-once choice that lives in Settings, so the
+                header drops from four icons to two. Font size stays: it is the
+                one control a reader may want at any moment. */}
+            {layout!=='simple'&&tab!=='home'&&<button onClick={function(){setTab('home');}} title="Home"
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(16),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
               🏠
             </button>}
@@ -5562,10 +5696,10 @@ function App(){
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
               {fontSz==='normal'?'Aa':fontSz==='large'?'A+':'A++'}
             </button>
-            <button onClick={toggleLang}
+            {layout!=='simple'&&<button onClick={toggleLang}
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 14px',fontWeight:700,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
               {lang==='en'?'हिं':'EN'}
-            </button>
+            </button>}
             <button onClick={function(){setMenuOpen(true);}} title="Menu" data-tut="menu"
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 11px',fontWeight:800,fontSize:fsr(17),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
               ☰
@@ -5582,24 +5716,30 @@ function App(){
       </header>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {tab==='home'     && <DashboardTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onNavigate={function(tabKey,staffId){setTab(tabKey);setPreselectSalaryStaff(staffId||'');}} />}
+        {tab==='home'     && <DashboardTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onNavigate={goTab} />}
         {tab==='staff'    && <StaffTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onStaffChange={function(){setStaffKey(function(k){return k+1;});}} />}
         {tab==='salary'   && <SalaryTab key={homeId+'-'+staffKey+'-'+preselectSalaryStaff} lang={lang} homeId={homeId} homes={homes} refreshKey={staffKey} workingDays={workingDays} syncKey={syncKey} defaultStaffId={preselectSalaryStaff} />}
         {tab==='leaves'   && <LeavesTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='adv'      && <AdvancesTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='annual'   && <AnnualTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
+        {tab==='money'    && <MoneyTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} refreshKey={staffKey} defaultStaffId={preselectSalaryStaff} />}
+        {tab==='reports'  && <ReportsTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='voice'    && <VoiceTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='feedback' && <FeedbackTab lang={lang} guestMode={guestMode} user={user} />}
         {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut}
           onCloudHomeAdded={cloudHomeAdded}
+          onLayoutChange={function(next){
+            saveSettings(Object.assign({},getSettings(),{layout:next}));
+            setLayout(next);
+          }}
           onReplayTutorial={function(){
             saveSettings(Object.assign({},getSettings(),{tutorialDone:false}));
             setTab('staff'); setShowTutorial(true);
           }} />}
       </div>
 
-      <BottomNav tab={tab} setTab={setTab} lang={lang} />
-      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={setTab} lang={lang} homeId={homeId} workingDays={workingDays} />
+      <BottomNav tab={tab} setTab={setTab} lang={lang} layout={layout} />
+      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={goTab} lang={lang} homeId={homeId} workingDays={workingDays} layout={layout} />
       {showTutorial && <TutorialOverlay lang={lang} tab={tab} onNavigate={setTab} onDone={finishTutorial} />}
     </div>
     </MembersCtx.Provider>
