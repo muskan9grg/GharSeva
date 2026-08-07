@@ -371,6 +371,11 @@ en:{
   raiseFromLabel:'Salary changed: {old} → {new}',
   raiseFromHint:'From which month does the new salary apply? Earlier months keep the old rate.',
   raiseSince:'since',
+  markMany:'Mark several days at once',
+  markManyHint:'Pick the first and last day, then choose what to mark them as. Useful for a trip to the village — and you can mark days ahead of time.',
+  markFrom:'From',markTo:'To',
+  markManyDone:'{n} day(s) marked',
+  plannedDay:'Planned — has not happened yet',
   fleaving:'Last Working Day',
   fleavingHint:'Fill this only when someone leaves. Their records are kept, but they stop appearing in attendance and pay reminders.',
   leftBadge:'Left',
@@ -552,6 +557,11 @@ hi:{
   raiseFromLabel:'वेतन बदला: {old} → {new}',
   raiseFromHint:'नया वेतन किस महीने से लागू है? पिछले महीनों में पुराना वेतन ही रहेगा।',
   raiseSince:'से',
+  markMany:'एक साथ कई दिन दर्ज करें',
+  markManyHint:'पहला और आखिरी दिन चुनें, फिर तय करें कि क्या दर्ज करना है। गाँव जाने जैसी छुट्टी के लिए — आप आने वाले दिन भी पहले से दर्ज कर सकते हैं।',
+  markFrom:'से',markTo:'तक',
+  markManyDone:'{n} दिन दर्ज हुए',
+  plannedDay:'योजना — अभी हुआ नहीं है',
   fleaving:'काम का आखिरी दिन',
   fleavingHint:'यह तभी भरें जब कोई काम छोड़ रहा हो। रिकॉर्ड सुरक्षित रहेंगे, पर वे उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
   leftBadge:'छोड़ दिया',
@@ -2987,18 +2997,50 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
 }
 
 /* ── LEAVE CALENDAR ─────────────────────────────────────────── */
+/* Apply one status across a span of days, in a single action. Marking a
+   fortnight away used to be a fortnight of separate taps. The span may cross a
+   month boundary, and leaves are stored a month at a time, so the days are
+   grouped into their months and each month written once. */
+function applyLeaveRange(homeId,staffId,fromISO,toISO,status){
+  var a=parseISO(fromISO), b=parseISO(toISO);
+  if(!a||!b) return 0;
+  if(b<a){ var swap=a; a=b; b=swap; }
+  var buckets={}, n=0, cur=new Date(a);
+  while(cur<=b&&n<400){
+    var ym=padYM(cur.getFullYear(),cur.getMonth()+1);
+    var key=ym+'-'+String(cur.getDate()).padStart(2,'0');
+    if(!buckets[ym]) buckets[ym]=Object.assign({},getLeaves(staffId,ym));
+    if(status) buckets[ym][key]=status; else delete buckets[ym][key];
+    n++; cur.setDate(cur.getDate()+1);
+  }
+  Object.keys(buckets).forEach(function(k){ fbSaveLeaves(homeId,staffId,k,buckets[k]); });
+  return n;
+}
+
 function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,syncKey}){
   var t=T[lang];
   var ym=padYM(year,month);
   var [lv,setLv]=useState({});
   var [flash,setFlash]=useState('');
+  var [rangeOpen,setRangeOpen]=useState(false);
+  var [rFrom,setRFrom]=useState(todayStr());
+  var [rTo,setRTo]=useState(todayStr());
+  var [rMsg,setRMsg]=useState('');
   var today=new Date();
 
   useEffect(function(){setLv(getLeaves(staffId,ym));},[staffId,ym,syncKey]);
 
+  function doRange(status){
+    var n=applyLeaveRange(homeId||_activeHomeId,staffId,rFrom,rTo,status);
+    setLv(getLeaves(staffId,ym));
+    setRMsg(t.markManyDone.replace('{n}',n));
+    setTimeout(function(){setRMsg('');},2500);
+  }
+
   function toggle(day){
-    var date=new Date(year,month-1,day);
-    if(date>today) return;
+    /* Future days are markable: telling the app about leave already agreed for
+       next week is the point. They are drawn differently so a plan is never
+       mistaken for something that has already happened. */
     var key=ym+'-'+String(day).padStart(2,'0');
     var cur=lv[key];
     var next=cur==='leave'?'holiday':cur==='holiday'?null:'leave';
@@ -3073,6 +3115,40 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
           </div>
         </div>
       )}
+      <button onClick={function(){setRangeOpen(function(v){return !v;});}}
+        className="btn btn-ghost btn-full" style={{marginBottom:12}}>
+        📅 {t.markMany} {rangeOpen?'▲':'▼'}
+      </button>
+      {rangeOpen&&(
+        <div className="rounded-2xl mb-3" style={{background:'var(--surface2)',border:'1px solid var(--border)',padding:'12px 14px'}}>
+          <p style={{fontSize:fsr(12),color:'var(--ink2)',margin:'0 0 10px'}}>{t.markManyHint}</p>
+          <div className="flex gap-3 mb-3">
+            <div style={{flex:1}}>
+              <label style={{display:'block',fontSize:fsr(12),fontWeight:700,color:'var(--ink2)',marginBottom:4}}>{t.markFrom}</label>
+              <input type="date" value={rFrom} onChange={function(e){setRFrom(e.target.value);}} className="inp" style={{width:'100%'}} />
+            </div>
+            <div style={{flex:1}}>
+              <label style={{display:'block',fontSize:fsr(12),fontWeight:700,color:'var(--ink2)',marginBottom:4}}>{t.markTo}</label>
+              <input type="date" value={rTo} onChange={function(e){setRTo(e.target.value);}} className="inp" style={{width:'100%'}} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {[{s:'leave',label:t.tLeave,bg:'#FCE8E8',c:'var(--danger)'},
+              {s:'holiday',label:t.tHoliday,bg:'#F5EBC0',c:'var(--warn)'},
+              {s:null,label:t.tPresent,bg:'#CCEADC',c:'#1A5E35'}].map(function(o){
+              return (
+                <button key={o.label} onClick={function(){doRange(o.s);}}
+                  style={{flex:1,padding:'11px 4px',borderRadius:12,border:'2px solid '+o.c,
+                    background:o.bg,color:o.c,fontWeight:800,fontSize:fsr(13),
+                    cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+          {rMsg&&<p style={{fontSize:fsr(13),color:'var(--ok)',fontWeight:800,margin:'10px 0 0',textAlign:'center'}}>✓ {rMsg}</p>}
+        </div>
+      )}
       <p style={{fontSize:fsr(12),color:'var(--muted)',textAlign:'center',marginBottom:12}}>{t.calHint}</p>
       <div className="grid grid-cols-7 mb-1">
         {t.days.map(function(d,i){return <div key={i} style={{textAlign:'center',fontSize:fsr(11),fontWeight:700,paddingTop:4,paddingBottom:4,color:i===0?'var(--danger)':'var(--ink2)'}}>{d}</div>;})}
@@ -3086,9 +3162,16 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
           var isFuture=td>today&&!isToday;
           var stStyle=dayCls(st);
           return (
-            <button key={day} onClick={function(){toggle(day);}} disabled={!!isFuture}
+            <button key={day} onClick={function(){toggle(day);}}
               className="cal-btn flex flex-col items-center justify-center rounded-lg text-xs transition-all"
-              style={Object.assign({},stStyle,{outline:'none',border:isToday?'2px solid var(--accent)':'none',cursor:isFuture?'default':'pointer',opacity:isFuture?0.5:1})}>
+              title={isFuture?t.plannedDay:undefined}
+              /* A future day that has been marked is a plan, not a record, so it
+                 is outlined rather than filled. An unmarked future day stays
+                 faint: nothing has been said about it either way. */
+              style={Object.assign({},stStyle,{outline:'none',cursor:'pointer',
+                border:isToday?'2px solid var(--accent)':isFuture&&st!=='present'?'2px dashed '+stStyle.color:'none',
+                background:isFuture&&st!=='present'?'transparent':stStyle.background,
+                opacity:isFuture&&st==='present'?0.45:1})}>
               <span style={{fontSize:fsr(13),fontWeight:600,lineHeight:1}}>{day}</span>
               <span style={{fontSize:fsr(11),lineHeight:1,marginTop:2,opacity:.8}}>{dayLbl(st)}</span>
             </button>
