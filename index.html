@@ -368,6 +368,9 @@ en:{
   undoBlocked:'To undo this, first undo {m}.',
   undoHistory:'Undone payments',
   undoneOn:'undone on',
+  raiseFromLabel:'Salary changed: {old} → {new}',
+  raiseFromHint:'From which month does the new salary apply? Earlier months keep the old rate.',
+  raiseSince:'since',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
@@ -543,6 +546,9 @@ hi:{
   undoBlocked:'इसे वापस लेने के लिए, पहले {m} वापस लें।',
   undoHistory:'वापस लिए गए भुगतान',
   undoneOn:'वापस लिया',
+  raiseFromLabel:'वेतन बदला: {old} → {new}',
+  raiseFromHint:'नया वेतन किस महीने से लागू है? पिछले महीनों में पुराना वेतन ही रहेगा।',
+  raiseSince:'से',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
@@ -1310,6 +1316,38 @@ function getLoanBal(staffId,ledger){
   return listActiveLoans(staffId,ledger).reduce(function(s,e){return s+loanRemaining(e);},0);
 }
 
+/* What this staff member was paid per month at a given point in time.
+   staff.salary is only ever the CURRENT figure, so using it to work out an
+   older month silently rewrote history: give someone a raise in July and
+   every earlier unpaid month, and every estimate in the Annual view, would
+   claim they had always been on the new rate. salaryHistory records each rate
+   with the month it took effect; months before the earliest entry fall back
+   to it, since that is the rate they joined on. */
+function salaryFor(staff,year,month){
+  var h=staff&&staff.salaryHistory;
+  if(!h||!h.length) return (staff&&staff.salary)||0;
+  var ym=padYM(year,month), best=null, earliest=null;
+  h.forEach(function(e){
+    if(!earliest||e.ym<earliest.ym) earliest=e;
+    if(e.ym<=ym&&(!best||e.ym>best.ym)) best=e;
+  });
+  return (best||earliest).amount||0;
+}
+
+/* Record a rate change. The rate in force until now has to be captured first,
+   or the months before the change would inherit the new figure — the very bug
+   this exists to stop. */
+function withSalaryChange(staff,newAmount,fromYm){
+  var h=(staff.salaryHistory||[]).slice();
+  if(!h.length){
+    var joinYm=(staff.joiningDate||'').slice(0,7)||'0000-01';
+    h.push({ym:joinYm<fromYm?joinYm:'0000-01',amount:staff.salary||0});
+  }
+  h=h.filter(function(e){return e.ym!==fromYm;}).concat([{ym:fromYm,amount:newAmount}]);
+  h.sort(function(a,b){return a.ym<b.ym?-1:a.ym>b.ym?1:0;});
+  return h;
+}
+
 /* Every line that reduces the salary, in one place. The net is summed from
    this list alone, so a line cannot be waived in the display yet still
    deducted, and a new charge cannot be added to the total without also being
@@ -1334,7 +1372,9 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
   Object.entries(lv).forEach(function(e){
     if(e[1]==='leave') leaveDays++;
   });
-  var daily=staff.salary/(workingDays||30);
+  /* The rate in force in THIS month, not whatever the staff member earns now. */
+  var monthlyRate=salaryFor(staff,year,month);
+  var daily=monthlyRate/(workingDays||30);
   var items=(ledger||[]).filter(function(e){return e.staffId===staff.id && e.date && e.date.startsWith(ym);});
   function sum(type){ return items.filter(function(e){return e.type===type;}).reduce(function(s,e){return s+(e.amount||0);},0); }
   var bonuses=sum('bonus'), extraWork=sum('extra_work');
@@ -1357,12 +1397,12 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
     totalDeduct+=eff[k];
   });
 
-  var net=staff.salary-totalDeduct+bonuses+extraWork;
+  var net=monthlyRate-totalDeduct+bonuses+extraWork;
   /* Deductions can still exceed the salary — a ₹10,000 advance against ₹8,000
      of pay. You cannot hand over a negative amount, so netPayable stays
      clamped at zero and the remainder is reported as unrecovered, which the
      next month picks up as its carry-in. */
-  return {baseSalary:staff.salary,leaveDays:leaveDays,
+  return {baseSalary:monthlyRate,leaveDays:leaveDays,
           leaveDeduction:raw.leave,advances:raw.advances,expenses:raw.expenses,
           loanInst:raw.loan,shortHours:raw.shortHours,carryIn:raw.carry,
           bonuses:bonuses,extraWork:extraWork,
@@ -1772,9 +1812,17 @@ function StaffModal({lang,onClose,onSave,existing}){
     reader.readAsDataURL(file);
   }
   var [errMsg,setErrMsg]=useState('');
+  var [raiseFrom,setRaiseFrom]=useState(todayStr().slice(0,7));
+  /* Only an edit that actually moves the number is a rate change; retyping the
+     same figure, or filling in a brand-new staff member, is not. */
+  var salaryChanged=!!existing&&Number(form.salary||0)!==Number(existing.salary||0);
+
   function handleSave(){
     if(!form.name.trim()){setErrMsg(t.errName);return;}
-    onSave(Object.assign({},form,{id:existing?existing.id:uid(),salary:Number(form.salary)||0,phone:normalizePhone(form.phone||'')}));
+    var amount=Number(form.salary)||0;
+    var next=Object.assign({},form,{id:existing?existing.id:uid(),salary:amount,phone:normalizePhone(form.phone||'')});
+    if(salaryChanged) next.salaryHistory=withSalaryChange(existing,amount,raiseFrom);
+    onSave(next);
   }
 
   return (
@@ -1812,6 +1860,16 @@ function StaffModal({lang,onClose,onSave,existing}){
         )}
       </FLabel>
       <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder="0" /></FLabel>
+      {salaryChanged&&(
+        <div className="rounded-2xl mb-4" style={{background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px'}}>
+          <p style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08',margin:'0 0 4px'}}>
+            {t.raiseFromLabel.replace('{old}',fmt(existing.salary||0)).replace('{new}',fmt(Number(form.salary)||0))}
+          </p>
+          <p style={{fontSize:fsr(12),color:'#8B5E08',margin:'0 0 8px'}}>{t.raiseFromHint}</p>
+          <input type="month" value={raiseFrom} onChange={function(e){setRaiseFrom(e.target.value);}}
+            className="inp" style={{width:'100%'}} />
+        </div>
+      )}
       <FLabel label={t.fphone} hint={t.fphoneHint}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
       <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
       <FLabel label={t.fpay} hint={t.hintPayDay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
@@ -2254,6 +2312,13 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
             <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
               <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>💵 {t.fsalary}</p>
               <p style={{fontSize:fsr(14),color:'var(--accent)',fontWeight:800,margin:0}}>{fmt(staff.salary)}</p>
+              {(staff.salaryHistory||[]).length>1&&(
+                <p style={{fontSize:fsr(10),color:'var(--muted)',margin:'4px 0 0',lineHeight:1.5}}>
+                  {staff.salaryHistory.slice().reverse().slice(0,3).map(function(e){
+                    return fmt(e.amount)+' '+t.raiseSince+' '+(e.ym==='0000-01'?'—':t.months[Number(e.ym.slice(5,7))-1]+' '+e.ym.slice(0,4));
+                  }).join(' · ')}
+                </p>
+              )}
             </div>
             {staff.payDay&&(
               <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
@@ -3014,7 +3079,7 @@ function LeavesTab({lang,homeId,workingDays,syncKey}){
             <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(15)}}>{t.mFull[month-1]} {year}</span>
             <button onClick={nextM} className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{background:'var(--surface)',border:'1px solid var(--border)',cursor:'pointer'}}>›</button>
           </div>
-          <LeaveCalendar staffId={s.id} staffSalary={s.salary} lang={lang} year={year} month={month} workingDays={workingDays} homeId={homeId} syncKey={syncKey} />
+          <LeaveCalendar staffId={s.id} staffSalary={salaryFor(s,year,month)} lang={lang} year={year} month={month} workingDays={workingDays} homeId={homeId} syncKey={syncKey} />
         </div>
       ) : <p className="text-center mt-16" style={{color:'var(--muted)'}}>{t.noStaff}</p>}
     </div>
@@ -3518,7 +3583,10 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     var aLoan=sLed.filter(function(e){return e.type==='loan'&&e.status==='active';});
     var lBal=aLoan.reduce(function(a,e){return a+Math.max(0,e.amount-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));},0);
     var paid=payments.filter(function(p){return p.staffId===s.id&&p.year===selYear;}).reduce(function(a,p){return a+p.amount;},0);
-    return {id:s.id,name:s.name,role:s.role,tSal:paid||s.salary*12,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort,tExtraHelp:tExtraHelp};
+    /* Twelve times the current salary would misreport any year containing a
+       raise, so the estimate adds up each month at the rate in force then. */
+    var estYear=0; for(var em=1;em<=12;em++) estYear+=salaryFor(s,selYear,em);
+    return {id:s.id,name:s.name,role:s.role,tSal:paid||estYear,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort,tExtraHelp:tExtraHelp};
   });
 
   /* Extra Help entries not tied to any current staff member (no staffId, or
