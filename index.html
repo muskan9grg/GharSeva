@@ -358,6 +358,16 @@ en:{
   waiveOff:'Do not charge this month',
   waiveUndo:'Charge this again',
   waiveNote:'{n} charge(s) cancelled for this month. Tap ↺ to bring one back.',
+  undoPay:'Undo this payment',
+  undoConfirm:'Undo this salary payment?',
+  undoWillRemove:'The record of {amt} paid will be removed.',
+  undoWillRestore:'{n} loan instalment(s) will be put back.',
+  undoLoanUnknown:'This payment is from an older version, so its loan instalments cannot be put back automatically. Please check the loan afterwards.',
+  undoYes:'Yes, undo',
+  undoneOk:'Payment undone',
+  undoBlocked:'To undo this, first undo {m}.',
+  undoHistory:'Undone payments',
+  undoneOn:'undone on',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
@@ -523,6 +533,16 @@ hi:{
   waiveOff:'इस महीने न काटें',
   waiveUndo:'फिर से काटें',
   waiveNote:'इस महीने {n} कटौती रद्द की गई है। वापस लाने के लिए ↺ दबाएँ।',
+  undoPay:'यह भुगतान वापस लें',
+  undoConfirm:'क्या यह वेतन भुगतान वापस लेना है?',
+  undoWillRemove:'{amt} भुगतान का रिकॉर्ड हट जाएगा।',
+  undoWillRestore:'{n} लोन किस्त वापस जुड़ जाएगी।',
+  undoLoanUnknown:'यह भुगतान पुराने वर्जन का है, इसलिए इसकी लोन किस्तें अपने आप वापस नहीं हो सकतीं। कृपया बाद में लोन जाँच लें।',
+  undoYes:'हाँ, वापस लें',
+  undoneOk:'भुगतान वापस लिया गया',
+  undoBlocked:'इसे वापस लेने के लिए, पहले {m} वापस लें।',
+  undoHistory:'वापस लिए गए भुगतान',
+  undoneOn:'वापस लिया',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
@@ -557,6 +577,7 @@ const SK={
   payments:h=>'gs_pay_'+h,
   leaves:(s,ym)=>'gs_lv_'+s+'_'+ym,
   waivers:h=>'gs_waive_'+h,
+  undos:h=>'gs_undo_'+h,
 };
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -960,6 +981,8 @@ const getLeaves=(s,ym)=>lsGet(SK.leaves(s,ym),{});
 const saveLeaves=(s,ym,l)=>lsSet(SK.leaves(s,ym),l);
 const getWaivers=h=>lsGet(SK.waivers(h),{});
 const saveWaivers=(h,w)=>lsSet(SK.waivers(h),w);
+const getUndos=h=>lsGet(SK.undos(h),[]);
+const saveUndos=(h,u)=>lsSet(SK.undos(h),u);
 
 /* ── WAIVED CHARGES ───────────────────────────────────────────
    A charge the employer has cancelled for one staff member for one month —
@@ -1027,6 +1050,16 @@ function fbSaveWaivers(homeId, newW){
   Object.keys(newW).forEach(function(k){ batch.set(fbDb.doc('homes/'+homeId+'/waivers/'+k),{items:newW[k]}); });
   Object.keys(old).forEach(function(k){ if(!newW[k]) batch.delete(fbDb.doc('homes/'+homeId+'/waivers/'+k)); });
   batch.commit().catch(function(e){console.warn('fbSaveWaivers:',e);});
+}
+/* Reversed payments. Deliberately a separate store: the payments list stays a
+   record of money that actually moved, so no salary figure anywhere has to
+   remember to filter this out. Nothing here is ever read by a calculation. */
+function fbSaveUndos(homeId, newU){
+  saveUndos(homeId,newU);
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  var batch=fbDb.batch();
+  newU.forEach(function(u){ batch.set(fbDb.doc('homes/'+homeId+'/undos/'+u.id),u); });
+  batch.commit().catch(function(e){console.warn('fbSaveUndos:',e);});
 }
 function fbSaveLeaves(homeId, staffId, ym, dates){
   saveLeaves(staffId,ym,dates);
@@ -1361,14 +1394,73 @@ function applyLoanInstalments(ledger,staffId,waived){
   /* If the instalment was waived for this month, no money changed hands, so
      the loan must not move at all — advancing it here would pay the loan down
      out of nothing and quietly rob the staff member of an instalment. */
-  if((waived||[]).indexOf('loan')>=0) return ledger||[];
-  return (ledger||[]).map(function(e){
+  if((waived||[]).indexOf('loan')>=0) return {ledger:ledger||[],advanced:[]};
+  /* Which loans this payment actually moved is recorded on the payment, so an
+     undo can put back exactly those and nothing else — loans taken out later,
+     or closed by a cash repayment in the meantime, must not be disturbed. */
+  var advanced=[];
+  var next=(ledger||[]).map(function(e){
     if(e.staffId!==staffId||e.type!=='loan'||e.status!=='active') return e;
     var due=loanDue(e);
+    /* Nothing left owing: tidy the status, but no instalment was taken, so
+       this is not something an undo should reverse. */
     if(due<=0) return Object.assign({},e,{status:'closed'});
     var p=(e.paidInstallments||0)+1;
     var settled=(loanRemaining(e)-due)<=0||p>=(e.totalInstallments||Infinity);
+    advanced.push(e.id);
     return Object.assign({},e,{paidInstallments:p,status:settled?'closed':'active'});
+  });
+  return {ledger:next,advanced:advanced};
+}
+
+/* The exact inverse: step back the instalment each named loan was advanced by,
+   then let the outstanding balance decide whether it is open again, rather
+   than assuming — a loan may since have been closed by a cash repayment, and
+   that closure is not this payment's to undo. */
+function revertLoanInstalments(ledger,staffId,loanIds){
+  var ids=loanIds||[];
+  if(!ids.length) return ledger||[];
+  return (ledger||[]).map(function(e){
+    if(e.staffId!==staffId||e.type!=='loan'||ids.indexOf(e.id)<0) return e;
+    var upd=Object.assign({},e,{paidInstallments:Math.max(0,(e.paidInstallments||0)-1)});
+    upd.status=loanRemaining(upd)>0?'active':'closed';
+    return upd;
+  });
+}
+
+/* A month may only be reopened if no later month has been settled. Undoing an
+   earlier month would otherwise strand the later one: its carry-in came from
+   this month's shortfall, and that shortfall is about to stop existing. */
+function laterPaidMonth(payments,staffId,year,month){
+  var after=(payments||[]).filter(function(p){
+    return p.staffId===staffId&&(p.year*12+p.month)>(year*12+month);
+  }).sort(function(a,b){return (a.year*12+a.month)-(b.year*12+b.month);});
+  return after.length?after[0]:null;
+}
+
+/* Reopen a settled month: remove the payment, step the loans it advanced back,
+   and note who reversed it. Written once and shared by every screen that
+   offers an undo, so a reversal cannot mean two different things depending on
+   where it was pressed. Returns false if the month may not be reopened. */
+function undoSalaryPayment(homeId,rec,actorUid,actorName){
+  var payments=getPayments(homeId);
+  if(!rec||laterPaidMonth(payments,rec.staffId,rec.year,rec.month)) return false;
+  fbSaveLedger(homeId,revertLoanInstalments(getLedger(homeId),rec.staffId,rec.loanAdvances));
+  fbSavePayments(homeId,payments.filter(function(p){return p.key!==rec.key;}));
+  fbSaveUndos(homeId,getUndos(homeId).concat([{
+    id:uid(),key:rec.key,staffId:rec.staffId,year:rec.year,month:rec.month,
+    amount:rec.amount||0,paidOn:rec.date||'',undoneOn:todayStr(),
+    byUid:actorUid||'',byName:actorName||''
+  }]));
+  return true;
+}
+
+/* An older payment predates loanAdvances being recorded, so there is no way to
+   know which loans it moved. The undo still works, but the loans must be put
+   right by hand — better to say so than to guess and quietly corrupt one. */
+function undoLoansUnknown(rec,ledger){
+  return !!rec&&!rec.loanAdvances&&(ledger||[]).some(function(e){
+    return e.staffId===rec.staffId&&e.type==='loan'&&(e.paidInstallments||0)>0;
   });
 }
 
@@ -1894,6 +1986,63 @@ function StaleNotice({paidRec,calc,t}){
   );
 }
 
+/* Reopens a settled month. Two-step by design — reversing a payment moves loan
+   instalments as well as the payment itself, so it should not be one stray tap
+   on a phone. Refuses outright when a later month is already settled, naming
+   the month that has to be undone first. */
+function UndoPayment({rec,homeId,ledger,payments,t,mc,onDone}){
+  var [ask,setAsk]=useState(false);
+  if(!rec) return null;
+  var blocker=laterPaidMonth(payments,rec.staffId,rec.year,rec.month);
+  var loansUnknown=undoLoansUnknown(rec,ledger);
+  var nLoans=(rec.loanAdvances||[]).length;
+
+  if(blocker) return (
+    <p style={{fontSize:fsr(12),color:'var(--muted)',marginTop:10,lineHeight:1.5}}>
+      {t.undoBlocked.replace('{m}',t.mFull[blocker.month-1]+' '+blocker.year)}
+    </p>
+  );
+
+  if(!ask) return (
+    <button onClick={function(){setAsk(true);}}
+      style={{marginTop:12,padding:'9px 16px',borderRadius:12,cursor:'pointer',
+        border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',
+        fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif'}}>
+      ↩ {t.undoPay}
+    </button>
+  );
+
+  return (
+    <div className="rounded-2xl" style={{marginTop:12,background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px',textAlign:'left'}}>
+      <p style={{fontSize:fsr(14),fontWeight:800,color:'#8B5E08',margin:0}}>{t.undoConfirm}</p>
+      <ul style={{margin:'8px 0 0',paddingLeft:18,color:'#8B5E08',fontSize:fsr(13),lineHeight:1.6}}>
+        <li>{t.undoWillRemove.replace('{amt}',fmt(rec.amount||0))}</li>
+        {nLoans>0&&<li>{t.undoWillRestore.replace('{n}',nLoans)}</li>}
+        {loansUnknown&&<li style={{fontWeight:800}}>{t.undoLoanUnknown}</li>}
+      </ul>
+      <div className="flex gap-2" style={{marginTop:12}}>
+        <button onClick={function(){setAsk(false);}}
+          style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',
+            color:'var(--ink2)',fontWeight:800,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+          {t.cancel}
+        </button>
+        <button onClick={function(){
+            /* On a single-device household there is nobody to attribute this
+               to, so the log records no name rather than a placeholder. */
+            var named=mc&&!mc.guestMode&&mc.uid;
+            var ok=undoSalaryPayment(homeId,rec,named?mc.uid:'',named?memberLabel(mc.uid,mc.members,t):'');
+            setAsk(false);
+            if(ok) onDone&&onDone();
+          }}
+          style={{flex:1,padding:'10px',borderRadius:12,border:'none',background:'var(--danger)',
+            color:'#fff',fontWeight:800,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
+          {t.undoYes}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* The part of this month's deductions the salary could not cover. */
 function UnrecoveredNotice({calc,t}){
   if(!calc||!calc.unrecovered) return null;
@@ -1952,9 +2101,11 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
       rec.paidBy=payer;
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
+    var loans=applyLoanInstalments(ledger,staff.id,calc.waived);
+    rec.loanAdvances=loans.advanced;
     var newPays=payments.concat([rec]);
-    var newLed=applyLoanInstalments(ledger,staff.id,calc.waived);
-    fbSavePayments(homeId,newPays); fbSaveLedger(homeId,newLed);
+    fbSavePayments(homeId,newPays); fbSaveLedger(homeId,loans.ledger);
+    setPayments(newPays); setLedger(loans.ledger);
     setDone(true);
     setWAMsg(waTemplate('salary',staff,calc.netPayable,pDate,home.name,lang));
     onPaid&&onPaid();
@@ -2001,6 +2152,13 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
               </p>
             )}
             {waMsg&&<WACard message={waMsg} phone={staff.phone} t={t} />}
+            <UndoPayment rec={paidRec||payments.find(function(p){return p.key===payKey;})}
+              homeId={homeId} ledger={ledger} payments={payments} t={t} mc={mc}
+              onDone={function(){
+                setPayments(getPayments(homeId)); setLedger(getLedger(homeId));
+                setDone(false); setWAMsg('');
+                onPaid&&onPaid();
+              }} />
           </div>
         : <PrimaryBtn onClick={doConfirm} color="green" full={true}>{t.profConfirmPay}</PrimaryBtn>
       }
@@ -2031,6 +2189,10 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
   var duesTotal=getOutstandingDues(staff.id,payments);
+  var undoneHere=useMemo(function(){
+    return getUndos(homeId).filter(function(u){return u.staffId===staff.id;})
+      .sort(function(a,b){return (b.year*12+b.month)-(a.year*12+a.month);}).slice(0,4);
+  },[homeId,staff.id,payments]);
   var halfDayCount=thisMonthHalf.length;
   var presentDays=Math.max(0,workingDays-leaveCount-halfDayCount*0.5);
   var initials=(staff.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
@@ -2137,6 +2299,18 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
               below, so showing both would print the figure twice. */}
           {!paidRec&&<UnrecoveredNotice calc={calc} t={t} />}
           <StaleNotice paidRec={paidRec} calc={calc} t={t} />
+          {undoneHere.length>0&&(
+            <div className="rounded-2xl mb-4" style={{background:'var(--surface2)',border:'1px solid var(--border)',padding:'10px 14px'}}>
+              <p style={{fontSize:fsr(12),fontWeight:800,color:'var(--muted)',margin:'0 0 6px'}}>↩ {t.undoHistory}</p>
+              {undoneHere.map(function(u){
+                return (
+                  <p key={u.id} style={{fontSize:fsr(12),color:'var(--ink2)',margin:'2px 0'}}>
+                    {t.mFull[u.month-1]} {u.year} · {fmt(u.amount)} · {t.undoneOn} {fmtD(u.undoneOn)}{u.byName?' · '+u.byName:''}
+                  </p>
+                );
+              })}
+            </div>
+          )}
           {duesTotal>0&&(
             <div className="rounded-2xl mb-4" style={{background:'#FCE8E8',border:'1px solid var(--danger)',padding:'10px 14px'}}>
               <div className="flex justify-between items-center">
@@ -2521,10 +2695,11 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
       rec.paidBy=payer;
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
+    var loans=applyLoanInstalments(ledger,selStaff,calc.waived);
+    rec.loanAdvances=loans.advanced;
     var newPays=[...payments,rec];
-    var newLed=applyLoanInstalments(ledger,selStaff,calc.waived);
     fbSavePayments(homeId,newPays); setPayments(newPays);
-    fbSaveLedger(homeId,newLed); setLedger(newLed);
+    fbSaveLedger(homeId,loans.ledger); setLedger(loans.ledger);
     setToast(t.paidOk);
     setWAMsg(waTemplate('salary',s,calc.netPayable,pDate,home.name,lang));
   }
@@ -2646,6 +2821,13 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
                     {t.paidBy}: <b>{payerLabel(paidRec,mc.members,t)}</b>
                   </p>
                 )}
+                <UndoPayment rec={paidRec} homeId={homeId} ledger={ledger} payments={payments}
+                  t={t} mc={mc} onDone={function(){
+                    setPayments(getPayments(homeId)); setLedger(getLedger(homeId));
+                    var st=staff.find(function(x){return x.id===selStaff;});
+                    if(st) setCalc(calcSalary(st,selYear,selMonth,getLedger(homeId),workingDays,homeId));
+                    setWAMsg(''); setToast(t.undoneOk);
+                  }} />
               </div>
             : <div>
                 {showPaidBy&&(
@@ -5029,6 +5211,9 @@ function App(){
       db.collection('homes/'+homeId+'/waivers').onSnapshot(function(snap){
         var w={}; snap.docs.forEach(function(d){ w[d.id]=d.data().items||[]; });
         saveWaivers(homeId,w); bump();
+      }),
+      db.collection('homes/'+homeId+'/undos').onSnapshot(function(snap){
+        saveUndos(homeId,snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});})); bump();
       }),
     ];
     return function(){ clearTimeout(timer); unsubs.forEach(function(u){u();}); };
