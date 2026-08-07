@@ -13,6 +13,10 @@ firebase-debug.log
 # Node
 node_modules/
 
+# Household backups exported from the app. These hold real staff names, phone
+# numbers, salaries and loan balances, and this repository is public.
+GharSeva_Backup_*.json
+
 # Local Claude Code preferences (machine-specific)
 .claude/settings.local.json
 

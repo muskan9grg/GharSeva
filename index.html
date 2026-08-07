@@ -345,6 +345,15 @@ en:{
   waLangHint:'The language your staff receive messages in. This is separate from the app language above.',
   waLangBoth:'Hindi + English',waLangHi:'हिंदी only',waLangEn:'English only',
   inviteWaText:'Join my household on GharSeva! Code: {code} 🏠 ({home})',
+  rUnrecovered:'Could not be deducted',
+  unrecoveredHint:'Deductions were more than the salary. This much is still owed to you.',
+  duesTitle:'Unrecovered dues',
+  duesHint:'Left over from earlier months when deductions were more than the salary.',
+  staleTitle:'⚠️ This month changed after it was paid',
+  staleRecorded:'You recorded',
+  staleNow:'Now works out to',
+  staleMore:'You paid {amt} more than needed.',
+  staleLess:'You paid {amt} less than needed.',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
@@ -497,6 +506,15 @@ hi:{
   waLangHint:'आपके स्टाफ को संदेश किस भाषा में जाएगा। यह ऊपर वाली ऐप भाषा से अलग है।',
   waLangBoth:'हिंदी + अंग्रेज़ी',waLangHi:'सिर्फ़ हिंदी',waLangEn:'सिर्फ़ अंग्रेज़ी',
   inviteWaText:'घरसेवा पर मेरे घर से जुड़ें! कोड: {code} 🏠 ({home})',
+  rUnrecovered:'कट नहीं सका',
+  unrecoveredHint:'कटौती वेतन से ज़्यादा थी। इतना अभी भी आपको देना बाकी है।',
+  duesTitle:'बकाया राशि',
+  duesHint:'पिछले महीनों से बचा हुआ, जब कटौती वेतन से ज़्यादा थी।',
+  staleTitle:'⚠️ भुगतान के बाद इस महीने में बदलाव हुआ है',
+  staleRecorded:'आपने दर्ज किया',
+  staleNow:'अब बनता है',
+  staleMore:'आपने {amt} ज़्यादा दिया है।',
+  staleLess:'आपने {amt} कम दिया है।',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
@@ -1201,12 +1219,27 @@ function maskAadhaar(n){if(!n)return '—';var c=n.replace(/\D/g,'');return c.le
 function maskAccount(n){if(!n)return '—';return n.length<=4?n:'*'.repeat(Math.max(0,n.length-4))+n.slice(-4);}
 function roleLabel(key,lang){var r=getRoles().find(function(r){return r.key===key;});return r?(lang==='hi'?r.hi:r.en):key;}
 
+/* What is genuinely still owed on one loan entry. */
+function loanRemaining(e){
+  return Math.max(0,(e.amount||0)-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));
+}
+
+/* What this loan may take from this month's salary. Never more than is still
+   owed: a ₹5,000 loan repaid at ₹2,000 has only ₹1,000 left on the third
+   month, and deducting the full instalment there overcharged the staff
+   member by ₹1,000 every time a loan did not divide evenly. */
+function loanDue(e){
+  return Math.min(e.installment||0,loanRemaining(e));
+}
+
+function listActiveLoans(staffId,ledger){
+  return (ledger||[]).filter(function(e){
+    return e.staffId===staffId&&e.type==='loan'&&e.status==='active';
+  });
+}
+
 function getLoanBal(staffId,ledger){
-  return (ledger||[])
-    .filter(function(e){return e.staffId===staffId&&e.type==='loan'&&e.status==='active';})
-    .reduce(function(s,e){
-      return s+Math.max(0,e.amount-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));
-    },0);
+  return listActiveLoans(staffId,ledger).reduce(function(s,e){return s+loanRemaining(e);},0);
 }
 
 function calcSalary(staff,year,month,ledger,workingDays){
@@ -1224,13 +1257,47 @@ function calcSalary(staff,year,month,ledger,workingDays){
   var bonuses   =items.filter(function(e){return e.type==='bonus';     }).reduce(function(s,e){return s+(e.amount||0);},0);
   var extraWork =items.filter(function(e){return e.type==='extra_work';}).reduce(function(s,e){return s+(e.amount||0);},0);
   var shortHours=items.filter(function(e){return e.type==='short_hours';}).reduce(function(s,e){return s+(e.amount||0);},0);
-  var loanInst=(ledger||[]).filter(function(e){return e.staffId===staff.id&&e.type==='loan'&&e.status==='active';})
-               .reduce(function(s,e){return s+(e.installment||0);},0);
+  var loanInst=listActiveLoans(staff.id,ledger).reduce(function(s,e){return s+loanDue(e);},0);
   var loanBal=getLoanBal(staff.id,ledger);
   var net=staff.salary-leaveDeduction-advances-expenses-loanInst+bonuses+extraWork-shortHours;
+  /* Deductions can exceed the salary — a ₹10,000 advance against ₹8,000 pay.
+     You still cannot hand over a negative amount, so netPayable stays clamped
+     at zero, but the shortfall is reported instead of being silently dropped:
+     it is money the staff member still owes the household. */
   return {baseSalary:staff.salary,leaveDays:leaveDays,leaveDeduction:leaveDeduction,
           advances:advances,expenses:expenses,loanInst:loanInst,bonuses:bonuses,
-          extraWork:extraWork,shortHours:shortHours,loanBal:loanBal,netPayable:Math.max(0,net)};
+          extraWork:extraWork,shortHours:shortHours,loanBal:loanBal,
+          netPayable:Math.max(0,net),unrecovered:Math.max(0,-net)};
+}
+
+/* Sum of shortfalls already locked into recorded payments — what the staff
+   member has accumulated in dues that no month's salary could absorb. */
+function getUnrecoveredTotal(staffId,payments){
+  return (payments||[]).reduce(function(s,p){
+    return p.staffId===staffId?s+(p.unrecovered||0):s;
+  },0);
+}
+
+/* Advance each active loan by the instalment that was actually deducted, and
+   close any that are now fully repaid. Shared by both salary-payment paths so
+   the two cannot drift apart. A loan closes once nothing is left owing, not
+   merely once the instalment count is reached, so an uneven final instalment
+   settles the loan instead of leaving a stray active balance. */
+function applyLoanInstalments(ledger,staffId){
+  return (ledger||[]).map(function(e){
+    if(e.staffId!==staffId||e.type!=='loan'||e.status!=='active') return e;
+    var due=loanDue(e);
+    if(due<=0) return Object.assign({},e,{status:'closed'});
+    var p=(e.paidInstallments||0)+1;
+    var settled=(loanRemaining(e)-due)<=0||p>=(e.totalInstallments||Infinity);
+    return Object.assign({},e,{paidInstallments:p,status:settled?'closed':'active'});
+  });
+}
+
+/* True when a recorded payment no longer matches what the month now works out
+   to — an entry was added, edited or deleted after the salary was paid. */
+function paymentIsStale(paidRec,calc){
+  return !!(paidRec&&calc&&Number(paidRec.amount)!==Number(calc.netPayable));
 }
 
 /* The message goes to the staff member, so its language is about THEM — not
@@ -1726,6 +1793,43 @@ function QuickLeaveModal({staff,lang,ym,homeId,onClose,onSaved}){
   );
 }
 
+/* Shown when a month's recorded payment no longer matches what it now works
+   out to, so the two figures are never left contradicting each other in
+   silence. Says plainly which way the difference went. */
+function StaleNotice({paidRec,calc,t}){
+  if(!paymentIsStale(paidRec,calc)) return null;
+  var diff=Number(paidRec.amount)-Number(calc.netPayable);
+  var line=(diff>0?t.staleMore:t.staleLess).replace('{amt}',fmt(Math.abs(diff)));
+  return (
+    <div className="rounded-2xl mb-4" style={{background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px'}}>
+      <p style={{fontSize:fsr(14),fontWeight:800,color:'#8B5E08',margin:0}}>{t.staleTitle}</p>
+      <div className="flex justify-between" style={{marginTop:8}}>
+        <span style={{fontSize:fsr(13),color:'#8B5E08'}}>{t.staleRecorded}</span>
+        <span style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08'}}>{fmt(paidRec.amount)}</span>
+      </div>
+      <div className="flex justify-between" style={{marginTop:2}}>
+        <span style={{fontSize:fsr(13),color:'#8B5E08'}}>{t.staleNow}</span>
+        <span style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08'}}>{fmt(calc.netPayable)}</span>
+      </div>
+      <p style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08',margin:'8px 0 0'}}>{line}</p>
+    </div>
+  );
+}
+
+/* The part of this month's deductions the salary could not cover. */
+function UnrecoveredNotice({calc,t}){
+  if(!calc||!calc.unrecovered) return null;
+  return (
+    <div className="rounded-2xl mb-4" style={{background:'#FCE8E8',border:'2px solid var(--danger)',padding:'12px 14px'}}>
+      <div className="flex justify-between items-center">
+        <span style={{fontSize:fsr(14),fontWeight:800,color:'var(--danger)'}}>{t.rUnrecovered}</span>
+        <span style={{fontSize:fsr(17),fontWeight:800,color:'var(--danger)'}}>{fmt(calc.unrecovered)}</span>
+      </div>
+      <p style={{fontSize:fsr(12),color:'var(--danger)',margin:'6px 0 0'}}>{t.unrecoveredHint}</p>
+    </div>
+  );
+}
+
 /* ── SALARY PAY MODAL ───────────────────────────────────────── */
 function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   var t=T[lang];
@@ -1761,18 +1865,13 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
     var rec={key:payKey,staffId:staff.id,year:year,month:month,amount:calc.netPayable,date:pDate};
+    if(calc.unrecovered>0) rec.unrecovered=calc.unrecovered;
     if(showPaidBy&&payer){
       rec.paidBy=payer;
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
     var newPays=payments.concat([rec]);
-    var newLed=ledger.map(function(e){
-      if(e.staffId===staff.id&&e.type==='loan'&&e.status==='active'){
-        var p=(e.paidInstallments||0)+1;
-        return Object.assign({},e,{paidInstallments:p,status:p>=(e.totalInstallments||Infinity)?'closed':'active'});
-      }
-      return e;
-    });
+    var newLed=applyLoanInstalments(ledger,staff.id);
     fbSavePayments(homeId,newPays); fbSaveLedger(homeId,newLed);
     setDone(true);
     setWAMsg(waTemplate('salary',staff,calc.netPayable,pDate,home.name,lang));
@@ -1801,6 +1900,8 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
           <span style={{color:'#fff',fontWeight:800,fontSize:fsr(24)}}>{fmt(calc.netPayable)}</span>
         </div>
       </div>
+      <UnrecoveredNotice calc={calc} t={t} />
+      <StaleNotice paidRec={paidRec} calc={calc} t={t} />
       {!(done||paidRec)&&showPaidBy&&(
         <div>
           {payerErr&&<p style={{fontSize:fsr(13),color:'var(--danger)',fontWeight:700,marginBottom:8}}>{payerErr}</p>}
@@ -1847,6 +1948,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var activeLoans=ledger.filter(function(e){return e.staffId===staff.id&&e.type==='loan'&&e.status==='active';});
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
+  var duesTotal=getUnrecoveredTotal(staff.id,payments);
   var halfDayCount=thisMonthHalf.length;
   var presentDays=Math.max(0,workingDays-leaveCount-halfDayCount*0.5);
   var initials=(staff.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
@@ -1940,11 +2042,28 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
             </div>
             <div className="rounded-xl p-3 text-center" style={{background:paidRec?'#D8EEE2':'var(--accent)',border:'1px solid var(--border)'}}>
               <p style={{fontSize:fsr(11),color:paidRec?'var(--ok)':'rgba(255,255,255,0.7)',fontWeight:700,marginBottom:4}}>
-                {paidRec?'✓ '+t.profAlreadyPaid:t.rNet}
+                {paidRec?t.profAlreadyPaid:t.rNet}
               </p>
-              <p style={{fontSize:fsr(22),fontWeight:800,color:paidRec?'var(--ok)':'#fff',margin:0}}>{fmt(calc.netPayable)}</p>
+              {/* Once paid, this tile is a record of what was handed over, so it
+                  must show the recorded figure — not a live recalculation that
+                  later entries would quietly change underneath the label. */}
+              <p style={{fontSize:fsr(22),fontWeight:800,color:paidRec?'var(--ok)':'#fff',margin:0}}>{fmt(paidRec?paidRec.amount:calc.netPayable)}</p>
             </div>
           </div>
+          {/* Before payment this is a warning about what is about to happen;
+              afterwards the same amount is already counted in the dues total
+              below, so showing both would print the figure twice. */}
+          {!paidRec&&<UnrecoveredNotice calc={calc} t={t} />}
+          <StaleNotice paidRec={paidRec} calc={calc} t={t} />
+          {duesTotal>0&&(
+            <div className="rounded-2xl mb-4" style={{background:'#FCE8E8',border:'1px solid var(--danger)',padding:'10px 14px'}}>
+              <div className="flex justify-between items-center">
+                <span style={{fontSize:fsr(13),fontWeight:800,color:'var(--danger)'}}>⚠️ {t.duesTitle}</span>
+                <span style={{fontSize:fsr(15),fontWeight:800,color:'var(--danger)'}}>{fmt(duesTotal)}</span>
+              </div>
+              <p style={{fontSize:fsr(12),color:'var(--danger)',margin:'4px 0 0'}}>{t.duesHint}</p>
+            </div>
+          )}
           <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}>💸 {t.rAdv}</p>
           {thisMonthAdv.length===0
             ? <p style={{fontSize:fsr(13),color:'var(--muted)',marginBottom:12}}>{t.profNoAdv}</p>
@@ -2300,18 +2419,13 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
     var rec={key:key,staffId:selStaff,year:selYear,month:selMonth,amount:calc.netPayable,date:pDate};
+    if(calc.unrecovered>0) rec.unrecovered=calc.unrecovered;
     if(showPaidBy&&payer){
       rec.paidBy=payer;
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
     var newPays=[...payments,rec];
-    var newLed=ledger.map(function(e){
-      if(e.staffId===selStaff&&e.type==='loan'&&e.status==='active'){
-        var paid=(e.paidInstallments||0)+1;
-        return Object.assign({},e,{paidInstallments:paid,status:paid>=(e.totalInstallments||Infinity)?'closed':'active'});
-      }
-      return e;
-    });
+    var newLed=applyLoanInstalments(ledger,selStaff);
     fbSavePayments(homeId,newPays); setPayments(newPays);
     fbSaveLedger(homeId,newLed); setLedger(newLed);
     setToast(t.paidOk);
@@ -2389,6 +2503,9 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
               <span style={{color:'#fff',fontWeight:800,fontSize:fsr(24)}}>{fmt(calc.netPayable)}</span>
             </div>
           </div>
+
+          <UnrecoveredNotice calc={calc} t={t} />
+          <StaleNotice paidRec={paidRec} calc={calc} t={t} />
 
           {calc.loanBal>0 && (
             <div className="flex justify-between items-center px-4 py-2 mb-3 rounded-2xl" style={{background:'#EAE4F5',border:'1px solid var(--purple)'}}>
