@@ -354,6 +354,10 @@ en:{
   staleNow:'Now works out to',
   staleMore:'You paid {amt} more than needed.',
   staleLess:'You paid {amt} less than needed.',
+  rCarry:'Dues from last month',
+  waiveOff:'Do not charge this month',
+  waiveUndo:'Charge this again',
+  waiveNote:'{n} charge(s) cancelled for this month. Tap ↺ to bring one back.',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
@@ -515,6 +519,10 @@ hi:{
   staleNow:'अब बनता है',
   staleMore:'आपने {amt} ज़्यादा दिया है।',
   staleLess:'आपने {amt} कम दिया है।',
+  rCarry:'पिछले महीने का बकाया',
+  waiveOff:'इस महीने न काटें',
+  waiveUndo:'फिर से काटें',
+  waiveNote:'इस महीने {n} कटौती रद्द की गई है। वापस लाने के लिए ↺ दबाएँ।',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
@@ -548,6 +556,7 @@ const SK={
   ledger:h=>'gs_ledger_'+h,
   payments:h=>'gs_pay_'+h,
   leaves:(s,ym)=>'gs_lv_'+s+'_'+ym,
+  waivers:h=>'gs_waive_'+h,
 };
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -626,7 +635,7 @@ function buildReportData(homeId,period,lang,members,workingDays){
     var real=payments.filter(function(p){return p.staffId===s.id&&p.year===year&&p.month===m;})
                       .reduce(function(a,p){return a+(p.amount||0);},0);
     if(real>0) return real;
-    return new Date(year,m-1,1)>now ? 0 : calcSalary(s,year,m,ledger,workingDays).netPayable;
+    return new Date(year,m-1,1)>now ? 0 : calcSalary(s,year,m,ledger,workingDays,homeId).netPayable;
   }
   function monthAttendance(staffId,m){
     var lv=getLeaves(staffId,padYM(year,m));
@@ -949,6 +958,23 @@ const getPayments=h=>lsGet(SK.payments(h),[]);
 const savePayments=(h,p)=>lsSet(SK.payments(h),p);
 const getLeaves=(s,ym)=>lsGet(SK.leaves(s,ym),{});
 const saveLeaves=(s,ym,l)=>lsSet(SK.leaves(s,ym),l);
+const getWaivers=h=>lsGet(SK.waivers(h),{});
+const saveWaivers=(h,w)=>lsSet(SK.waivers(h),w);
+
+/* ── WAIVED CHARGES ───────────────────────────────────────────
+   A charge the employer has cancelled for one staff member for one month —
+   "don't cut the loan this month". Keyed by staff+month, holding the names of
+   the deduction lines to skip. Waiving is a decision about the household, not
+   about one phone, so it syncs like everything else. */
+function waiveKey(staffId,year,month){ return staffId+'_'+year+'_'+month; }
+function getWaived(homeId,staffId,year,month){
+  return getWaivers(homeId)[waiveKey(staffId,year,month)]||[];
+}
+function setWaived(homeId,staffId,year,month,list){
+  var all=getWaivers(homeId), k=waiveKey(staffId,year,month);
+  if(list&&list.length) all[k]=list; else delete all[k];
+  fbSaveWaivers(homeId,all);
+}
 
 /* ── FIRESTORE WRITE WRAPPERS ─────────────────────────────────
    Each wrapper writes to localStorage first (instant UI update),
@@ -992,6 +1018,15 @@ function fbSavePayments(homeId, newPays){
   var newKeys=newPays.map(function(p){return p.key;});
   old.forEach(function(p){ if(!newKeys.includes(p.key)) batch.delete(fbDb.doc('homes/'+homeId+'/payments/'+p.key)); });
   batch.commit().catch(function(e){console.warn('fbSavePayments:',e);});
+}
+function fbSaveWaivers(homeId, newW){
+  var old=getWaivers(homeId);
+  saveWaivers(homeId,newW);
+  if(!FIREBASE_ENABLED||!fbDb) return;
+  var batch=fbDb.batch();
+  Object.keys(newW).forEach(function(k){ batch.set(fbDb.doc('homes/'+homeId+'/waivers/'+k),{items:newW[k]}); });
+  Object.keys(old).forEach(function(k){ if(!newW[k]) batch.delete(fbDb.doc('homes/'+homeId+'/waivers/'+k)); });
+  batch.commit().catch(function(e){console.warn('fbSaveWaivers:',e);});
 }
 function fbSaveLeaves(homeId, staffId, ym, dates){
   saveLeaves(staffId,ym,dates);
@@ -1242,7 +1277,24 @@ function getLoanBal(staffId,ledger){
   return listActiveLoans(staffId,ledger).reduce(function(s,e){return s+loanRemaining(e);},0);
 }
 
-function calcSalary(staff,year,month,ledger,workingDays){
+/* Every line that reduces the salary, in one place. The net is summed from
+   this list alone, so a line cannot be waived in the display yet still
+   deducted, and a new charge cannot be added to the total without also being
+   waivable. Bonus and overtime are deliberately absent: they pay the staff
+   member, so there is nothing to cancel. */
+const DEDUCTION_KEYS=['leave','advances','expenses','loan','shortHours','carry'];
+
+/* What last month could not recover, now due this month. Only a month that
+   was actually paid carries anything: an unsettled month is still open, so
+   its shortfall is not yet a debt. */
+function getCarryIn(homeId,staffId,year,month){
+  if(!homeId) return 0;
+  var py=month===1?year-1:year, pm=month===1?12:month-1;
+  var rec=getPayments(homeId).find(function(p){return p.key===staffId+'_'+py+'_'+pm;});
+  return rec?(rec.unrecovered||0):0;
+}
+
+function calcSalary(staff,year,month,ledger,workingDays,homeId){
   var ym=padYM(year,month);
   var lv=getLeaves(staff.id,ym);
   var leaveDays=0;
@@ -1250,32 +1302,54 @@ function calcSalary(staff,year,month,ledger,workingDays){
     if(e[1]==='leave') leaveDays++;
   });
   var daily=staff.salary/(workingDays||30);
-  var leaveDeduction=Math.round(daily*leaveDays);
   var items=(ledger||[]).filter(function(e){return e.staffId===staff.id && e.date && e.date.startsWith(ym);});
-  var advances  =items.filter(function(e){return e.type==='advance';   }).reduce(function(s,e){return s+(e.amount||0);},0);
-  var expenses  =items.filter(function(e){return e.type==='expense';   }).reduce(function(s,e){return s+(e.amount||0);},0);
-  var bonuses   =items.filter(function(e){return e.type==='bonus';     }).reduce(function(s,e){return s+(e.amount||0);},0);
-  var extraWork =items.filter(function(e){return e.type==='extra_work';}).reduce(function(s,e){return s+(e.amount||0);},0);
-  var shortHours=items.filter(function(e){return e.type==='short_hours';}).reduce(function(s,e){return s+(e.amount||0);},0);
-  var loanInst=listActiveLoans(staff.id,ledger).reduce(function(s,e){return s+loanDue(e);},0);
-  var loanBal=getLoanBal(staff.id,ledger);
-  var net=staff.salary-leaveDeduction-advances-expenses-loanInst+bonuses+extraWork-shortHours;
-  /* Deductions can exceed the salary — a ₹10,000 advance against ₹8,000 pay.
-     You still cannot hand over a negative amount, so netPayable stays clamped
-     at zero, but the shortfall is reported instead of being silently dropped:
-     it is money the staff member still owes the household. */
-  return {baseSalary:staff.salary,leaveDays:leaveDays,leaveDeduction:leaveDeduction,
-          advances:advances,expenses:expenses,loanInst:loanInst,bonuses:bonuses,
-          extraWork:extraWork,shortHours:shortHours,loanBal:loanBal,
+  function sum(type){ return items.filter(function(e){return e.type===type;}).reduce(function(s,e){return s+(e.amount||0);},0); }
+  var bonuses=sum('bonus'), extraWork=sum('extra_work');
+
+  /* Raw amounts — what each charge would be if nothing were waived. Shown in
+     the breakdown (struck through when waived) so the employer can always see
+     what was cancelled rather than the line silently disappearing. */
+  var raw={
+    leave:      Math.round(daily*leaveDays),
+    advances:   sum('advance'),
+    expenses:   sum('expense'),
+    loan:       listActiveLoans(staff.id,ledger).reduce(function(s,e){return s+loanDue(e);},0),
+    shortHours: sum('short_hours'),
+    carry:      getCarryIn(homeId,staff.id,year,month)
+  };
+  var waived=homeId?getWaived(homeId,staff.id,year,month):[];
+  var eff={}, totalDeduct=0;
+  DEDUCTION_KEYS.forEach(function(k){
+    eff[k]=waived.indexOf(k)>=0?0:raw[k];
+    totalDeduct+=eff[k];
+  });
+
+  var net=staff.salary-totalDeduct+bonuses+extraWork;
+  /* Deductions can still exceed the salary — a ₹10,000 advance against ₹8,000
+     of pay. You cannot hand over a negative amount, so netPayable stays
+     clamped at zero and the remainder is reported as unrecovered, which the
+     next month picks up as its carry-in. */
+  return {baseSalary:staff.salary,leaveDays:leaveDays,
+          leaveDeduction:raw.leave,advances:raw.advances,expenses:raw.expenses,
+          loanInst:raw.loan,shortHours:raw.shortHours,carryIn:raw.carry,
+          bonuses:bonuses,extraWork:extraWork,
+          loanBal:getLoanBal(staff.id,ledger),
+          raw:raw,eff:eff,waived:waived,totalDeduct:totalDeduct,
           netPayable:Math.max(0,net),unrecovered:Math.max(0,-net)};
 }
 
-/* Sum of shortfalls already locked into recorded payments — what the staff
-   member has accumulated in dues that no month's salary could absorb. */
-function getUnrecoveredTotal(staffId,payments){
-  return (payments||[]).reduce(function(s,p){
-    return p.staffId===staffId?s+(p.unrecovered||0):s;
-  },0);
+/* What the staff member still owes the household.
+   This is the latest settled month's shortfall, NOT a sum across months. Each
+   month charges the previous month's shortfall as its carry-in, so that figure
+   already contains everything still outstanding — adding the months together
+   would count the same debt once per month it survived. */
+function getOutstandingDues(staffId,payments){
+  var latest=null;
+  (payments||[]).forEach(function(p){
+    if(p.staffId!==staffId) return;
+    if(!latest||(p.year*12+p.month)>(latest.year*12+latest.month)) latest=p;
+  });
+  return latest?(latest.unrecovered||0):0;
 }
 
 /* Advance each active loan by the instalment that was actually deducted, and
@@ -1283,7 +1357,11 @@ function getUnrecoveredTotal(staffId,payments){
    the two cannot drift apart. A loan closes once nothing is left owing, not
    merely once the instalment count is reached, so an uneven final instalment
    settles the loan instead of leaving a stray active balance. */
-function applyLoanInstalments(ledger,staffId){
+function applyLoanInstalments(ledger,staffId,waived){
+  /* If the instalment was waived for this month, no money changed hands, so
+     the loan must not move at all — advancing it here would pay the loan down
+     out of nothing and quietly rob the staff member of an instalment. */
+  if((waived||[]).indexOf('loan')>=0) return ledger||[];
   return (ledger||[]).map(function(e){
     if(e.staffId!==staffId||e.type!=='loan'||e.status!=='active') return e;
     var due=loanDue(e);
@@ -1849,15 +1927,19 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   var [payerErr,setPayerErr]=useState('');
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
-  var calc=calcSalary(staff,year,month,ledger,workingDays);
+  var calc=calcSalary(staff,year,month,ledger,workingDays,homeId);
+  /* Built from the effective amounts, not the raw ones: a charge cancelled in
+     the Pay tab falls to zero here and drops out of the list, so this modal
+     can never show a deduction the net has already excluded. */
   var rows=[{label:t.rBase,val:calc.baseSalary,color:'var(--ink)'}];
-  if(calc.leaveDays>0) rows.push({label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')',val:-calc.leaveDeduction,color:'var(--danger)'});
-  if(calc.advances>0) rows.push({label:t.rAdv,val:-calc.advances,color:'var(--warn)'});
-  if(calc.expenses>0) rows.push({label:t.rExp,val:-calc.expenses,color:'var(--warn)'});
-  if(calc.loanInst>0) rows.push({label:t.rLoan,val:-calc.loanInst,color:'var(--purple)'});
+  if(calc.eff.leave>0) rows.push({label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')',val:-calc.eff.leave,color:'var(--danger)'});
+  if(calc.eff.advances>0) rows.push({label:t.rAdv,val:-calc.eff.advances,color:'var(--warn)'});
+  if(calc.eff.expenses>0) rows.push({label:t.rExp,val:-calc.eff.expenses,color:'var(--warn)'});
+  if(calc.eff.loan>0) rows.push({label:t.rLoan,val:-calc.eff.loan,color:'var(--purple)'});
+  if(calc.eff.carry>0) rows.push({label:t.rCarry,val:-calc.eff.carry,color:'var(--danger)'});
   if(calc.bonuses>0) rows.push({label:t.rBonus,val:calc.bonuses,color:'var(--ok)'});
   if(calc.extraWork>0) rows.push({label:t.rExtraWork,val:calc.extraWork,color:'var(--ok)'});
-  if(calc.shortHours>0) rows.push({label:t.rShortHours,val:-calc.shortHours,color:'var(--warn)'});
+  if(calc.eff.shortHours>0) rows.push({label:t.rShortHours,val:-calc.eff.shortHours,color:'var(--warn)'});
   function doConfirm(){
     if(paidRec||done) return;
     if(showPaidBy&&payer==='other'&&!payerName.trim()){setPayerErr(t.errPayerName);return;}
@@ -1871,7 +1953,7 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
     var newPays=payments.concat([rec]);
-    var newLed=applyLoanInstalments(ledger,staff.id);
+    var newLed=applyLoanInstalments(ledger,staff.id,calc.waived);
     fbSavePayments(homeId,newPays); fbSaveLedger(homeId,newLed);
     setDone(true);
     setWAMsg(waTemplate('salary',staff,calc.netPayable,pDate,home.name,lang));
@@ -1939,7 +2021,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var [showEntryModal,setShowEntryModal]=useState(null);
   var [showLeaveModal,setShowLeaveModal]=useState(false);
   var [toast,setToast]=useState('');
-  var calc=useMemo(function(){return calcSalary(staff,year,month,ledger,workingDays);},[ledger,workingDays,staff]);
+  var calc=useMemo(function(){return calcSalary(staff,year,month,ledger,workingDays,homeId);},[ledger,workingDays,staff,homeId,payments]);
   var leaveMap=getLeaves(staff.id,ym);
   var leaveCount=0,holidayCount=0;
   Object.values(leaveMap).forEach(function(v){if(v==='leave')leaveCount++;else if(v==='holiday')holidayCount++;});
@@ -1948,7 +2030,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var activeLoans=ledger.filter(function(e){return e.staffId===staff.id&&e.type==='loan'&&e.status==='active';});
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
-  var duesTotal=getUnrecoveredTotal(staff.id,payments);
+  var duesTotal=getOutstandingDues(staff.id,payments);
   var halfDayCount=thisMonthHalf.length;
   var presentDays=Math.max(0,workingDays-leaveCount-halfDayCount*0.5);
   var initials=(staff.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
@@ -2333,6 +2415,9 @@ function StaffTab({lang,homeId,homes,workingDays,onStaffChange,syncKey}){
        lingers in Annual Summary totals after deletion */
     var nextPayments=getPayments(homeId).filter(function(p){return p.staffId!==id;});
     fbSavePayments(homeId,nextPayments);
+    var w=getWaivers(homeId), nextW={};
+    Object.keys(w).forEach(function(k){ if(!k.startsWith(id+'_')) nextW[k]=w[k]; });
+    fbSaveWaivers(homeId,nextW);
     setSelectedStaff(null);
     onStaffChange && onStaffChange();
   }
@@ -2405,8 +2490,20 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
   function doCalc(){
     var s=staff.find(function(x){return x.id===selStaff;});
     if(!s) return;
-    setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays));
+    setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays,homeId));
     setWAMsg('');
+  }
+
+  /* Cancel or restore one charge for this staff member for this month. The
+     figures are always re-derived from calcSalary rather than adjusted by
+     hand, so the breakdown and the net can never disagree. */
+  function toggleWaive(k){
+    var s=staff.find(function(x){return x.id===selStaff;});
+    if(!s) return;
+    var cur=getWaived(homeId,selStaff,selYear,selMonth);
+    setWaived(homeId,selStaff,selYear,selMonth,
+      cur.indexOf(k)>=0?cur.filter(function(x){return x!==k;}):cur.concat([k]));
+    setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays,homeId));
   }
 
   function doMarkPaid(){
@@ -2425,7 +2522,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
     var newPays=[...payments,rec];
-    var newLed=applyLoanInstalments(ledger,selStaff);
+    var newLed=applyLoanInstalments(ledger,selStaff,calc.waived);
     fbSavePayments(homeId,newPays); setPayments(newPays);
     fbSaveLedger(homeId,newLed); setLedger(newLed);
     setToast(t.paidOk);
@@ -2480,20 +2577,38 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
           <div className="rounded-2xl overflow-hidden mb-4" style={{border:'1px solid var(--border)'}}>
             {[
               {label:t.rBase, val:calc.baseSalary, sign:0},
-              {label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')', val:calc.leaveDeduction, sign:-1},
-              {label:t.rAdv, val:calc.advances, sign:-1},
-              {label:t.rLoan, val:calc.loanInst, sign:-1},
-              {label:t.rExp, val:calc.expenses, sign:-1},
+              {label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')', val:calc.leaveDeduction, sign:-1, k:'leave'},
+              {label:t.rAdv, val:calc.advances, sign:-1, k:'advances'},
+              {label:t.rLoan, val:calc.loanInst, sign:-1, k:'loan'},
+              {label:t.rExp, val:calc.expenses, sign:-1, k:'expenses'},
+              {label:t.rCarry, val:calc.carryIn, sign:-1, k:'carry'},
               {label:t.rBonus, val:calc.bonuses, sign:1},
               {label:t.rExtraWork, val:calc.extraWork, sign:1},
-              {label:t.rShortHours, val:calc.shortHours, sign:-1},
+              {label:t.rShortHours, val:calc.shortHours, sign:-1, k:'shortHours'},
             ].map(function(row){
-              var color=row.sign===-1&&row.val>0?'var(--danger)':row.sign===1&&row.val>0?'var(--ok)':'var(--ink)';
+              var off=row.k&&calc.waived.indexOf(row.k)>=0;
+              var color=off?'var(--muted)':row.sign===-1&&row.val>0?'var(--danger)':row.sign===1&&row.val>0?'var(--ok)':'var(--ink)';
+              /* A charge can only be cancelled while the month is still open —
+                 once paid, the figures are a record of what happened. */
+              var canWaive=row.k&&row.val>0&&!paidRec;
               return (
-                <div key={row.label} className="flex justify-between items-center py-3 px-4" style={{borderBottom:'1px solid var(--border)',background:'var(--surface)'}}>
-                  <span style={{fontSize:fsr(15),color:'var(--ink2)'}}>{row.label}</span>
-                  <span style={{fontSize:fsr(15),fontWeight:700,color:color}}>
-                    {row.sign===-1&&row.val>0?'− ':row.sign===1&&row.val>0?'+ ':''}{fmt(row.val)}
+                <div key={row.label} className="flex justify-between items-center py-3 px-4" style={{borderBottom:'1px solid var(--border)',background:off?'var(--surface2)':'var(--surface)'}}>
+                  <span style={{fontSize:fsr(15),color:off?'var(--muted)':'var(--ink2)',textDecoration:off?'line-through':'none'}}>{row.label}</span>
+                  <span className="flex items-center gap-2">
+                    <span style={{fontSize:fsr(15),fontWeight:700,color:color,textDecoration:off?'line-through':'none'}}>
+                      {row.sign===-1&&row.val>0?'− ':row.sign===1&&row.val>0?'+ ':''}{fmt(row.val)}
+                    </span>
+                    {canWaive&&(
+                      <button onClick={function(){toggleWaive(row.k);}}
+                        title={off?t.waiveUndo:t.waiveOff} aria-label={(off?t.waiveUndo:t.waiveOff)+' — '+row.label}
+                        style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',lineHeight:1,
+                          border:'1px solid '+(off?'var(--ok)':'var(--border)'),
+                          background:off?'#D8EEE2':'var(--surface2)',
+                          color:off?'var(--ok)':'var(--danger)',
+                          fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif',padding:0}}>
+                        {off?'↺':'✕'}
+                      </button>
+                    )}
                   </span>
                 </div>
               );
@@ -2504,6 +2619,13 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
             </div>
           </div>
 
+          {calc.waived.length>0&&(
+            <div className="rounded-2xl mb-3" style={{background:'#D8EEE2',border:'1px solid var(--ok)',padding:'10px 14px'}}>
+              <p style={{fontSize:fsr(13),color:'var(--ok)',fontWeight:700,margin:0}}>
+                {t.waiveNote.replace('{n}',calc.waived.length)}
+              </p>
+            </div>
+          )}
           <UnrecoveredNotice calc={calc} t={t} />
           <StaleNotice paidRec={paidRec} calc={calc} t={t} />
 
@@ -3188,7 +3310,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
       var first=new Date(selYear,m-1,1);
       if(first>now){ data.push(0); continue; }
       var est=0;
-      staff.forEach(function(s){ est+=calcSalary(s,selYear,m,ledger,workingDays).netPayable; });
+      staff.forEach(function(s){ est+=calcSalary(s,selYear,m,ledger,workingDays,homeId).netPayable; });
       data.push(est);
     }
     return data;
@@ -4903,6 +5025,10 @@ function App(){
           var p=d.id.split('_');
           if(p.length>=2) saveLeaves(p[0],p.slice(1).join('_'),d.data().dates||{});
         }); bump();
+      }),
+      db.collection('homes/'+homeId+'/waivers').onSnapshot(function(snap){
+        var w={}; snap.docs.forEach(function(d){ w[d.id]=d.data().items||[]; });
+        saveWaivers(homeId,w); bump();
       }),
     ];
     return function(){ clearTimeout(timer); unsubs.forEach(function(u){u();}); };
