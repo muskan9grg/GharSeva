@@ -284,6 +284,7 @@ en:{
   errName:'Please enter the staff name',errAmount:'Please enter an amount',errStaff:'Please select a staff member',
   tPaidBadge:'✓ Paid',tDueBadge:'Due this month',
   dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',
+  dashFullCalendar:'Full calendar & past days',
   dashPay:'Upcoming Pay Days',dashRecent:'Recent Entries',dashSpend:'This Month',
   dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet — go to Staff tab',
   dashPayBtn:'Pay →',dashNoRecent:'No entries yet',dashTomorrow:'Tomorrow',dashToday:'Today',
@@ -478,6 +479,7 @@ hi:{
   errName:'कृपया स्टाफ का नाम डालें',errAmount:'कृपया राशि डालें',errStaff:'कृपया स्टाफ चुनें',
   tPaidBadge:'✓ भुगतान',tDueBadge:'बाकी है',
   dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',
+  dashFullCalendar:'पूरा कैलेंडर और पिछले दिन',
   dashPay:'इस महीने वेतन तारीखें',dashRecent:'हाल की एंट्री',dashSpend:'इस महीने',
   dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं — स्टाफ टैब पर जाएं',
   dashPayBtn:'दें →',dashNoRecent:'कोई एंट्री नहीं',dashTomorrow:'कल',dashToday:'आज',
@@ -2593,14 +2595,24 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
   var curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var curYear=now.getFullYear(),curMonth=now.getMonth()+1,todayDate=now.getDate();
 
-  /* attendance */
+  /* attendance — only people still working; a former staff member is neither
+     present nor absent today. */
+  var [attTick,setAttTick]=useState(0);
+  var onStaff=staff.filter(function(s){return !hasLeft(s);});
   var presentCount=0,absentCount=0,holidayCount=0;
-  staff.forEach(function(s){
+  onStaff.forEach(function(s){
     var st=getLeaves(s.id,curYM)[today];
     if(st==='leave') absentCount++;
     else if(st==='holiday') holidayCount++;
     else presentCount++;
   });
+
+  function markTodayFor(staffId,status){
+    var lv=Object.assign({},getLeaves(staffId,curYM));
+    if(status==='present') delete lv[today]; else lv[today]=status;
+    fbSaveLeaves(homeId,staffId,curYM,lv);
+    setAttTick(function(n){return n+1;});
+  }
 
   /* upcoming pay days sorted by closeness — nobody who has left is still due */
   var payList=staff.filter(function(s){return !hasLeft(s);}).map(function(s){
@@ -2629,7 +2641,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
       {/* Attendance */}
       {staff.length===0
         ? <div className="card mb-4 text-center"><p style={{color:'var(--muted)',fontSize:fsr(14)}}>{t.dashNoStaff}</p></div>
-        : <div className="grid grid-cols-3 gap-3 mb-4">
+        : <div className="grid grid-cols-3 gap-3 mb-3">
             {[{n:presentCount,lbl:t.dashPresent,c:'var(--ok)'},{n:absentCount,lbl:t.dashAbsent,c:'var(--danger)'},{n:holidayCount,lbl:t.dashHoliday,c:'var(--warn)'}].map(function(tile){
               return (
                 <div key={tile.lbl} className="card text-center" style={{padding:'14px 8px'}}>
@@ -2640,6 +2652,47 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
             })}
           </div>
       }
+
+      {/* Marking today's attendance is a daily job, so it belongs on the screen
+          opened daily rather than behind a tab or a menu. The full calendar
+          stays a tap away for corrections and for planning ahead. */}
+      {onStaff.length>0&&(
+        <div className="card mb-4">
+          {onStaff.map(function(s,i){
+            var cur=(getLeaves(s.id,curYM)||{})[today]||'present';
+            return (
+              <div key={s.id} className="flex items-center gap-2" style={{padding:'8px 0',borderTop:i?'1px solid var(--border)':'none'}}>
+                <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
+                  style={{width:32,height:32,background:avatarBg(s.role),fontSize:fsr(12)}}>
+                  {(s.name[0]||'?').toUpperCase()}
+                </div>
+                <p className="flex-1 truncate" style={{fontSize:fsr(14),fontWeight:700,color:'var(--ink)',margin:0}}>{s.name}</p>
+                <div className="flex gap-1 shrink-0">
+                  {[{v:'present',ic:'✓',c:'var(--ok)',bg:'#D8EEE2'},
+                    {v:'leave',ic:'🗓',c:'var(--danger)',bg:'#FCE8E8'},
+                    {v:'holiday',ic:'🏖',c:'var(--warn)',bg:'#F5EBC0'}].map(function(o){
+                    var on=cur===o.v;
+                    return (
+                      <button key={o.v} onClick={function(){markTodayFor(s.id,o.v);}}
+                        aria-label={s.name+' — '+(o.v==='present'?t.tPresent:o.v==='leave'?t.tLeave:t.tHoliday)}
+                        style={{minWidth:38,minHeight:38,borderRadius:10,cursor:'pointer',fontSize:fsr(15),
+                          fontFamily:'Nunito,sans-serif',lineHeight:1,padding:0,
+                          border:on?'2px solid '+o.c:'1px solid var(--border)',
+                          background:on?o.bg:'var(--surface2)',opacity:on?1:0.55}}>
+                        {o.ic}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          <button onClick={function(){onNavigate&&onNavigate('leaves');}}
+            className="btn btn-ghost btn-full" style={{marginTop:10}}>
+            🗓️ {t.dashFullCalendar}
+          </button>
+        </div>
+      )}
 
       {/* Pay Days */}
       <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:8}}>{t.dashPay}</p>
