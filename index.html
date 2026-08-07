@@ -371,6 +371,9 @@ en:{
   raiseFromLabel:'Salary changed: {old} → {new}',
   raiseFromHint:'From which month does the new salary apply? Earlier months keep the old rate.',
   raiseSince:'since',
+  fleaving:'Last Working Day',
+  fleavingHint:'Fill this only when someone leaves. Their records are kept, but they stop appearing in attendance and pay reminders.',
+  leftBadge:'Left',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
@@ -549,6 +552,9 @@ hi:{
   raiseFromLabel:'वेतन बदला: {old} → {new}',
   raiseFromHint:'नया वेतन किस महीने से लागू है? पिछले महीनों में पुराना वेतन ही रहेगा।',
   raiseSince:'से',
+  fleaving:'काम का आखिरी दिन',
+  fleavingHint:'यह तभी भरें जब कोई काम छोड़ रहा हो। रिकॉर्ड सुरक्षित रहेंगे, पर वे उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
+  leftBadge:'छोड़ दिया',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
@@ -1334,6 +1340,36 @@ function salaryFor(staff,year,month){
   return (best||earliest).amount||0;
 }
 
+/* ISO date -> local Date. Built from parts rather than new Date(string),
+   which parses a bare date as UTC midnight and can land on the previous day
+   in a positive-offset zone such as IST. */
+function parseISO(s){
+  var p=String(s||'').split('-');
+  return p.length<3?null:new Date(+p[0],+p[1]-1,+p[2]);
+}
+
+/* How much of a month a staff member was actually employed for. Joining on the
+   20th earns twenty-days-fewer than a full month, and joiningDate was until
+   now recorded and displayed but never used in any calculation, so a new
+   starter was shown a full month's pay for their first part-month. */
+function employedDays(staff,year,month){
+  var monthDays=new Date(year,month,0).getDate();
+  var first=new Date(year,month-1,1), last=new Date(year,month-1,monthDays);
+  var join=parseISO(staff&&staff.joiningDate), left=parseISO(staff&&staff.leavingDate);
+  var start=join&&join>first?join:first;
+  var end=left&&left<last?left:last;
+  if(end<start) return {days:0,monthDays:monthDays,partial:true};
+  var days=Math.round((end-start)/86400000)+1;
+  return {days:days,monthDays:monthDays,partial:days<monthDays};
+}
+
+/* Someone who has left. Their records stay for reporting, but they no longer
+   appear where the app is asking what to do next. */
+function hasLeft(staff){
+  var d=parseISO(staff&&staff.leavingDate);
+  return !!d&&d<=new Date();
+}
+
 /* Record a rate change. The rate in force until now has to be captured first,
    or the months before the change would inherit the new figure — the very bug
    this exists to stop. */
@@ -1372,9 +1408,14 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
   Object.entries(lv).forEach(function(e){
     if(e[1]==='leave') leaveDays++;
   });
-  /* The rate in force in THIS month, not whatever the staff member earns now. */
-  var monthlyRate=salaryFor(staff,year,month);
-  var daily=monthlyRate/(workingDays||30);
+  /* The rate in force in THIS month, not whatever the staff member earns now,
+     scaled down if they joined or left partway through it. */
+  var fullRate=salaryFor(staff,year,month);
+  var emp=employedDays(staff,year,month);
+  var monthlyRate=emp.partial?Math.round(fullRate*emp.days/emp.monthDays):fullRate;
+  /* A day off costs a normal day's pay, so leave is always docked at the full
+     rate — it is not scaled a second time by a part-month. */
+  var daily=fullRate/(workingDays||30);
   var items=(ledger||[]).filter(function(e){return e.staffId===staff.id && e.date && e.date.startsWith(ym);});
   function sum(type){ return items.filter(function(e){return e.type===type;}).reduce(function(s,e){return s+(e.amount||0);},0); }
   var bonuses=sum('bonus'), extraWork=sum('extra_work');
@@ -1407,6 +1448,7 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
           loanInst:raw.loan,shortHours:raw.shortHours,carryIn:raw.carry,
           bonuses:bonuses,extraWork:extraWork,
           loanBal:getLoanBal(staff.id,ledger),
+          fullRate:fullRate,partMonth:emp.partial,partDays:emp.days,monthDays:emp.monthDays,
           raw:raw,eff:eff,waived:waived,totalDeduct:totalDeduct,
           netPayable:Math.max(0,net),unrecovered:Math.max(0,-net)};
 }
@@ -1777,7 +1819,7 @@ function WACard({message,phone,t}){
 /* ── ADD / EDIT STAFF MODAL ─────────────────────────────────── */
 function StaffModal({lang,onClose,onSave,existing}){
   var t=T[lang];
-  var blank={name:'',nickname:'',role:'maid',salary:'',phone:'',joiningDate:todayStr(),payDay:'1',photo:'',notes:'',
+  var blank={name:'',nickname:'',role:'maid',salary:'',phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
              aadhaar:'',bankName:'',accountNo:'',ifsc:''};
   var [form,setForm]=useState(existing?Object.assign({nickname:''},existing):blank);
   var [showVault,setShowVault]=useState(false);
@@ -1872,6 +1914,11 @@ function StaffModal({lang,onClose,onSave,existing}){
       )}
       <FLabel label={t.fphone} hint={t.fphoneHint}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
       <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
+      {existing&&(
+        <FLabel label={t.fleaving} hint={t.fleavingHint}>
+          <FInput type="date" value={form.leavingDate||''} onChange={function(v){set('leavingDate',v);}} />
+        </FLabel>
+      )}
       <FLabel label={t.fpay} hint={t.hintPayDay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
       <FLabel label={t.fnotes}>
         <textarea value={form.notes||''} onChange={function(e){set('notes',e.target.value);}} placeholder={t.fnotesPh} className="ta" style={{height:80}} />
@@ -1922,9 +1969,13 @@ function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
             <p style={{fontSize:fsr(13),color:'var(--ink2)'}}>{roleLabel(staff.role,lang)}</p>
             <div className="flex items-center gap-2 flex-wrap" style={{marginTop:2}}>
               <p style={{fontSize:fsr(15),fontWeight:700,color:'var(--accent)',margin:0}}>{fmt(staff.salary)}{t.perMonth}</p>
-              {isPaid
-                ? <span className="pill pill-ok" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tPaidBadge}</span>
-                : <span className="pill pill-warn" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tDueBadge}</span>
+              {/* Someone who has left is neither paid nor due — the pay badges
+                  would be asking a question that no longer applies. */}
+              {hasLeft(staff)
+                ? <span className="pill pill-muted" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.leftBadge} {fmtD(staff.leavingDate)}</span>
+                : isPaid
+                  ? <span className="pill pill-ok" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tPaidBadge}</span>
+                  : <span className="pill pill-warn" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tDueBadge}</span>
               }
             </div>
             {loanBal>0 && <span className="pill pill-purple" style={{fontSize:fsr(11),marginTop:2,display:'inline-block'}}>🏦 {fmt(loanBal)} {t.loanDue}</span>}
@@ -2119,8 +2170,11 @@ function UnrecoveredNotice({calc,t}){
 function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   var t=T[lang];
   var now=new Date();
-  var month=now.getMonth()+1;
-  var year=now.getFullYear();
+  /* Salary in an Indian household is usually handed over at the start of the
+     following month, so this was fixed to today and quietly recorded July's
+     pay against August. The month is now chosen, defaulting to today's. */
+  var [month,setMonth]=useState(now.getMonth()+1);
+  var [year,setYear]=useState(now.getFullYear());
   var [ledger,setLedger]=useState(function(){return getLedger(homeId);});
   var [payments,setPayments]=useState(function(){return getPayments(homeId);});
   var [done,setDone]=useState(false);
@@ -2177,6 +2231,24 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
           <p style={{fontSize:fsr(13),color:'var(--ink2)',margin:0}}>{t.mFull[month-1]} {year}</p>
         </div>
       </div>
+      {!(done||paidRec)&&(
+        <div className="flex gap-3 mb-4">
+          <div style={{flex:2}}>
+            <FLabel label={t.selMonth}>
+              <FSelect value={String(month)} onChange={function(v){setMonth(Number(v));setDone(false);setWAMsg('');}}>
+                {t.mFull.map(function(m,i){return <option key={i} value={i+1}>{m}</option>;})}
+              </FSelect>
+            </FLabel>
+          </div>
+          <div style={{flex:1}}>
+            <FLabel label={t.selYear}>
+              <FSelect value={String(year)} onChange={function(v){setYear(Number(v));setDone(false);setWAMsg('');}}>
+                {[now.getFullYear()-1,now.getFullYear()].map(function(y){return <option key={y} value={y}>{y}</option>;})}
+              </FSelect>
+            </FLabel>
+          </div>
+        </div>
+      )}
       <div className="rounded-2xl overflow-hidden mb-4" style={{border:'1px solid var(--border)'}}>
         {rows.map(function(row,i){
           return (
@@ -2504,8 +2576,8 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
     else presentCount++;
   });
 
-  /* upcoming pay days sorted by closeness */
-  var payList=staff.map(function(s){
+  /* upcoming pay days sorted by closeness — nobody who has left is still due */
+  var payList=staff.filter(function(s){return !hasLeft(s);}).map(function(s){
     var pd=Number(s.payDay)||1;
     var daysUntil=pd>=todayDate?pd-todayDate:(30-todayDate+pd);
     var isPaid=payments.some(function(p){return p.staffId===s.id&&Number(p.year)===curYear&&Number(p.month)===curMonth;});
@@ -2516,7 +2588,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
   var recent=[...ledger].sort(function(a,b){return b.date>a.date?1:-1;}).slice(0,3);
 
   /* monthly spend */
-  var totalSal=staff.reduce(function(s,x){return s+(x.salary||0);},0);
+  var totalSal=staff.filter(function(x){return !hasLeft(x);}).reduce(function(s,x){return s+(x.salary||0);},0);
   var paidAmt=payments.filter(function(p){return Number(p.year)===curYear&&Number(p.month)===curMonth;}).reduce(function(s,p){return s+(p.amount||0);},0);
   var paidPct=totalSal>0?Math.min(100,Math.round(paidAmt/totalSal*100)):0;
 
@@ -2816,7 +2888,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
 
           <div className="rounded-2xl overflow-hidden mb-4" style={{border:'1px solid var(--border)'}}>
             {[
-              {label:t.rBase, val:calc.baseSalary, sign:0},
+              {label:calc.partMonth?t.rBase+' ('+calc.partDays+'/'+calc.monthDays+' '+t.tDays+')':t.rBase, val:calc.baseSalary, sign:0},
               {label:t.rLeave+' ('+calc.leaveDays+' '+t.tDays+')', val:calc.leaveDeduction, sign:-1, k:'leave'},
               {label:t.rAdv, val:calc.advances, sign:-1, k:'advances'},
               {label:t.rLoan, val:calc.loanInst, sign:-1, k:'loan'},
@@ -3051,7 +3123,9 @@ function LeavesTab({lang,homeId,workingDays,syncKey}){
   var [year,setYear]=useState(now.getFullYear());
 
   useEffect(function(){
-    var s=getStaff(homeId);
+    /* Attendance is about who is working now, so former staff drop out. Their
+       past attendance is untouched and still reaches the reports. */
+    var s=getStaff(homeId).filter(function(x){return !hasLeft(x);});
     setStaff(s); setSelStaff(s.length>0?s[0].id:'');
   },[homeId,syncKey]);
 
