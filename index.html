@@ -191,6 +191,96 @@ const ROLE_AVATAR = {
 };
 function avatarBg(role){ return ROLE_AVATAR[role]||'#3E6060'; }
 
+/* ── ICONS ──────────────────────────────────────────────────────
+   Emoji were standing in for an icon set. They render differently on every
+   phone — the calendar is blue on one and grey on another — sit at different
+   optical weights beside each other, and cannot take the colour of the thing
+   they belong to, so a row of them never lines up.
+
+   These are one set: a 24-unit grid, a single 2px stroke, round ends. The
+   stroke is deliberately heavy rather than the hairline that is fashionable —
+   this app is read by people with older eyes, and a thin line is the first
+   thing to disappear. Everything inherits currentColor, so an icon is always
+   exactly as dark as the text beside it. */
+const ICONS={
+  home:'<path d="M3.5 10.6 12 4l8.5 6.6V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z"/>',
+  staff:'<circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><circle cx="17.5" cy="9.2" r="2.3"/><path d="M17 14.8c2.6.1 4.4 1.9 4.4 4.4"/>',
+  money:'<rect x="2.5" y="6" width="19" height="12" rx="2.2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/>',
+  reports:'<path d="M4 20.5V11M10 20.5V4.5M16 20.5V14M22 20.5H2.5"/>',
+  calendar:'<rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3v4.5M16 3v4.5M3.5 10.5h17"/>',
+  card:'<rect x="2.5" y="5.5" width="19" height="13" rx="2.2"/><path d="M2.5 10h19M6 14.5h4"/>',
+  records:'<rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 3h6v3H9z"/><path d="M8.5 11h7M8.5 15h4"/>',
+  advance:'<rect x="2.5" y="7" width="13" height="10" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M18 12h3.5M19.5 9.8 21.8 12l-2.3 2.2"/>',
+  loan:'<path d="M3 10 12 4.5l9 5.5"/><path d="M5.5 10.5v8M9.5 10.5v8M14.5 10.5v8M18.5 10.5v8M3 20.5h18"/>',
+  expense:'<path d="M2.5 4.5h2.2l2.4 9.5h9.6l2.3-7H6.4"/><circle cx="10" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/>',
+  bonus:'<path d="M12 3.6l2.5 5.3 5.8.8-4.2 4 1 5.7-5.1-2.8-5.1 2.8 1-5.7-4.2-4 5.8-.8z"/>',
+  overtime:'<circle cx="12" cy="12.5" r="7.8"/><path d="M12 8v4.8l3.2 2M12 2.2v1.6"/>',
+  halfday:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>',
+  extrahelp:'<circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><path d="M18.5 7.5v6M15.5 10.5h6"/>',
+  /* A wallet, not another banknote — salary sits beside the money tab and the
+     card icon, and three rectangles with a circle in them are one idea. */
+  salary:'<path d="M3 8V7a2 2 0 0 1 2-2h11.5a1.5 1.5 0 0 1 1.5 1.5V8"/><rect x="3" y="8" width="18" height="11.5" rx="2"/><path d="M21.2 12.2h-3.4a1.9 1.9 0 0 0 0 3.8h3.4"/>',
+  /* Holiday is a day off, so the sun says it more plainly than a parasol. */
+  holiday:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4 7 7M17 17l1.6 1.6M5.4 18.6 7 17M17 7l1.6-1.6"/>',
+  chat:'<path d="M20.5 12.5c0 4-3.8 7.2-8.5 7.2a10 10 0 0 1-2.6-.33L4.5 21l1.2-3.4A6.9 6.9 0 0 1 3.5 12.5C3.5 8.5 7.3 5.3 12 5.3s8.5 3.2 8.5 7.2z"/>',
+  /* Sliders rather than a cog: a cog at this size is a ring of specks, and it
+     would be indistinguishable from the sun used for holiday. */
+  settings:'<path d="M3.5 7h9M18.5 7h2M3.5 12h4M11.5 12h9M3.5 17h9M18.5 17h2"/><circle cx="15" cy="7" r="2.2"/><circle cx="9.2" cy="12" r="2.2"/><circle cx="15" cy="17" r="2.2"/>',
+  menu:'<path d="M3.5 7h17M3.5 12h17M3.5 17h17"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  check:'<path d="M4.5 12.5l5 5L20 6.5"/>',
+  plus:'<path d="M12 4.5v15M4.5 12h15"/>',
+  undo:'<path d="M4 8.5h10a5.5 5.5 0 0 1 0 11h-6"/><path d="M7.5 5 4 8.5 7.5 12"/>',
+  trash:'<path d="M4.5 6.5h15M9.5 6.5V4.2h5v2.3M6.5 6.5l1 13.5h9l1-13.5M10 10v7M14 10v7"/>',
+  edit:'<path d="M4 20l.9-4.2L15.6 5.1a2 2 0 0 1 2.8 0l1.5 1.5a2 2 0 0 1 0 2.8L9.2 20.1z"/><path d="M14 6.7l3.3 3.3"/>',
+  phone:'<path d="M8.2 3.5 10 7.6l-2 1.6a11 11 0 0 0 5.8 5.8l1.6-2 4.1 1.8v3.4a1.7 1.7 0 0 1-1.9 1.7C10.4 19.4 4.6 13.6 3.9 5.4A1.7 1.7 0 0 1 5.6 3.5z"/>',
+  note:'<rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/>',
+  camera:'<rect x="2.5" y="7" width="19" height="13" rx="2.4"/><circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.4-2.6h4.2L15.5 7"/>',
+  download:'<path d="M12 3.8v11M8 11l4 4 4-4"/><path d="M4 17.5v1.7a1.8 1.8 0 0 0 1.8 1.8h12.4a1.8 1.8 0 0 0 1.8-1.8v-1.7"/>',
+  upload:'<path d="M12 15.5v-11M8 8.3l4-4 4 4"/><path d="M4 17.5v1.7a1.8 1.8 0 0 0 1.8 1.8h12.4a1.8 1.8 0 0 0 1.8-1.8v-1.7"/>',
+  folder:'<path d="M3 7a1.8 1.8 0 0 1 1.8-1.8h4L11 8h8.2A1.8 1.8 0 0 1 21 9.8v8.4A1.8 1.8 0 0 1 19.2 20H4.8A1.8 1.8 0 0 1 3 18.2z"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/>',
+  lock:'<rect x="4.5" y="10" width="15" height="10.5" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>',
+  key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3.5M15.5 12v2.5"/>',
+  warning:'<path d="M12 3.8 21.2 20H2.8z"/><path d="M12 9.5v4.5M12 17h.01"/>',
+  bulb:'<path d="M9 17.5h6M10 20.5h4"/><path d="M8 13.4A5.5 5.5 0 1 1 16 13.4c-.8.9-1.2 1.6-1.3 2.6H9.3c-.1-1-.5-1.7-1.3-2.6z"/>',
+  share:'<path d="M20.5 3.5 11 13"/><path d="M20.5 3.5 14.5 20.5l-3.5-7.5-7.5-3.5z"/>',
+  signout:'<path d="M9.5 20.5H5.8A1.8 1.8 0 0 1 4 18.7V5.3a1.8 1.8 0 0 1 1.8-1.8h3.7"/><path d="M15.5 16.5 20 12l-4.5-4.5M20 12H9.5"/>',
+  refresh:'<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20.5 3.5v4h-4"/>',
+  person:'<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20.5c0-3.8 3.2-6.1 7.2-6.1s7.2 2.3 7.2 6.1"/>',
+  chevronRight:'<path d="M9 4.5 16.5 12 9 19.5"/>',
+  chevronLeft:'<path d="M15 4.5 7.5 12 15 19.5"/>',
+  chevronDown:'<path d="M4.5 9 12 16.5 19.5 9"/>',
+  chevronUp:'<path d="M4.5 15 12 7.5 19.5 15"/>',
+  arrowRight:'<path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5"/>',
+  sync:'<path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6"/><path d="M17.5 2.5v4h-4M6.5 21.5v-4h4"/>',
+};
+
+/* A card's heading: one icon, one line, always the same size and spacing.
+   These were previously an emoji glued to the front of a string, which meant
+   each heading sat at a slightly different height from the last. */
+function CardTitle({icon,children,size}){
+  return (
+    <p className="flex items-center gap-2" style={{fontSize:fsr(size||16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>
+      <span style={{color:'var(--accent)'}}><Icon name={icon} size={(size||16)+4} /></span>
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/* Size defaults to 22 — bigger than the 16-18 most interfaces use, because
+   the people this is for should not have to look twice. */
+function Icon({name,size,style,strokeWidth}){
+  var px=size||22;
+  return (
+    <svg width={px} height={px} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={strokeWidth||2}
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      style={Object.assign({flexShrink:0,display:'block'},style||{})}
+      dangerouslySetInnerHTML={{__html:ICONS[name]||''}} />
+  );
+}
+
 /* A staff member's face wherever they are named. Photos were only ever drawn
    on the edit form, the staff card and the profile header; every other list
    fell back to an initial, which is the hardest thing to scan quickly — a
@@ -224,14 +314,14 @@ function getCustomRoles(){ return lsGet('gs_roles',[]); }
 function saveCustomRoles(r){ lsSet('gs_roles',r); }
 
 const TC={
-  advance:   {icon:'💸',pillCls:'pill-warn',  bg:'#FDF3DC'},
-  loan:      {icon:'🏦',pillCls:'pill-purple',bg:'#EAE4F5'},
-  expense:   {icon:'🛒',pillCls:'pill-accent',bg:'#D8EEE8'},
-  bonus:     {icon:'🎉',pillCls:'pill-ok',    bg:'#D8EEE2'},
-  loan_repay: {icon:'💰',pillCls:'pill-ok',   bg:'#D8EEE2'},
-  extra_work: {icon:'⏰',pillCls:'pill-ok',   bg:'#D8EEE2'},
-  short_hours:{icon:'⏱️',pillCls:'pill-warn', bg:'#FDF3DC'},
-  extra_help: {icon:'🤝',pillCls:'pill-purple',bg:'#EAE4F5'},
+  advance:   {icon:'advance',  pillCls:'pill-warn',  bg:'#FDF3DC',ink:'#8B5E08'},
+  loan:      {icon:'loan',     pillCls:'pill-purple',bg:'#EAE4F5',ink:'#3A2E7A'},
+  expense:   {icon:'expense',  pillCls:'pill-accent',bg:'#D8EEE8',ink:'#1A5045'},
+  bonus:     {icon:'bonus',    pillCls:'pill-ok',    bg:'#D8EEE2',ink:'#1A5E35'},
+  loan_repay:{icon:'salary',   pillCls:'pill-ok',    bg:'#D8EEE2',ink:'#1A5E35'},
+  extra_work:{icon:'overtime', pillCls:'pill-ok',    bg:'#D8EEE2',ink:'#1A5E35'},
+  short_hours:{icon:'halfday', pillCls:'pill-warn',  bg:'#FDF3DC',ink:'#8B5E08'},
+  extra_help:{icon:'extrahelp',pillCls:'pill-purple',bg:'#EAE4F5',ink:'#3A2E7A'},
 };
 
 /* ── TRANSLATIONS ───────────────────────────────────────────── */
@@ -255,7 +345,7 @@ en:{
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly Salary (₹)',
   fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
   fphoto:'Photo',fnotes:'Notes / Duties',fnotesPh:'e.g. Cleans all rooms, washes utensils',
-  addPhoto:'📷 Add Photo',changePhoto:'Change',
+  addPhoto:'Add Photo',changePhoto:'Change',
   nickname:'Nickname',nicknamePh:'e.g. Kamla, Ramu',
   hintPayDay:'Day of month (1 = 1st, 15 = 15th)',hintIFSC:'11-character bank code (e.g. SBIN0001234)',
   hintEMI:'Amount deducted from salary each month',hintTotInst:'How many months to repay',
@@ -295,7 +385,7 @@ en:{
   micSpeak:'Speak',micStop:'Stop',micListening:'Listening…',micFillDone:'Form filled from voice — please review',
   voiceTitle:'Voice Input 🎤',voiceHint:'Tap the mic and speak. Hindi & English both work!',
   voiceEx:'Examples:',startListen:'🎤 Tap to Speak',stopListen:'■ Stop',
-  voiceListening:'🔴 Listening…',voiceHeard:'You said:',voiceUnderstood:'Saving this:',voiceShowEx:'💡 Show examples',voiceHideEx:'Hide examples',
+  voiceListening:'Listening…',voiceHeard:'You said:',voiceUnderstood:'Saving this:',voiceShowEx:'Show examples',voiceHideEx:'Hide examples',
   voiceConfirm:'Confirm & Save',voiceNoSupport:'Voice not supported. Use Chrome.',
   voiceNoStaff:'No staff found in this home.',
   waTitle:'WhatsApp Message',waCopy:'Copy',waOpen:'Open WhatsApp',waCopied:'Copied!',
@@ -383,7 +473,7 @@ en:{
   rCarry:'Dues from last month',
   waiveOff:'Do not charge this month',
   waiveUndo:'Charge this again',
-  waiveNote:'{n} charge(s) cancelled for this month. Tap ↺ to bring one back.',
+  waiveNote:'{n} cancelled this month. Tap the arrow to bring one back.',
   undoPay:'Undo this payment',
   undoConfirm:'Undo this salary payment?',
   undoWillRemove:'The record of {amt} paid will be removed.',
@@ -398,7 +488,7 @@ en:{
   raiseFromHint:'From which month does the new salary apply? Earlier months keep the old rate.',
   raiseSince:'since',
   navHome:'Home',navMoney:'Money',navReports:'Reports',
-  moneyRecords:'📋 Records',moneyPay:'💳 Pay Salary',
+  moneyRecords:'Records',moneyPay:'Pay Salary',
   layoutLabel:'App Layout',
   layoutHint:'You can switch back at any time. Nothing is lost either way.',
   layoutClassic:'Classic',
@@ -456,7 +546,7 @@ hi:{
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन (₹)',
   fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
   fphoto:'फोटो',fnotes:'नोट्स / काम',fnotesPh:'जैसे: सभी कमरे साफ, बर्तन',
-  addPhoto:'📷 फोटो जोड़ें',changePhoto:'बदलें',
+  addPhoto:'फोटो जोड़ें',changePhoto:'बदलें',
   nickname:'उपनाम',nicknamePh:'जैसे: कमला, रामू',
   hintPayDay:'महीने की तारीख (1 = पहली, 15 = पंद्रहवीं)',hintIFSC:'11 अक्षर का बैंक कोड (जैसे SBIN0001234)',
   hintEMI:'हर महीने वेतन से कटने वाली राशि',hintTotInst:'कितने महीनों में चुकाना है',
@@ -496,7 +586,7 @@ hi:{
   micSpeak:'बोलें',micStop:'रोकें',micListening:'सुन रहे हैं…',micFillDone:'आवाज़ से फॉर्म भरा — कृपया जांचें',
   voiceTitle:'आवाज़ से एंट्री 🎤',voiceHint:'माइक्रोफोन दबाएं और बोलें!',
   voiceEx:'उदाहरण:',startListen:'🎤 बोलने के लिए दबाएं',stopListen:'■ रोकें',
-  voiceListening:'🔴 सुन रहे हैं…',voiceHeard:'आपने कहा:',voiceUnderstood:'यह सहेजा जाएगा:',voiceShowEx:'💡 उदाहरण दिखाएं',voiceHideEx:'छुपाएं',
+  voiceListening:'सुन रहे हैं…',voiceHeard:'आपने कहा:',voiceUnderstood:'यह सहेजा जाएगा:',voiceShowEx:'उदाहरण दिखाएं',voiceHideEx:'छुपाएं',
   voiceConfirm:'पुष्टि करें और सहेजें',voiceNoSupport:'आवाज़ काम नहीं करता। Chrome उपयोग करें।',
   voiceNoStaff:'इस घर में स्टाफ नहीं है।',
   waTitle:'WhatsApp संदेश',waCopy:'कॉपी',waOpen:'WhatsApp खोलें',waCopied:'कॉपी!',
@@ -584,7 +674,7 @@ hi:{
   rCarry:'पिछले महीने का बकाया',
   waiveOff:'इस महीने न काटें',
   waiveUndo:'फिर से काटें',
-  waiveNote:'इस महीने {n} कटौती रद्द की गई है। वापस लाने के लिए ↺ दबाएँ।',
+  waiveNote:'इस महीने {n} कटौती रद्द की गई है। वापस लाने के लिए तीर दबाएँ।',
   undoPay:'यह भुगतान वापस लें',
   undoConfirm:'क्या यह वेतन भुगतान वापस लेना है?',
   undoWillRemove:'{amt} भुगतान का रिकॉर्ड हट जाएगा।',
@@ -599,7 +689,7 @@ hi:{
   raiseFromHint:'नया वेतन किस महीने से लागू है? पिछले महीनों में पुराना वेतन ही रहेगा।',
   raiseSince:'से',
   navHome:'होम',navMoney:'पैसा',navReports:'रिपोर्ट',
-  moneyRecords:'📋 रिकॉर्ड',moneyPay:'💳 वेतन भुगतान',
+  moneyRecords:'रिकॉर्ड',moneyPay:'वेतन भुगतान',
   layoutLabel:'ऐप का लेआउट',
   layoutHint:'आप कभी भी वापस बदल सकते हैं। किसी भी हाल में कुछ नहीं खोएगा।',
   layoutClassic:'क्लासिक',
@@ -1755,7 +1845,7 @@ function Modal({onClose,title,children}){
       <div className="flex-1 overflow-y-auto flex flex-col" style={{background:'var(--surface)',maxWidth:480,margin:'0 auto',width:'100%'}}>
         <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-10" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
           <h2 style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)',margin:0}}>{title}</h2>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full text-2xl leading-none" style={{background:'var(--surface2)',border:'none',cursor:'pointer',color:'var(--ink2)'}}>✕</button>
+          <button onClick={onClose} aria-label="Close" className="w-10 h-10 flex items-center justify-center rounded-full" style={{background:'var(--surface2)',border:'none',cursor:'pointer',color:'var(--ink2)'}}><Icon name="close" size={20} /></button>
         </div>
         <div className="flex-1 p-4">{children}</div>
       </div>
@@ -1946,7 +2036,7 @@ function StaffModal({lang,onClose,onSave,existing}){
           {form.photo
             ? <img src={form.photo} className="w-24 h-24 rounded-full object-cover" style={{border:'4px solid var(--accent2)'}} />
             : <div className="w-24 h-24 rounded-full flex flex-col items-center justify-center" style={{background:'var(--surface2)',border:'2px dashed var(--border)',color:'var(--muted)'}}>
-                <span style={{fontSize:fsr(32)}}>📷</span>
+                <span style={{color:'var(--muted)'}}><Icon name="camera" size={30} /></span>
                 <span style={{fontSize:fsr(11),marginTop:4}}>{t.addPhoto}</span>
               </div>
           }
@@ -1968,7 +2058,7 @@ function StaffModal({lang,onClose,onSave,existing}){
               onKeyDown={function(e){if(e.key==='Enter')addNewRole();}}
               placeholder={t.addRolePh} className="inp" style={{flex:1}} />
             <button onClick={addNewRole} className="btn btn-accent btn-sm">{t.addRoleBtn}</button>
-            <button onClick={function(){setAddingRole(false);setNewRoleName('');}} className="btn btn-ghost btn-sm">✕</button>
+            <button onClick={function(){setAddingRole(false);setNewRoleName('');}} aria-label="Cancel" className="btn btn-ghost btn-sm"><Icon name="close" size={16} /></button>
           </div>
         )}
       </FLabel>
@@ -2046,17 +2136,17 @@ function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
                   : <span className="pill pill-warn" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.tDueBadge}</span>
               }
             </div>
-            {loanBal>0 && <span className="pill pill-purple" style={{fontSize:fsr(11),marginTop:2,display:'inline-block'}}>🏦 {fmt(loanBal)} {t.loanDue}</span>}
+            {loanBal>0 && <span className="pill pill-purple" style={{fontSize:fsr(11),marginTop:2,display:'inline-block'}}>{fmt(loanBal)} {t.loanDue}</span>}
           </div>
           <div className="shrink-0 flex flex-col items-center gap-1">
             <div className="flex flex-col gap-2">
-              <button onClick={function(e){e.stopPropagation();onEdit();}} className="rounded-full flex items-center justify-center text-base" style={{minWidth:44,minHeight:44,background:'var(--surface2)',border:'none',cursor:'pointer'}}>✏️</button>
-              <button onClick={function(e){e.stopPropagation();setConfirmDel(true);}} className="rounded-full flex items-center justify-center text-base" style={{minWidth:44,minHeight:44,background:'#FCE8E8',border:'none',cursor:'pointer'}}>🗑️</button>
+              <button onClick={function(e){e.stopPropagation();onEdit();}} aria-label={t.edit} className="rounded-full flex items-center justify-center" style={{minWidth:44,minHeight:44,background:'var(--surface2)',border:'none',cursor:'pointer',color:'var(--ink2)'}}><Icon name="edit" size={20} /></button>
+              <button onClick={function(e){e.stopPropagation();setConfirmDel(true);}} aria-label={t.del} className="rounded-full flex items-center justify-center" style={{minWidth:44,minHeight:44,background:'#FCE8E8',border:'none',cursor:'pointer',color:'var(--danger)'}}><Icon name="trash" size={20} /></button>
             </div>
           </div>
         </div>
-        {staff.phone && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8}}>📞 {staff.phone}</p>}
-        {staff.notes && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:4}} className="line-clamp-2">📝 {staff.notes}</p>}
+        {staff.phone && <p className="flex items-center gap-2" style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8}}><Icon name="phone" size={15} />{staff.phone}</p>}
+        {staff.notes && <p className="flex items-center gap-2" style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:4}}><Icon name="note" size={15} /><span className="line-clamp-2">{staff.notes}</span></p>}
         <p style={{fontSize:fsr(12),color:'var(--accent)',fontWeight:700,textAlign:'right',marginTop:6,marginBottom:0}}>{t.profViewProfile} →</p>
       </div>
 
@@ -2185,7 +2275,7 @@ function UndoPayment({rec,homeId,ledger,payments,t,mc,onDone}){
       style={{marginTop:12,padding:'9px 16px',borderRadius:12,cursor:'pointer',
         border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',
         fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif'}}>
-      ↩ {t.undoPay}
+      <Icon name="undo" size={17} style={{display:'inline-block',verticalAlign:'-3px',marginRight:6}} />{t.undoPay}
     </button>
   );
 
@@ -2478,12 +2568,12 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
           <div className="grid grid-cols-2 gap-2 mb-3">
             {staff.joiningDate&&(
               <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
-                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>📅 {t.profJoined}</p>
+                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}} className="flex items-center gap-1"><Icon name="calendar" size={13} />{t.profJoined}</p>
                 <p style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700,margin:0}}>{fmtD(staff.joiningDate)}</p>
               </div>
             )}
             <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
-              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>💵 {t.fsalary}</p>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}} className="flex items-center gap-1"><Icon name="salary" size={13} />{t.fsalary}</p>
               <p style={{fontSize:fsr(14),color:'var(--accent)',fontWeight:800,margin:0}}>{fmt(staff.salary)}</p>
               {(staff.salaryHistory||[]).length>1&&(
                 <p style={{fontSize:fsr(10),color:'var(--muted)',margin:'4px 0 0',lineHeight:1.5}}>
@@ -2495,20 +2585,20 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
             </div>
             {staff.payDay&&(
               <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
-                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>📆 {t.profPayDay}</p>
+                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}} className="flex items-center gap-1"><Icon name="calendar" size={13} />{t.profPayDay}</p>
                 <p style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700,margin:0}}>{staff.payDay}</p>
               </div>
             )}
             {staff.phone&&(
               <div className="rounded-xl p-3" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
-                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}}>📞 {t.fphone}</p>
+                <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:2}} className="flex items-center gap-1"><Icon name="phone" size={13} />{t.fphone}</p>
                 <p style={{fontSize:fsr(14),color:'var(--ink)',fontWeight:700,margin:0}}>{staff.phone}</p>
               </div>
             )}
           </div>
           {staff.notes&&(
             <div className="p-3 rounded-xl" style={{background:'var(--surface2)'}}>
-              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:4}}>📝 {t.fnotes}</p>
+              <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:4}} className="flex items-center gap-1"><Icon name="note" size={13} />{t.fnotes}</p>
               <p style={{fontSize:fsr(14),color:'var(--ink)',lineHeight:1.5,margin:0}}>{staff.notes}</p>
             </div>
           )}
@@ -2516,7 +2606,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
 
         {/* ② Financial Summary */}
         <div className="card fade-in">
-          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>💰 {t.profFinancials} — {t.mFull[month-1]} {year}</p>
+          <CardTitle icon="money">{t.profFinancials} — {t.mFull[month-1]} {year}</CardTitle>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="rounded-xl p-3 text-center" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
               <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:4}}>{t.profGross}</p>
@@ -2539,7 +2629,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
           <StaleNotice paidRec={paidRec} calc={calc} t={t} />
           {undoneHere.length>0&&(
             <div className="rounded-2xl mb-4" style={{background:'var(--surface2)',border:'1px solid var(--border)',padding:'10px 14px'}}>
-              <p style={{fontSize:fsr(12),fontWeight:800,color:'var(--muted)',margin:'0 0 6px'}}>↩ {t.undoHistory}</p>
+              <p style={{fontSize:fsr(12),fontWeight:800,color:'var(--muted)',margin:'0 0 6px'}} className="flex items-center gap-1"><Icon name="undo" size={14} />{t.undoHistory}</p>
               {undoneHere.map(function(u){
                 return (
                   <p key={u.id} style={{fontSize:fsr(12),color:'var(--ink2)',margin:'2px 0'}}>
@@ -2558,7 +2648,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
               <p style={{fontSize:fsr(12),color:'var(--danger)',margin:'4px 0 0'}}>{t.duesHint}</p>
             </div>
           )}
-          <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}>💸 {t.rAdv}</p>
+          <p className="flex items-center gap-2" style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}><Icon name="advance" size={16} />{t.rAdv}</p>
           {thisMonthAdv.length===0
             ? <p style={{fontSize:fsr(13),color:'var(--muted)',marginBottom:12}}>{t.profNoAdv}</p>
             : <div className="mb-3">{thisMonthAdv.map(function(e){return (
@@ -2571,7 +2661,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
                 </div>
               );})}</div>
           }
-          <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}>🏦 {t.profLoans}</p>
+          <p className="flex items-center gap-2" style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink2)',marginBottom:6}}><Icon name="loan" size={16} />{t.profLoans}</p>
           {activeLoans.length===0
             ? <p style={{fontSize:fsr(13),color:'var(--muted)'}}>{t.profNoLoans}</p>
             : activeLoans.map(function(loan){
@@ -2599,7 +2689,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
             rather than by person — so answering "what has Kamala had this
             year" meant scrolling past everybody. */}
         <div className="card fade-in">
-          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:10}}>🧾 {t.profTxns}</p>
+          <CardTitle icon="records">{t.profTxns}</CardTitle>
           <div className="flex gap-2 mb-3" style={{flexWrap:'wrap'}}>
             {[['month',t.perThisMonth],['last',t.perLastMonth],['year',t.perThisYear],['all',t.perAll]].map(function(o){
               var on=txnPeriod===o[0];
@@ -2631,7 +2721,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
                   var tc=TC[r.kind]||{icon:'💵',bg:'#D8EEE2'};
                   return (
                     <div key={r.id} className="flex items-center gap-2" style={{padding:'8px 10px',borderRadius:12,background:tc.bg,marginBottom:6}}>
-                      <span style={{fontSize:fsr(17),width:24,textAlign:'center',flexShrink:0}}>{tc.icon}</span>
+                      <span style={{color:tc.ink||'var(--ink2)'}}><Icon name={tc.icon} size={20} /></span>
                       <div className="flex-1 min-w-0">
                         <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink)',margin:0}}>{r.label}</p>
                         <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}} className="truncate">
@@ -2648,7 +2738,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
 
         {/* ④ Attendance */}
         <div className="card fade-in">
-          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>📅 {t.profAttend} — {t.mFull[month-1]}</p>
+          <CardTitle icon="calendar">{t.profAttend} — {t.mFull[month-1]}</CardTitle>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
               {v:Math.floor(presentDays),label:t.tPresent,color:'var(--ok)',bg:'#D8EEE2'},
@@ -2678,7 +2768,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
 
         {/* ④ Quick Actions */}
         <div className="card fade-in">
-          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>⚡ {t.profQA}</p>
+          <CardTitle icon="bulb">{t.profQA}</CardTitle>
           <div className="grid grid-cols-2 gap-3">
             {actions.map(function(act,i){return (
               <button key={i} onClick={act.disabled?undefined:act.onClick}
@@ -2814,8 +2904,9 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
                           fontSize:fsr(15),fontWeight:800,fontFamily:'Nunito,sans-serif',lineHeight:1,
                           border:'2px solid '+(on?o.c:'var(--border)'),
                           background:on?o.bg:'var(--surface)',
-                          color:on?o.c:'var(--muted)'}}>
-                        {on?'✓ ':''}{o.lbl}
+                          color:on?o.c:'var(--muted)',
+                          display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                        {on&&<Icon name="check" size={17} strokeWidth={2.6} />}{o.lbl}
                       </button>
                     );
                   })}
@@ -2824,8 +2915,8 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
             );
           })}
           <button onClick={function(){onNavigate&&onNavigate('leaves');}}
-            className="btn btn-ghost btn-full" style={{marginTop:10}}>
-            🗓️ {t.dashFullCalendar}
+            className="btn btn-ghost btn-full" style={{marginTop:10,gap:8}}>
+            <Icon name="calendar" size={18} />{t.dashFullCalendar}
           </button>
         </div>
       )}
@@ -2869,7 +2960,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
               return (
                 <div key={e.id} className="flex items-center gap-3 px-4 py-3"
                   style={{background:tc.bg,borderBottom:i<recent.length-1?'1px solid var(--border)':'none'}}>
-                  <span style={{fontSize:fsr(20),width:28,textAlign:'center'}}>{tc.icon}</span>
+                  <span style={{color:tc.ink||'var(--ink2)'}}><Icon name={tc.icon} size={22} /></span>
                   <div className="flex-1 min-w-0">
                     <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink)',margin:0}} className="truncate">{s.name}</p>
                     <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{e.reason||''} · {fmtD(e.date)}</p>
@@ -3128,7 +3219,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
                           background:off?'#D8EEE2':'var(--surface2)',
                           color:off?'var(--ok)':'var(--danger)',
                           fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif',padding:0}}>
-                        {off?'↺':'✕'}
+                        <Icon name={off?'undo':'close'} size={15} />
                       </button>
                     )}
                   </span>
@@ -3153,7 +3244,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
 
           {calc.loanBal>0 && (
             <div className="flex justify-between items-center px-4 py-2 mb-3 rounded-2xl" style={{background:'#EAE4F5',border:'1px solid var(--purple)'}}>
-              <span style={{fontSize:fsr(13),fontWeight:700,color:'var(--purple)'}}>🏦 {t.rLoanBal}</span>
+              <span style={{fontSize:fsr(13),fontWeight:700,color:'var(--purple)'}} className="flex items-center gap-2"><Icon name="loan" size={15} />{t.rLoanBal}</span>
               <span style={{fontSize:fsr(15),fontWeight:800,color:'var(--purple)'}}>{fmt(calc.loanBal)}</span>
             </div>
           )}
@@ -3317,7 +3408,7 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
       )}
       <button onClick={function(){setRangeOpen(function(v){return !v;});}}
         className="btn btn-ghost btn-full" style={{marginBottom:12}}>
-        📅 {t.markMany} {rangeOpen?'▲':'▼'}
+        <Icon name="calendar" size={18} /><span style={{margin:'0 8px'}}>{t.markMany}</span><Icon name={rangeOpen?'chevronUp':'chevronDown'} size={16} />
       </button>
       {rangeOpen&&(
         <div className="rounded-2xl mb-3" style={{background:'var(--surface2)',border:'1px solid var(--border)',padding:'12px 14px'}}>
@@ -3566,8 +3657,21 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   function typeBtn(key,full){
     var active=form.type===key;
     var blocked=typeChangeBlocked(key)&&!active;
-    var st=Object.assign({},active?typeStyles[key].active:typeStyles[key].inactive,{borderRadius:12,padding:full?'14px 12px':'10px 8px',cursor:blocked?'not-allowed':'pointer',opacity:blocked?0.4:1,fontWeight:700,fontFamily:'Nunito,sans-serif',fontSize:fsr(full?15:13),transition:'all .15s',textAlign:'center',width:'100%',display:'block'});
-    return <button key={key} disabled={blocked} onClick={function(){ if(!blocked) set('type',key); }} style={st}>{TC[key]?TC[key].icon+' ':''}{typeLabels[key]}</button>;
+    /* Fixed height with the icon above the label, so a two-word type like
+       Loan Repayment wraps inside its own tile instead of making that row of
+       the grid taller than the others. */
+    var st=Object.assign({},active?typeStyles[key].active:typeStyles[key].inactive,
+      {borderRadius:12,padding:'10px 6px',cursor:blocked?'not-allowed':'pointer',
+       opacity:blocked?0.4:1,fontWeight:700,fontFamily:'Nunito,sans-serif',
+       fontSize:fsr(full?14:12.5),transition:'all .15s',textAlign:'center',width:'100%',
+       minHeight:full?64:70,display:'flex',flexDirection:full?'row':'column',
+       alignItems:'center',justifyContent:'center',gap:full?8:5,lineHeight:1.2});
+    return (
+      <button key={key} disabled={blocked} onClick={function(){ if(!blocked) set('type',key); }} style={st}>
+        {TC[key]&&<Icon name={TC[key].icon} size={full?22:24} />}
+        <span>{typeLabels[key]}</span>
+      </button>
+    );
   }
 
   return (
@@ -3575,7 +3679,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
       {errMsg&&<Toast msg={errMsg} onDone={function(){setErrMsg('');}} />}
       {loanLocked && (
         <div className="mb-4 px-3 py-2 rounded-xl" style={{background:'#EAE4F5',border:'1px solid var(--purple)'}}>
-          <p style={{fontSize:fsr(13),color:'#3A2E7A',fontWeight:700}}>🔒 {t.loanLockedHint}</p>
+          <p style={{fontSize:fsr(13),color:'#3A2E7A',fontWeight:700}} className="flex items-center gap-2"><Icon name="lock" size={15} />{t.loanLockedHint}</p>
         </div>
       )}
       <FLabel label={t.selStaff} req={form.type!=='extra_help'}>
@@ -3688,7 +3792,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
             <button onClick={function(){setConfirmDelete(true);}}
               style={{width:'100%',padding:'10px',background:'none',border:'none',color:'var(--danger)',
                 fontSize:fsr(14),fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-              🗑️ {t.del}
+              <Icon name="trash" size={17} style={{display:'inline-block',verticalAlign:'-3px',marginRight:6}} />{t.del}
             </button>
           )}
         </div>
@@ -3804,7 +3908,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                 <button key={mid} onClick={function(){setFilterMember(mid);}}
                   className={'pill '+(active?'pill-accent':'pill-muted')}
                   style={{cursor:'pointer',border:'none',whiteSpace:'nowrap'}}>
-                  {mid==='all'?'👥 ':mid==='none'?'':'💰 '}{label}
+                  {label}
                 </button>
               );
             })}
@@ -3825,7 +3929,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                   className="rounded-2xl p-3 mb-3 fade-in" style={{background:tc.bg,border:'1px solid var(--border)',cursor:'pointer'}}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <span style={{fontSize:fsr(20)}}>{tc.icon}</span>
+                      <span style={{color:tc.ink||'var(--ink2)'}}><Icon name={tc.icon} size={22} /></span>
                       <div>
                         <span className={'pill '+tc.pillCls}>{typeLabels[entry.type]}</span>
                         <p style={{fontWeight:800,color:'var(--ink)',marginTop:2}}>{sName}</p>
@@ -3839,7 +3943,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                           fontSize:fsr(11),fontWeight:800,color:'var(--ink2)'}}>
                           <span style={{width:15,height:15,borderRadius:'50%',display:'inline-grid',placeItems:'center',
                             background:entry.paidBy==='other'?'var(--muted)':(mc.members[entry.paidBy]||{}).color||'var(--muted)',color:'#fff',fontSize:fsr(8)}}>
-                            {entry.paidBy==='other'?'👤':payerLabel(entry,mc.members,t).charAt(0).toUpperCase()}
+                            {entry.paidBy==='other'?<Icon name="person" size={14} />:payerLabel(entry,mc.members,t).charAt(0).toUpperCase()}
                           </span>
                           {payerLabel(entry,mc.members,t)}
                         </span>
@@ -3863,7 +3967,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                   <div className="mt-2 flex gap-2 flex-wrap" onClick={function(e){e.stopPropagation();}}>
                     {sObj && <button onClick={function(){setActiveWA(entry.id===activeWA?null:entry.id);}}
                       style={{fontSize:fsr(12),color:'#1A6E5E',border:'1px solid #A8D4C4',borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-                      📲 WhatsApp
+                      <Icon name="share" size={15} style={{display:'inline-block',verticalAlign:'-2px',marginRight:6}} />WhatsApp
                     </button>}
                     <span style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,alignSelf:'center'}}>{t.tapToEdit}</span>
                   </div>
@@ -4061,7 +4165,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
                 <div className="flex items-center gap-2" style={{marginBottom:6}}>
                   <span style={{width:26,height:26,borderRadius:'50%',display:'grid',placeItems:'center',
                     background:col,color:'#fff',fontWeight:800,fontSize:fsr(11),flex:'none'}}>
-                    {isNone?'?':isExternal?'👤':name.charAt(0).toUpperCase()}
+                    {isNone?'?':isExternal?<Icon name="person" size={14} />:name.charAt(0).toUpperCase()}
                   </span>
                   <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(14),flex:1}}>
                     {name}{r.uid===mc.uid?' ('+t.paidByYou+')':''}
@@ -4577,7 +4681,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
               {r.isDefault
                 ? <span className="pill pill-muted" style={{fontSize:fsr(11)}}>{t.defaultRole}</span>
                 : <button onClick={function(){tryDeleteRole(r.key);}}
-                    style={{background:'transparent',border:'none',cursor:'pointer',fontSize:fsr(16),padding:'2px 6px'}}>🗑️</button>
+                    style={{background:'transparent',border:'none',cursor:'pointer',padding:'2px 6px',color:'var(--danger)'}} aria-label="Delete"><Icon name="trash" size={17} /></button>
               }
             </div>
           );
@@ -4609,7 +4713,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
 
         {cloudHomes && (
           <div className="flex gap-2 mb-3">
-            {[{k:'create',label:'🏗️ '+t.createHome},{k:'join',label:'🔑 '+t.joinHome}].map(function(o){
+            {[{k:'create',icon:'plus',label:t.createHome},{k:'join',icon:'key',label:t.joinHome}].map(function(o){
               var on=homeMode===o.k;
               return (
                 <button key={o.k} onClick={function(){setHomeMode(o.k);setHomeErr('');}}
@@ -4617,8 +4721,9 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
                     border:'2px solid '+(on?'var(--accent)':'var(--border)'),
                     background:on?'#D8EEE8':'var(--surface2)',
                     color:on?'var(--accent)':'var(--ink2)',fontWeight:800,fontSize:fsr(13),
-                    fontFamily:'Nunito,sans-serif'}}>
-                  {o.label}
+                    fontFamily:'Nunito,sans-serif',minHeight:44,
+                    display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+                  <Icon name={o.icon} size={17} />{o.label}
                 </button>
               );
             })}
@@ -4730,7 +4835,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
         </pre>
 
         <button onClick={onReplayTutorial} className="btn btn-ghost btn-full" style={{marginTop:16}}>
-          🔄 {t.tutReplayBtn}
+          <Icon name="refresh" size={18} style={{display:'inline-block',verticalAlign:'-3px',marginRight:8}} />{t.tutReplayBtn}
         </button>
       </div>
 
@@ -4747,8 +4852,8 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
           </div>
         ) : (
           <div className="flex gap-3">
-            <button onClick={function(){downloadBackup();}} style={{flex:1,padding:'12px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface2)',color:'var(--ink)',fontWeight:700,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>💾 {t.hmBackup}</button>
-            <button onClick={function(){restoreRef.current&&restoreRef.current.click();}} style={{flex:1,padding:'12px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface2)',color:'var(--ink)',fontWeight:700,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>📂 {t.hmRestore}</button>
+            <button onClick={function(){downloadBackup();}} style={{flex:1,padding:'12px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface2)',color:'var(--ink)',fontWeight:700,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}><Icon name="download" size={17} style={{display:'inline-block',verticalAlign:'-3px',marginRight:6}} />{t.hmBackup}</button>
+            <button onClick={function(){restoreRef.current&&restoreRef.current.click();}} style={{flex:1,padding:'12px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface2)',color:'var(--ink)',fontWeight:700,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}><Icon name="folder" size={17} style={{display:'inline-block',verticalAlign:'-3px',marginRight:6}} />{t.hmRestore}</button>
           </div>
         )}
         <input type="file" accept=".json" onChange={handleRestoreFile} className="hidden" ref={restoreRef} />
@@ -4761,7 +4866,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
             {user.phoneNumber||user.email||user.displayName||'Signed in'}
           </p>
           <button className="btn btn-danger btn-full" onClick={onSignOut}>
-            🚪 {t.signOut}
+            <Icon name="signout" size={18} style={{display:'inline-block',verticalAlign:'-3px',marginRight:8}} />{t.signOut}
           </button>
         </div>
       )}
@@ -4958,21 +5063,21 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays,layout}){
   function go(tabKey){ setTab(tabKey); onClose(); }
 
   var menuItems=[
-    {icon:'📊',label:t.hmAnnual,   action:function(){go('annual');}},
-    {icon:'🎤',label:t.hmVoice,    action:function(){go('voice');}},
-    {icon:'📤',label:t.hmExportMonth, action:function(){setShowExport(function(v){return !v;});}},
-    {icon:'💬',label:t.hmFeedback, action:function(){go('feedback');}},
-    {icon:'⚙️',label:t.hmSettings, action:function(){go('settings');}},
+    {icon:'reports', label:t.hmAnnual,   action:function(){go('annual');}},
+    {icon:'mic',     label:t.hmVoice,    action:function(){go('voice');}},
+    {icon:'upload',  label:t.hmExportMonth, action:function(){setShowExport(function(v){return !v;});}},
+    {icon:'chat',    label:t.hmFeedback, action:function(){go('feedback');}},
+    {icon:'settings',label:t.hmSettings, action:function(){go('settings');}},
   ];
   /* Attendance has no bar of its own in the simple layout, so it is listed
      here — nothing the classic layout can reach may become unreachable. */
-  if(layout==='simple') menuItems.unshift({icon:'🗓️',label:t.navLeaves,action:function(){go('leaves');}});
+  if(layout==='simple') menuItems.unshift({icon:'calendar',label:t.navLeaves,action:function(){go('leaves');}});
 
   function rowBtn(item){
     return (
       <button key={item.label} onClick={item.action}
         style={{display:'flex',alignItems:'center',gap:14,width:'100%',minHeight:56,padding:'0 20px',background:'none',border:'none',borderBottom:'1px solid var(--border)',cursor:'pointer',fontFamily:'Nunito,sans-serif',color:'var(--ink)',fontSize:fsr(16),fontWeight:700,textAlign:'left'}}>
-        <span style={{fontSize:fsr(24),width:34,textAlign:'center'}}>{item.icon}</span>
+        <span style={{width:34,display:'flex',justifyContent:'center',color:'var(--accent)'}}><Icon name={item.icon} size={24} /></span>
         <span style={{flex:1}}>{item.label}</span>
         <span style={{color:'var(--ink2)',fontSize:fsr(18)}}>›</span>
       </button>
@@ -4987,7 +5092,7 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays,layout}){
           <div style={{width:44,height:4,background:'var(--border)',borderRadius:4}} />
         </div>
         {menuItems.map(function(item){
-          var isExport=item.icon==='📤';
+          var isExport=item.icon==='upload';
           return (
             <div key={item.label}>
               {rowBtn(item)}
@@ -5235,15 +5340,16 @@ function MoneyTab({lang,homeId,homes,workingDays,syncKey,refreshKey,defaultStaff
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex gap-2 px-4 pt-3 shrink-0">
-        {[['records',t.moneyRecords],['pay',t.moneyPay]].map(function(o){
+        {[['records','records',t.moneyRecords],['pay','card',t.moneyPay]].map(function(o){
           var on=view===o[0];
           return (
             <button key={o[0]} onClick={function(){setView(o[0]);}}
-              style={{flex:1,padding:'10px',borderRadius:12,cursor:'pointer',fontFamily:'Nunito,sans-serif',
-                fontWeight:800,fontSize:fsr(14),
+              style={{flex:1,padding:'11px',borderRadius:12,cursor:'pointer',fontFamily:'Nunito,sans-serif',
+                fontWeight:800,fontSize:fsr(14),minHeight:46,
+                display:'flex',alignItems:'center',justifyContent:'center',gap:8,
                 border:on?'2px solid var(--accent)':'2px solid var(--border)',
                 background:on?'var(--accent)':'var(--surface)',color:on?'#fff':'var(--ink2)'}}>
-              {o[1]}
+              <Icon name={o[1]} size={20} />{o[2]}
             </button>
           );
         })}
@@ -5277,13 +5383,13 @@ function ReportsTab({lang,homeId,workingDays,syncKey}){
             style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',
               color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
               opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
-            {busy==='month'?t.exportWorking:'📤 '+t.hmExportMonth}
+            {busy==='month'?t.exportWorking:<span className="flex items-center justify-center gap-2"><Icon name="upload" size={17} />{t.hmExportMonth}</span>}
           </button>
           <button disabled={!!busy} onClick={function(){run('year');}}
             style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',
               color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
               opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
-            {busy==='year'?t.exportWorking:'📤 '+t.hmExportYear}
+            {busy==='year'?t.exportWorking:<span className="flex items-center justify-center gap-2"><Icon name="upload" size={17} />{t.hmExportYear}</span>}
           </button>
         </div>
       </div>
@@ -5296,20 +5402,20 @@ function ReportsTab({lang,homeId,workingDays,syncKey}){
 function BottomNav({tab,setTab,lang,layout}){
   var t=T[lang];
   var tabs=[
-    {key:'staff',  icon:'👥',label:t.navStaff},
-    {key:'leaves', icon:'🗓️',label:t.navLeaves},
-    {key:'salary', icon:'💳',label:t.navSalary},
-    {key:'adv',    icon:'📋',label:t.navAdv},
+    {key:'staff',  icon:'staff',   label:t.navStaff},
+    {key:'leaves', icon:'calendar',label:t.navLeaves},
+    {key:'salary', icon:'card',    label:t.navSalary},
+    {key:'adv',    icon:'records', label:t.navAdv},
   ];
   /* The simple layout puts Home in the bar — in the classic one the most
      useful screen in the app is reachable only through a small icon in the
      header, competing with three others — and folds Pay and Records together
      so there is no longer a guess to make about where an advance lives. */
   if(layout==='simple') tabs=[
-    {key:'home',    icon:'🏠',label:t.navHome},
-    {key:'staff',   icon:'👥',label:t.navStaff},
-    {key:'money',   icon:'💰',label:t.navMoney},
-    {key:'reports', icon:'📊',label:t.navReports},
+    {key:'home',    icon:'home',   label:t.navHome},
+    {key:'staff',   icon:'staff',  label:t.navStaff},
+    {key:'money',   icon:'money',  label:t.navMoney},
+    {key:'reports', icon:'reports',label:t.navReports},
   ];
   return (
     <nav className="sticky bottom-0 z-20 shrink-0" style={{background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
@@ -5320,7 +5426,9 @@ function BottomNav({tab,setTab,lang,layout}){
             <button key={tb.key} onClick={function(){setTab(tb.key);}} data-tut={'nav-'+tb.key}
               className="flex-1 flex flex-col items-center py-2 transition-colors"
               style={{minHeight:56,color:active?'var(--accent)':'var(--ink2)',background:'none',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-              <span style={{fontSize:fsr(22),lineHeight:1,marginBottom:3}}>{tb.icon}</span>
+              {/* 26px in the bar: the primary target in the app, and the one
+                  most often hit with a thumb rather than looked at. */}
+              <Icon name={tb.icon} size={26} strokeWidth={active?2.3:2} style={{marginBottom:3}} />
               <span style={{fontSize:fsr(11),fontWeight:800,lineHeight:1.2}}>{tb.label}</span>
               {active && <span style={{marginTop:3,width:20,height:3,background:'var(--accent)',borderRadius:2,display:'block'}} />}
             </button>
@@ -5870,9 +5978,9 @@ function App(){
                 language is a set-once choice that lives in Settings, so the
                 header drops from four icons to two. Font size stays: it is the
                 one control a reader may want at any moment. */}
-            {layout!=='simple'&&tab!=='home'&&<button onClick={function(){setTab('home');}} title="Home"
-              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(16),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
-              🏠
+            {layout!=='simple'&&tab!=='home'&&<button onClick={function(){setTab('home');}} title="Home" aria-label="Home"
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 11px',color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,minHeight:40,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Icon name="home" size={22} />
             </button>}
             <button onClick={cycleFontSz} title="Font size"
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
@@ -5882,9 +5990,9 @@ function App(){
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 14px',fontWeight:700,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
               {lang==='en'?'हिं':'EN'}
             </button>}
-            <button onClick={function(){setMenuOpen(true);}} title="Menu" data-tut="menu"
-              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 11px',fontWeight:800,fontSize:fsr(17),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
-              ☰
+            <button onClick={function(){setMenuOpen(true);}} title="Menu" aria-label="Menu" data-tut="menu"
+              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 11px',color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,minHeight:40,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Icon name="menu" size={22} />
             </button>
           </div>
         </div>
@@ -5893,7 +6001,9 @@ function App(){
             style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 36px 8px 12px',fontWeight:600,fontSize:fsr(14),color:'#fff',width:'100%',appearance:'none',WebkitAppearance:'none',fontFamily:'Nunito,sans-serif',outline:'none'}}>
             {homes.map(function(h){return <option key={h.id} value={h.id} style={{background:'#1A2E2A',color:'#fff'}}>{h.name}</option>;})}
           </select>
-          <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'rgba(255,255,255,0.6)'}}>🏠</span>
+          {/* This is a dropdown, so it says so — a house here only repeated
+              the word already printed inside it. */}
+          <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'rgba(255,255,255,0.75)',display:'flex'}}><Icon name="chevronDown" size={18} /></span>
         </div>
       </header>
 
