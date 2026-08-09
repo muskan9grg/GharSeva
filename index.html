@@ -191,6 +191,25 @@ const ROLE_AVATAR = {
 };
 function avatarBg(role){ return ROLE_AVATAR[role]||'#3E6060'; }
 
+/* A staff member's face wherever they are named. Photos were only ever drawn
+   on the edit form, the staff card and the profile header; every other list
+   fell back to an initial, which is the hardest thing to scan quickly — a
+   household with a Kamala and a Kaki gets two identical Ks. One component now
+   shows the photo when there is one and the initial when there is not, so
+   adding a photo makes the person recognisable everywhere at once. */
+function Avatar({staff,size,ring}){
+  var px=size||40;
+  var common={width:px,height:px,borderRadius:'50%',flexShrink:0,
+    border:ring||'2px solid var(--border)'};
+  if(staff&&staff.photo) return <img src={staff.photo} alt="" style={Object.assign({objectFit:'cover'},common)} />;
+  var initials=((staff&&staff.name)||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+  return (
+    <div style={Object.assign({background:avatarBg(staff&&staff.role),color:'#fff',fontWeight:800,
+      display:'flex',alignItems:'center',justifyContent:'center',
+      fontSize:(px*0.38)/16+'rem',lineHeight:1},common)}>{initials}</div>
+  );
+}
+
 const DEFAULT_ROLES = [
   {key:'maid',    en:'Bai / Maid',   hi:'बाई / मेड',  isDefault:true},
   {key:'cook',    en:'Cook',         hi:'रसोइया',     isDefault:true},
@@ -285,6 +304,10 @@ en:{
   tPaidBadge:'✓ Paid',tDueBadge:'Due this month',
   dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',
   dashFullCalendar:'Full calendar & past days',
+  profTxns:'Transactions',
+  profNoTxns:'Nothing recorded for this period.',
+  perThisMonth:'This month',perLastMonth:'Last month',perThisYear:'This year',perAll:'All time',
+  profTxnPaid:'Salary paid',profTxnGiven:'Advances & expenses',profTxnSalary:'Salary',
   dashPay:'Upcoming Pay Days',dashRecent:'Recent Entries',dashSpend:'This Month',
   dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet — go to Staff tab',
   dashPayBtn:'Pay →',dashNoRecent:'No entries yet',dashTomorrow:'Tomorrow',dashToday:'Today',
@@ -480,6 +503,10 @@ hi:{
   tPaidBadge:'✓ भुगतान',tDueBadge:'बाकी है',
   dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',
   dashFullCalendar:'पूरा कैलेंडर और पिछले दिन',
+  profTxns:'लेन-देन',
+  profNoTxns:'इस अवधि में कुछ दर्ज नहीं है।',
+  perThisMonth:'इस महीने',perLastMonth:'पिछले महीने',perThisYear:'इस साल',perAll:'शुरू से अब तक',
+  profTxnPaid:'वेतन दिया',profTxnGiven:'अग्रिम और खर्च',profTxnSalary:'वेतन',
   dashPay:'इस महीने वेतन तारीखें',dashRecent:'हाल की एंट्री',dashSpend:'इस महीने',
   dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं — स्टाफ टैब पर जाएं',
   dashPayBtn:'दें →',dashNoRecent:'कोई एंट्री नहीं',dashTomorrow:'कल',dashToday:'आज',
@@ -1987,10 +2014,7 @@ function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
       {/* Tappable main area — navigates to profile */}
       <div className="p-4" onClick={onView} style={{cursor:'pointer'}}>
         <div className="flex items-center gap-3">
-          {staff.photo
-            ? <img src={staff.photo} className="w-14 h-14 rounded-full object-cover shrink-0" style={{border:'2px solid var(--border)'}} />
-            : <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0" style={{background:avatarBg(staff.role)}}>{initials}</div>
-          }
+          <Avatar staff={staff} size={56} />
           <div className="flex-1 min-w-0">
             <p style={{fontSize:fsr(17),fontWeight:800,color:'var(--ink)'}} className="truncate">{staff.name}</p>
             {staff.nickname && <p style={{fontSize:fsr(12),color:'var(--muted)'}}>{staff.nickname}</p>}
@@ -2253,7 +2277,7 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   return (
     <Modal onClose={onClose} title={t.profPaySalary}>
       <div className="flex items-center gap-3 mb-4 p-3 rounded-2xl" style={{background:'var(--surface2)'}}>
-        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0" style={{background:avatarBg(staff.role)}}>{(staff.name[0]||'?').toUpperCase()}</div>
+        <Avatar staff={staff} size={48} />
         <div>
           <p style={{fontWeight:800,fontSize:fsr(17),color:'var(--ink)',margin:0}}>{staff.name}</p>
           <p style={{fontSize:fsr(13),color:'var(--ink2)',margin:0}}>{t.mFull[month-1]} {year}</p>
@@ -2347,6 +2371,42 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var payKey=staff.id+'_'+year+'_'+month;
   var paidRec=payments.find(function(p){return p.key===payKey;});
   var duesTotal=getOutstandingDues(staff.id,payments);
+  var [txnPeriod,setTxnPeriod]=useState('month');
+
+  /* One list per person, drawn from both books: the ledger holds advances,
+     loans and the rest, while salary payments live separately. Shown together
+     because from the staff member's side there is no such distinction — it is
+     all money that changed hands. */
+  var txns=useMemo(function(){
+    var from='', to='9999-99';
+    if(txnPeriod==='month'){ from=padYM(year,month); to=from; }
+    else if(txnPeriod==='last'){ var ly=month===1?year-1:year, lm=month===1?12:month-1; from=padYM(ly,lm); to=from; }
+    else if(txnPeriod==='year'){ from=year+'-01'; to=year+'-12'; }
+    function inRange(d){ var ym=(d||'').slice(0,7); return txnPeriod==='all'||(ym>=from&&ym<=to); }
+
+    var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,
+                    extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
+    var rows=[], paid=0, given=0;
+    ledger.forEach(function(e){
+      if(e.staffId!==staff.id||!inRange(e.date)) return;
+      rows.push({id:'l'+e.id,date:e.date,kind:e.type,label:typeLabels[e.type]||e.type,
+                 amount:e.amount||0,note:e.reason||''});
+      /* Advances and expenses are money handed over on top of salary; the rest
+         are adjustments that land inside it, so they are not counted here. */
+      if(e.type==='advance'||e.type==='expense') given+=e.amount||0;
+    });
+    payments.forEach(function(p){
+      if(p.staffId!==staff.id) return;
+      var ym=padYM(p.year,p.month);
+      if(!(txnPeriod==='all'||(ym>=from&&ym<=to))) return;
+      rows.push({id:'p'+p.key,date:p.date||ym+'-01',kind:'salary',
+                 label:t.profTxnSalary+' · '+t.months[p.month-1]+' '+p.year,
+                 amount:p.amount||0,note:''});
+      paid+=p.amount||0;
+    });
+    rows.sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0;});
+    return {rows:rows,paid:paid,given:given};
+  },[ledger,payments,staff.id,txnPeriod,year,month,lang]);
   var undoneHere=useMemo(function(){
     return getUndos(homeId).filter(function(u){return u.staffId===staff.id;})
       .sort(function(a,b){return (b.year*12+b.month)-(a.year*12+a.month);}).slice(0,4);
@@ -2392,10 +2452,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
         {/* ① Personal Info */}
         <div className="card fade-in">
           <div className="flex items-center gap-4 mb-4">
-            {staff.photo
-              ? <img src={staff.photo} className="rounded-full object-cover shrink-0" style={{width:64,height:64,border:'2px solid var(--border)'}} />
-              : <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{width:64,height:64,background:avatarBg(staff.role),fontSize:fsr(22)}}>{initials}</div>
-            }
+            <Avatar staff={staff} size={72} />
             <div>
               <p style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',margin:0}}>{staff.name}</p>
               {staff.nickname&&<p style={{fontSize:fsr(13),color:'var(--muted)',margin:'2px 0 0'}}>{staff.nickname}</p>}
@@ -2520,7 +2577,60 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
           }
         </div>
 
-        {/* ③ Attendance */}
+        {/* ③ This person's own record of money.
+            Everything here was previously only visible in the household-wide
+            Records list, mixed in with everyone else's and filtered by type
+            rather than by person — so answering "what has Kamala had this
+            year" meant scrolling past everybody. */}
+        <div className="card fade-in">
+          <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:10}}>🧾 {t.profTxns}</p>
+          <div className="flex gap-2 mb-3" style={{flexWrap:'wrap'}}>
+            {[['month',t.perThisMonth],['last',t.perLastMonth],['year',t.perThisYear],['all',t.perAll]].map(function(o){
+              var on=txnPeriod===o[0];
+              return (
+                <button key={o[0]} onClick={function(){setTxnPeriod(o[0]);}}
+                  style={{padding:'7px 12px',borderRadius:999,cursor:'pointer',fontFamily:'Nunito,sans-serif',
+                    fontWeight:800,fontSize:fsr(12),
+                    border:'2px solid '+(on?'var(--accent)':'var(--border)'),
+                    background:on?'var(--accent)':'var(--surface)',color:on?'#fff':'var(--ink2)'}}>
+                  {o[1]}
+                </button>
+              );
+            })}
+          </div>
+          {txns.rows.length===0
+            ? <p style={{fontSize:fsr(13),color:'var(--muted)',margin:'8px 0'}}>{t.profNoTxns}</p>
+            : <div>
+                <div className="flex gap-2 mb-3">
+                  <div className="flex-1 rounded-xl p-2 text-center" style={{background:'#D8EEE2'}}>
+                    <p style={{fontSize:fsr(10),color:'var(--ok)',fontWeight:700,margin:0}}>{t.profTxnPaid}</p>
+                    <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ok)',margin:0}}>{fmt(txns.paid)}</p>
+                  </div>
+                  <div className="flex-1 rounded-xl p-2 text-center" style={{background:'#FDF3DC'}}>
+                    <p style={{fontSize:fsr(10),color:'#8B5E08',fontWeight:700,margin:0}}>{t.profTxnGiven}</p>
+                    <p style={{fontSize:fsr(16),fontWeight:800,color:'#8B5E08',margin:0}}>{fmt(txns.given)}</p>
+                  </div>
+                </div>
+                {txns.rows.map(function(r){
+                  var tc=TC[r.kind]||{icon:'💵',bg:'#D8EEE2'};
+                  return (
+                    <div key={r.id} className="flex items-center gap-2" style={{padding:'8px 10px',borderRadius:12,background:tc.bg,marginBottom:6}}>
+                      <span style={{fontSize:fsr(17),width:24,textAlign:'center',flexShrink:0}}>{tc.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink)',margin:0}}>{r.label}</p>
+                        <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}} className="truncate">
+                          {fmtD(r.date)}{r.note?' · '+r.note:''}
+                        </p>
+                      </div>
+                      <span style={{fontSize:fsr(14),fontWeight:800,color:'var(--ink)',flexShrink:0}}>{fmt(r.amount)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+          }
+        </div>
+
+        {/* ④ Attendance */}
         <div className="card fade-in">
           <p style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',marginBottom:12}}>📅 {t.profAttend} — {t.mFull[month-1]}</p>
           <div className="grid grid-cols-3 gap-2 mb-3">
@@ -2661,25 +2771,35 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
           {onStaff.map(function(s,i){
             var cur=(getLeaves(s.id,curYM)||{})[today]||'present';
             return (
-              <div key={s.id} className="flex items-center gap-2" style={{padding:'8px 0',borderTop:i?'1px solid var(--border)':'none'}}>
-                <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
-                  style={{width:32,height:32,background:avatarBg(s.role),fontSize:fsr(12)}}>
-                  {(s.name[0]||'?').toUpperCase()}
+              /* Name above, buttons below at full width. Squeezing all three
+                 onto one row truncated the very thing being identified — on a
+                 narrow phone "Kamala B…" beside two buttons helps nobody. */
+              <div key={s.id} style={{padding:'12px 0',borderTop:i?'1px solid var(--border)':'none'}}>
+                <div className="flex items-center gap-3 mb-2">
+                  <Avatar staff={s} size={42} />
+                  <p className="flex-1 truncate" style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',margin:0}}>{s.name}</p>
+                  {/* Holiday is set in the calendar, so neither button below
+                      would be lit — say so rather than showing a blank pair. */}
+                  {cur==='holiday'&&(
+                    <span className="pill" style={{background:'#F5EBC0',color:'var(--warn)',fontSize:fsr(11),padding:'3px 8px',flexShrink:0}}>🏖 {t.tHoliday}</span>
+                  )}
                 </div>
-                <p className="flex-1 truncate" style={{fontSize:fsr(14),fontWeight:700,color:'var(--ink)',margin:0}}>{s.name}</p>
-                <div className="flex gap-1 shrink-0">
-                  {[{v:'present',ic:'✓',c:'var(--ok)',bg:'#D8EEE2'},
-                    {v:'leave',ic:'🗓',c:'var(--danger)',bg:'#FCE8E8'},
-                    {v:'holiday',ic:'🏖',c:'var(--warn)',bg:'#F5EBC0'}].map(function(o){
+                {/* Named and colour-coded rather than pictographic: a tick and a
+                    calendar glyph look alike at a glance. Green for here, red
+                    for away — nothing to learn. */}
+                <div className="flex gap-2">
+                  {[{v:'present',lbl:t.tPresent,c:'#1A5E35',bg:'#D8EEE2'},
+                    {v:'leave',  lbl:t.tLeave,  c:'#B3282B',bg:'#FCE8E8'}].map(function(o){
                     var on=cur===o.v;
                     return (
                       <button key={o.v} onClick={function(){markTodayFor(s.id,o.v);}}
-                        aria-label={s.name+' — '+(o.v==='present'?t.tPresent:o.v==='leave'?t.tLeave:t.tHoliday)}
-                        style={{minWidth:38,minHeight:38,borderRadius:10,cursor:'pointer',fontSize:fsr(15),
-                          fontFamily:'Nunito,sans-serif',lineHeight:1,padding:0,
-                          border:on?'2px solid '+o.c:'1px solid var(--border)',
-                          background:on?o.bg:'var(--surface2)',opacity:on?1:0.55}}>
-                        {o.ic}
+                        aria-label={s.name+' — '+o.lbl} aria-pressed={on}
+                        style={{flex:1,minHeight:46,padding:'10px',borderRadius:12,cursor:'pointer',
+                          fontSize:fsr(15),fontWeight:800,fontFamily:'Nunito,sans-serif',lineHeight:1,
+                          border:'2px solid '+(on?o.c:'var(--border)'),
+                          background:on?o.bg:'var(--surface)',
+                          color:on?o.c:'var(--muted)'}}>
+                        {on?'✓ ':''}{o.lbl}
                       </button>
                     );
                   })}
@@ -2704,10 +2824,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
               return (
                 <div key={item.s.id} className="flex items-center gap-3 px-4 py-3"
                   style={{borderBottom:i<payList.length-1?'1px solid var(--border)':'none'}}>
-                  <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
-                    style={{width:36,height:36,background:avatarBg(item.s.role),fontSize:fsr(13)}}>
-                    {(item.s.name[0]||'?').toUpperCase()}
-                  </div>
+                  <Avatar staff={item.s} size={40} />
                   <div className="flex-1 min-w-0">
                     <p style={{fontSize:fsr(14),fontWeight:800,color:'var(--ink)',margin:0}} className="truncate">{item.s.name}</p>
                     <p style={{fontSize:fsr(11),color:'var(--muted)',margin:0}}>{dueTxt}</p>
@@ -2956,9 +3073,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
       {calc && s && (
         <div className="fade-in">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{background:avatarBg(s.role)}}>
-              {(s.name[0]||'?').toUpperCase()}
-            </div>
+            <Avatar staff={s} size={44} />
             <div>
               <p style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(18),margin:0}}>{s.name}</p>
               <p style={{fontSize:fsr(12),color:'var(--muted)',margin:0}}>{t.mFull[selMonth-1]} {selYear}</p>
@@ -3960,9 +4075,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
         return (
           <div key={s.id} className="rounded-2xl p-4 mb-3" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white" style={{background:avatarBg(s.role)}}>
-                {(s.name[0]||'?').toUpperCase()}
-              </div>
+              <Avatar staff={s} size={40} />
               <div>
                 <p style={{fontWeight:800,color:'var(--ink)',margin:0}}>{s.name}</p>
                 <p style={{fontSize:fsr(12),color:'var(--ink2)',margin:0}}>{roleLabel(s.role,lang)}</p>
