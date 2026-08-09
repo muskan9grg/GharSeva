@@ -246,6 +246,8 @@ en:{
   hmAnnual:'Annual Summary',hmVoice:'Voice Entry',hmSettings:'App Settings',hmHomes:'Manage Homes',hmRoles:'Manage Roles',
   hmData:'Data',hmExportMonth:'This Month (Excel)',hmExportYear:'Full Year (Excel)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
   exportSummaryTitle:'Household Summary',exportGeneratedOn:'Generated On',exportStaffCount:'Total Staff',exportMonthCol:'Month',
+  exportKeyFigures:'AT A GLANCE',exportTotal:'TOTAL',
+  exportSalaryLine:'Salary (paid, or due where unpaid)',
   exportNone:'Nothing recorded for this period',exportWorking:'Preparing…',
   exportSheetPayments:'Salary Payments',exportSheetEntries:'Records',
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'✅ Restored! Reloading…',hmRestoreErr:'Invalid backup file.',
@@ -445,6 +447,8 @@ hi:{
   hmAnnual:'वार्षिक सारांश',hmVoice:'आवाज़ एंट्री',hmSettings:'एप्प सेटिंग्स',hmHomes:'घर प्रबंधन',hmRoles:'भूमिकाएं',
   hmData:'डेटा',hmExportMonth:'इस महीने की Excel',hmExportYear:'पूरे साल की Excel',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
   exportSummaryTitle:'घर का सारांश',exportGeneratedOn:'जनरेट किया गया',exportStaffCount:'कुल स्टाफ',exportMonthCol:'महीना',
+  exportKeyFigures:'एक नज़र में',exportTotal:'कुल',
+  exportSalaryLine:'वेतन (दिया, और बाकी जहाँ नहीं दिया)',
   exportNone:'इस अवधि में कुछ दर्ज नहीं',exportWorking:'तैयार हो रहा है…',
   exportSheetPayments:'वेतन भुगतान',exportSheetEntries:'रिकॉर्ड',
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'✅ रिस्टोर हो गया! लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
@@ -773,61 +777,16 @@ function buildReportData(homeId,period,lang,members,workingDays){
     });
   });
 
-  /* chart series: monthly totals across a year, per-person for a single month */
-  var chart = period==='year'
-    ? {title:t.annEstTotal,
-       labels:monthsInPeriod.map(function(m){return t.months[m-1];}),
-       values:monthsInPeriod.map(function(m){
-         return staff.reduce(function(a,s){return a+monthSalary(s,m);},0);
-       })}
-    : {title:t.annTotal,
-       labels:staffRows.map(function(r){return r.name;}),
-       values:staffRows.map(function(r){return r.spend;})};
+  /* Totals across everyone, so the report can lead with the few numbers
+     someone actually opens it for rather than making them add up a column. */
+  function col(k){ return staffRows.reduce(function(a,r){return a+(r[k]||0);},0); }
+  var totals={salary:col('salary'),advances:col('advances'),expenses:col('expenses'),
+    bonuses:col('bonuses'),overtime:col('overtime'),halfDays:col('halfDays'),
+    loanBal:col('loanBal'),present:col('present'),leave:col('leave'),holiday:col('holiday')};
 
   return {t:t,lang:lang,home:home,label:label,period:period,year:year,
-    generatedOn:todayStr(),staffCount:staff.length,totalSpend:totalSpend,
-    staffRows:staffRows,payRows:payRows,entryRows:entryRows,attRows:attRows,chart:chart};
-}
-
-/* Bar chart drawn to a canvas and embedded as a picture — ExcelJS cannot
-   write native chart objects, and hand-building the chart XML is far more
-   fragile than it is worth here. The in-cell data bars stay live; this is
-   for the at-a-glance view on the Summary tab. */
-function renderChartPNG(chart){
-  var W=1040,H=520,padL=110,padR=30,padT=70,padB=90;
-  var c=document.createElement('canvas'); c.width=W; c.height=H;
-  var x=c.getContext('2d');
-  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,H);
-  x.fillStyle='#1A2E2A'; x.font='bold 30px Nunito, Arial, sans-serif';
-  x.fillText(chart.title,padL,46);
-  var vals=chart.values, labels=chart.labels;
-  var max=Math.max.apply(Math,vals.concat([1]));
-  var plotW=W-padL-padR, plotH=H-padT-padB;
-  /* gridlines + axis labels */
-  x.strokeStyle='#E5EDE6'; x.fillStyle='#7A998C'; x.font='16px Nunito, Arial, sans-serif'; x.lineWidth=1;
-  for(var g=0;g<=4;g++){
-    var gy=padT+plotH-(plotH*g/4);
-    x.beginPath(); x.moveTo(padL,gy); x.lineTo(W-padR,gy); x.stroke();
-    var gv=Math.round(max*g/4);
-    x.textAlign='right';
-    x.fillText(gv>=1000?Math.round(gv/1000)+'k':String(gv),padL-12,gy+5);
-  }
-  var slot=plotW/vals.length, bw=Math.min(64,slot*0.6);
-  vals.forEach(function(v,i){
-    var bh=max>0?Math.round(plotH*v/max):0;
-    var bx=padL+slot*i+(slot-bw)/2, by=padT+plotH-bh;
-    var grad=x.createLinearGradient(0,by,0,padT+plotH);
-    grad.addColorStop(0,'#3EA08A'); grad.addColorStop(1,'#1A6E5E');
-    x.fillStyle=grad; x.fillRect(bx,by,bw,bh);
-    x.fillStyle='#7A998C'; x.font='16px Nunito, Arial, sans-serif'; x.textAlign='center';
-    x.fillText(labels[i],bx+bw/2,padT+plotH+26);
-    if(v>0){
-      x.fillStyle='#1A2E2A'; x.font='bold 15px Nunito, Arial, sans-serif';
-      x.fillText(v>=1000?Math.round(v/1000)+'k':String(v),bx+bw/2,by-9);
-    }
-  });
-  x.strokeStyle='#C4D4C6'; x.beginPath(); x.moveTo(padL,padT+plotH); x.lineTo(W-padR,padT+plotH); x.stroke();
-  return c.toDataURL('image/png');
+    generatedOn:todayStr(),staffCount:staff.length,totalSpend:totalSpend,totals:totals,
+    staffRows:staffRows,payRows:payRows,entryRows:entryRows,attRows:attRows};
 }
 
 /* ── Styled Excel workbook ───────────────────────────────────── */
@@ -838,143 +797,193 @@ function exportExcel(homeId,period,lang,members,workingDays){
     var wb=new ExcelJS.Workbook();
     wb.creator='GharSeva'; wb.created=new Date();
 
-    var GREEN='FF1A6E5E', MINT='FFE5EDE6', LINE='FFC4D4C6', INK='FF1A2E2A';
-    var MONEY='"₹"#,##0', DATEF='dd/mm/yyyy';
+    var GREEN='FF1A6E5E', ACCENT='FF2F8F7A', MINT='FFE5EDE6', LINE='FFC4D4C6', INK='FF1A2E2A';
+    var MONEY='"₹"#,##0';
 
-    function headerRow(ws,rowNo){
-      var row=ws.getRow(rowNo);
-      row.height=24;
-      row.eachCell(function(cell){
-        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREEN}};
-        cell.font={bold:true,color:{argb:'FFFFFFFF'},size:11,name:'Calibri'};
-        cell.alignment={vertical:'middle',horizontal:'left'};
-        cell.border={bottom:{style:'thin',color:{argb:GREEN}}};
-      });
-    }
-    /* zebra striping + borders, so long lists stay readable */
-    function dressBody(ws,firstRow){
-      for(var r=firstRow;r<=ws.rowCount;r++){
-        var row=ws.getRow(r);
-        row.eachCell(function(cell){
-          cell.border={bottom:{style:'hair',color:{argb:LINE}}};
-          cell.alignment=Object.assign({vertical:'middle'},cell.alignment||{});
-          if((r-firstRow)%2===1) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
-        });
-      }
-    }
-    function sheet(name,columns){
-      var ws=wb.addWorksheet(name,{views:[{state:'frozen',ySplit:1}]});
-      ws.columns=columns;
-      headerRow(ws,1);
-      return ws;
-    }
-    /* in-cell proportional bars. cfvo (the min/max bounds) is required —
-       without it ExcelJS throws while writing the rule. */
+    /* In-cell proportional bars. cfvo (the min/max bounds) is required —
+       without it ExcelJS throws while writing the rule, and because the export
+       falls back to plain text on any error, that failure is silent. */
     function dataBar(ws,ref,argb,priority){
       ws.addConditionalFormatting({ref:ref,rules:[{
         type:'dataBar',cfvo:[{type:'min'},{type:'max'}],color:{argb:argb},priority:priority
       }]});
     }
+    /* One sheet. Five sheets meant the answer to any question sat on a tab you
+       were not looking at, and the summary — the part anybody actually opens —
+       was the one you had to navigate away from. Everything now reads top to
+       bottom on a single page: the totals first, then per person, then the two
+       ledgers that produced them. */
+    var ws=wb.addWorksheet('GharSeva',{views:[{state:'frozen',ySplit:2}],
+      pageSetup:{paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,
+        margins:{left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.2,footer:0.2}}});
+    ws.columns=[{width:26},{width:16},{width:11},{width:11},{width:14},{width:14},{width:14},{width:18}];
+    var LAST='H', NCOL=8, row=0;
+    function at(n){ return ws.getRow(n); }
+    function span(n){ ws.mergeCells('A'+n+':'+LAST+n); return ws.getCell('A'+n); }
 
-    /* ── Summary ── */
-    var sum=wb.addWorksheet(t.exportSummaryTitle);
-    sum.columns=[{width:28},{width:34}];
-    sum.mergeCells('A1:B1');
-    var title=sum.getCell('A1');
+    /* A coloured band naming what follows, so a section can be found without
+       counting rows. */
+    function band(text){
+      row++; var c=span(row);
+      c.value=text;
+      c.font={bold:true,size:12,color:{argb:'FFFFFFFF'},name:'Calibri'};
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREEN}};
+      c.alignment={vertical:'middle',horizontal:'left',indent:1};
+      at(row).height=26;
+    }
+    function spacer(){ row++; at(row).height=7; }
+    function headings(labels){
+      row++; var r=at(row); r.height=20;
+      labels.forEach(function(v,i){
+        var c=r.getCell(i+1);
+        c.value=v;
+        c.font={bold:true,size:10,color:{argb:INK},name:'Calibri'};
+        c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
+        c.alignment={vertical:'middle',horizontal:i===0?'left':'right',wrapText:true};
+        c.border={bottom:{style:'thin',color:{argb:GREEN}}};
+      });
+    }
+    /* money lists the column indexes to format as rupees. */
+    function line(values,opts){
+      opts=opts||{};
+      row++; var r=at(row); r.height=opts.tall?20:18;
+      values.forEach(function(v,i){
+        var c=r.getCell(i+1);
+        c.value=v;
+        if(opts.money&&opts.money.indexOf(i)>-1) c.numFmt=MONEY;
+        c.font={size:10,bold:!!opts.bold,color:{argb:opts.color||INK},name:'Calibri'};
+        c.alignment={vertical:'middle',horizontal:i===0||i===1?'left':'right'};
+        c.border={bottom:{style:'hair',color:{argb:LINE}}};
+        if(opts.fill) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:opts.fill}};
+        else if(opts.zebra) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
+      });
+    }
+    function noneRow(){
+      row++; var c=span(row);
+      c.value=t.exportNone;
+      c.font={italic:true,size:10,color:{argb:'FF7A998C'},name:'Calibri'};
+      c.alignment={vertical:'middle',indent:1};
+      at(row).height=18;
+    }
+    function isoOf(dt){ return dt?toISODate(dt):''; }
+
+    /* Title */
+    row++; var title=span(row);
     title.value='GharSeva — '+d.home.name;
     title.font={bold:true,size:18,color:{argb:'FFFFFFFF'},name:'Calibri'};
     title.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREEN}};
     title.alignment={vertical:'middle',horizontal:'center'};
-    sum.getRow(1).height=38;
-    [[t.annYear,d.label],[t.exportGeneratedOn,d.generatedOn],
-     [t.exportStaffCount,d.staffCount],[t.annTotal,d.totalSpend]].forEach(function(pair,i){
-      var r=sum.addRow(pair); r.height=22;
-      r.getCell(1).font={bold:true,color:{argb:INK}};
-      r.getCell(2).alignment={horizontal:'left'};
-      if(i===3){ r.getCell(2).numFmt=MONEY; r.getCell(2).font={bold:true,size:13,color:{argb:GREEN}}; }
-      r.eachCell(function(c){ c.border={bottom:{style:'hair',color:{argb:LINE}}}; });
+    at(row).height=34;
+
+    row++; var sub=span(row);
+    sub.value=d.label+'   ·   '+t.exportGeneratedOn+' '+fmtD(d.generatedOn)+'   ·   '+t.exportStaffCount+': '+d.staffCount;
+    sub.font={size:10,color:{argb:'FFFFFFFF'},name:'Calibri'};
+    sub.fill={type:'pattern',pattern:'solid',fgColor:{argb:ACCENT}};
+    sub.alignment={vertical:'middle',horizontal:'center'};
+    at(row).height=20;
+
+    spacer();
+
+    /* The figures worth leading with */
+    band(t.exportKeyFigures);
+    /* The first figure is money that actually left the house; the second
+       includes an estimate for any month not yet settled, so it can legitimately
+       be the larger of the two. Labelled to say so rather than leaving two
+       similar-looking totals to contradict each other. */
+    [[t.annTotal,d.totalSpend,true],
+     [t.exportSalaryLine,d.totals.salary,false],
+     [t.aTotAdv,d.totals.advances,false],
+     [t.aTotExp,d.totals.expenses,false],
+     [t.aTotBon,d.totals.bonuses+d.totals.overtime,false],
+     [t.aTotLoan,d.totals.loanBal,false]].forEach(function(k,i){
+      row++; at(row).height=k[2]?24:19;
+      ws.mergeCells('A'+row+':D'+row); ws.mergeCells('E'+row+':'+LAST+row);
+      var lab=ws.getCell('A'+row), val=ws.getCell('E'+row);
+      lab.value=k[0];
+      lab.font={bold:k[2],size:k[2]?12:10,color:{argb:INK},name:'Calibri'};
+      lab.alignment={vertical:'middle',indent:1};
+      val.value=k[1]; val.numFmt=MONEY;
+      val.font={bold:true,size:k[2]?14:11,color:{argb:k[2]?GREEN:INK},name:'Calibri'};
+      val.alignment={vertical:'middle',horizontal:'right',indent:1};
+      [lab,val].forEach(function(c){
+        c.border={bottom:{style:'hair',color:{argb:LINE}}};
+        if(k[2]) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD8EEE2'}};
+        else if(i%2===0) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
+      });
     });
 
-    /* ── Staff ── */
-    var st=sheet(t.annPer,[
-      {header:t.fname,key:'name',width:22},{header:t.frole,key:'role',width:16},
-      {header:t.aTotSal,key:'salary',width:14,style:{numFmt:MONEY}},
-      {header:t.aTotAdv,key:'advances',width:13,style:{numFmt:MONEY}},
-      {header:t.aTotExp,key:'expenses',width:13,style:{numFmt:MONEY}},
-      {header:t.aTotBon,key:'bonuses',width:13,style:{numFmt:MONEY}},
-      {header:t.aTotExtra,key:'overtime',width:13,style:{numFmt:MONEY}},
-      {header:t.aTotShort,key:'halfDays',width:13,style:{numFmt:MONEY}},
-      {header:t.aTotLoan,key:'loanBal',width:14,style:{numFmt:MONEY}},
-      {header:t.tPresent,key:'present',width:11},{header:t.tLeave,key:'leave',width:10},
-      {header:t.tHoliday,key:'holiday',width:11}
-    ]);
-    d.staffRows.forEach(function(r){ st.addRow(r); });
-    dressBody(st,2);
-    if(d.staffRows.length){
-      /* bars make each person's share of the salary bill obvious at a glance */
-      dataBar(st,'C2:C'+st.rowCount,'FF3EA08A',1);
-      dataBar(st,'I2:I'+st.rowCount,'FF5B4A9B',2);
+    spacer();
+
+    /* Per person */
+    band(t.annPer);
+    headings([t.fname,t.frole,t.tPresent,t.tLeave,t.aTotSal,t.aTotAdv,t.aTotExp,t.aTotLoan]);
+    var stFirst=row+1;
+    d.staffRows.forEach(function(r,i){
+      line([r.name,r.role,r.present,r.leave,r.salary,r.advances,r.expenses,r.loanBal],
+        {money:[4,5,6,7],zebra:i%2===1});
+    });
+    if(!d.staffRows.length) noneRow();
+    else {
+      line([t.exportTotal,'',d.totals.present,d.totals.leave,d.totals.salary,d.totals.advances,d.totals.expenses,d.totals.loanBal],
+        {money:[4,5,6,7],bold:true,fill:'FFD8EEE2',tall:true});
+      /* Proportional bars carry what the chart used to, in the cells themselves. */
+      dataBar(ws,'E'+stFirst+':E'+(stFirst+d.staffRows.length-1),'FF3EA08A',1);
+      dataBar(ws,'H'+stFirst+':H'+(stFirst+d.staffRows.length-1),'FF5B4A9B',2);
     }
 
-    /* ── Payments ── */
-    var pay=sheet(t.exportSheetPayments,[
-      {header:t.fdate,key:'date',width:14,style:{numFmt:DATEF}},
-      {header:t.fname,key:'name',width:22},
-      {header:t.famount,key:'amount',width:15,style:{numFmt:MONEY}},
-      {header:t.paidBy,key:'paidBy',width:20}
-    ]);
-    d.payRows.forEach(function(r){ pay.addRow(r); });
-    if(!d.payRows.length){ pay.addRow([t.exportNone]).getCell(1).font={italic:true,color:{argb:'FF7A998C'}}; }
-    dressBody(pay,2);
-    if(d.payRows.length) dataBar(pay,'C2:C'+pay.rowCount,'FF3EA08A',1);
+    spacer();
 
-    /* ── Entries ── */
+    /* Salary payments */
+    band(t.exportSheetPayments);
+    headings([t.fdate,t.fname,t.famount,t.paidBy,'','','','']);
+    if(!d.payRows.length) noneRow();
+    else {
+      d.payRows.forEach(function(r,i){
+        row++; var rr=at(row); rr.height=18;
+        [isoOf(r.date)?fmtD(isoOf(r.date)):'',r.name,r.amount,r.paidBy,'','','',''].forEach(function(v,ci){
+          var c=rr.getCell(ci+1);
+          c.value=v;
+          if(ci===2) c.numFmt=MONEY;
+          c.font={size:10,color:{argb:INK},name:'Calibri'};
+          c.alignment={vertical:'middle',horizontal:ci===2?'right':'left'};
+          c.border={bottom:{style:'hair',color:{argb:LINE}}};
+          if(i%2===1) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
+        });
+      });
+      line([t.exportTotal,'',d.payRows.reduce(function(a,r){return a+(r.amount||0);},0),'','','','',''],
+        {money:[2],bold:true,fill:'FFD8EEE2',tall:true});
+    }
+
+    spacer();
+
+    /* Everything else */
+    band(t.exportSheetEntries);
+    headings([t.fdate,t.fname,t.tType,t.famount,t.paidBy,t.freason,'','']);
     var TYPE_TINT={advance:'FFFDF3DC',loan:'FFEAE4F5',expense:'FFD8EEE8',bonus:'FFD8EEE2',
       loan_repay:'FFD8EEE2',extra_work:'FFD8EEE2',short_hours:'FFFDF3DC',extra_help:'FFEAE4F5'};
-    var ent=sheet(t.exportSheetEntries,[
-      {header:t.fdate,key:'date',width:14,style:{numFmt:DATEF}},
-      {header:t.fname,key:'name',width:24},
-      {header:t.tType,key:'type',width:17},
-      {header:t.famount,key:'amount',width:15,style:{numFmt:MONEY}},
-      {header:t.paidBy,key:'paidBy',width:18},
-      {header:t.freason,key:'reason',width:40}
-    ]);
-    d.entryRows.forEach(function(r){
-      var row=ent.addRow(r);
-      /* tint the Type cell to match the colour the app uses for it */
-      var tint=TYPE_TINT[r.typeKey];
-      if(tint) row.getCell(3).fill={type:'pattern',pattern:'solid',fgColor:{argb:tint}};
-    });
-    if(!d.entryRows.length){ ent.addRow([t.exportNone]).getCell(1).font={italic:true,color:{argb:'FF7A998C'}}; }
-    for(var er=2;er<=ent.rowCount;er++){
-      ent.getRow(er).eachCell(function(cell,cn){
-        cell.border={bottom:{style:'hair',color:{argb:LINE}}};
-        if(cn===6) cell.alignment={wrapText:true,vertical:'middle'};
+    if(!d.entryRows.length) noneRow();
+    else d.entryRows.forEach(function(r,i){
+      row++; var rr=at(row); rr.height=18;
+      /* the reason is the only free text here, so it takes the tail of the row */
+      ws.mergeCells('F'+row+':'+LAST+row);
+      [isoOf(r.date)?fmtD(isoOf(r.date)):'',r.name,r.type,r.amount,r.paidBy,r.reason].forEach(function(v,ci){
+        var c=rr.getCell(ci+1);
+        c.value=v;
+        if(ci===3) c.numFmt=MONEY;
+        c.font={size:10,color:{argb:INK},name:'Calibri'};
+        c.alignment={vertical:'middle',horizontal:ci===3?'right':'left',wrapText:ci===5};
+        c.border={bottom:{style:'hair',color:{argb:LINE}}};
+        if(i%2===1) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
       });
-    }
-
-    /* ── Attendance ── */
-    var att=sheet(t.profAttend,[
-      {header:t.fname,key:'name',width:22},{header:t.exportMonthCol,key:'month',width:16},
-      {header:t.tPresent,key:'present',width:12},{header:t.tLeave,key:'leave',width:11},
-      {header:t.tHoliday,key:'holiday',width:12}
-    ]);
-    d.attRows.forEach(function(r){ att.addRow(r); });
-    if(!d.attRows.length){ att.addRow([t.exportNone]).getCell(1).font={italic:true,color:{argb:'FF7A998C'}}; }
-    dressBody(att,2);
-    if(d.attRows.length){
-      dataBar(att,'C2:C'+att.rowCount,'FF1C7A48',1);
-      dataBar(att,'D2:D'+att.rowCount,'FFC0393B',2);
-    }
-
-    /* chart last, so a canvas failure can't cost us the whole workbook */
-    try{
-      if(d.chart.values.some(function(v){return v>0;})){
-        var png=renderChartPNG(d.chart);
-        var imgId=wb.addImage({base64:png.split(',')[1],extension:'png'});
-        sum.addImage(imgId,{tl:{col:0,row:6},ext:{width:660,height:330}});
+      /* each type keeps the colour the app gives it, so the eye can group */
+      var tint=TYPE_TINT[r.typeKey];
+      if(tint) rr.getCell(3).fill={type:'pattern',pattern:'solid',fgColor:{argb:tint}};
+      for(var mc=7;mc<=NCOL;mc++){
+        var c2=rr.getCell(mc);
+        c2.border={bottom:{style:'hair',color:{argb:LINE}}};
+        if(i%2===1) c2.fill={type:'pattern',pattern:'solid',fgColor:{argb:MINT}};
       }
-    }catch(e){ console.warn('chart skipped:',e); }
+    });
 
     return wb.xlsx.writeBuffer();
   }).then(function(buf){
@@ -1000,10 +1009,10 @@ function exportCSV(homeId,period,lang,members,workingDays){
     d.staffRows.map(function(r){return [r.name,r.role,r.salary,r.advances,r.expenses,r.bonuses,
       r.overtime,r.halfDays,r.loanBal,r.present,r.leave,r.holiday];})));
   section(t.exportSheetPayments,[[t.fdate,t.fname,t.famount,t.paidBy]].concat(
-    d.payRows.length?d.payRows.map(function(r){return [fmtD(r.date?r.date.toISOString().slice(0,10):''),r.name,r.amount,r.paidBy];})
+    d.payRows.length?d.payRows.map(function(r){return [fmtD(r.date?toISODate(r.date):''),r.name,r.amount,r.paidBy];})
                     :[[t.exportNone]]));
   section(t.exportSheetEntries,[[t.fdate,t.fname,t.tType,t.famount,t.paidBy,t.freason]].concat(
-    d.entryRows.length?d.entryRows.map(function(r){return [fmtD(r.date?r.date.toISOString().slice(0,10):''),r.name,r.type,r.amount,r.paidBy,r.reason];})
+    d.entryRows.length?d.entryRows.map(function(r){return [fmtD(r.date?toISODate(r.date):''),r.name,r.type,r.amount,r.paidBy,r.reason];})
                       :[[t.exportNone]]));
   section(t.profAttend,[[t.fname,t.exportMonthCol,t.tPresent,t.tLeave,t.tHoliday]].concat(
     d.attRows.length?d.attRows.map(function(r){return [r.name,r.month,r.present,r.leave,r.holiday];})
@@ -1348,7 +1357,14 @@ function cloudJoinHome(user, code){
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 function fmt(n){return '₹'+Number(n||0).toLocaleString('en-IN');}
 function fmtD(s){if(!s)return '';var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
-function todayStr(){return new Date().toISOString().slice(0,10);}
+/* Local calendar date, not UTC. toISOString() converts to UTC first, so in
+   India (UTC+5:30) every moment before 5:30am reported yesterday's date —
+   a payment or an entry recorded early in the morning was filed a day back,
+   and an exported ledger showed every row one day early. */
+function toISODate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function todayStr(){ return toISODate(new Date()); }
 function padYM(y,m){return y+'-'+String(m).padStart(2,'0');}
 function maskAadhaar(n){if(!n)return '—';var c=n.replace(/\D/g,'');return c.length>=4?'****-****-'+c.slice(-4):'****';}
 function maskAccount(n){if(!n)return '—';return n.length<=4?n:'*'.repeat(Math.max(0,n.length-4))+n.slice(-4);}
@@ -4903,7 +4919,7 @@ function FeedbackTab({lang,guestMode,user}){
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <span className="pill pill-accent">{ty.icon} {ty.label}</span>
                   <span style={{fontSize:fsr(12),color:'var(--muted)',fontWeight:700,whiteSpace:'nowrap'}}>
-                    {f.createdAtMs?fmtD(new Date(f.createdAtMs).toISOString().slice(0,10)):''}
+                    {f.createdAtMs?fmtD(toISODate(new Date(f.createdAtMs))):''}
                   </span>
                 </div>
                 <p style={{fontSize:fsr(14),color:'var(--ink)',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{f.message}</p>
