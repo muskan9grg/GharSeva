@@ -4460,7 +4460,7 @@ function VoicePartialEntry({parsed,staffList,lang,workingDays,onSave,onRerecord}
 }
 
 /* ── VOICE TAB ──────────────────────────────────────────────── */
-function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
+function VoiceTab({lang,homeId,homes,workingDays,syncKey,compact,onSaved}){
   var t=T[lang];
   var [staff,setStaff]=useState([]);
   var [ledger,setLedger]=useState([]);
@@ -4512,6 +4512,9 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
       setWAMsg(waTemplate(action,staffObj,amount,date,home.name,lang));
     }
     setSavedStaff(staffObj); setToast(t.savedOk); setConfirmed(true);
+    /* The screen underneath is showing the very list this just added to, so it
+       has to be told; otherwise the entry appears only after a tab change. */
+    onSaved&&onSaved();
   }
 
   function confirmEntry(){
@@ -4537,7 +4540,8 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey}){
     <div className="p-4 scroll-area flex-1">
       {toast && <Toast msg={toast} onDone={function(){setToast('');}} />}
 
-      <h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',marginBottom:4}}>{t.voiceTitle}</h2>
+      {/* In the sheet the title is already on the handle bar above. */}
+      {!compact&&<h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',marginBottom:4}}>{t.voiceTitle}</h2>}
       <p style={{fontSize:fsr(15),color:'var(--ink2)',marginBottom:20}}>{t.voiceHint}</p>
 
       {!SR && <div className="rounded-2xl p-4 mb-4" style={{background:'#FCE8E8',border:'1px solid #F5C6C6'}}><p style={{color:'var(--danger)',fontWeight:800}}>{t.voiceNoSupport}</p></div>}
@@ -5486,8 +5490,76 @@ function ReportsTab({lang,homeId,workingDays,syncKey}){
   );
 }
 
+/* ── VOICE ENTRY, REACHABLE FROM ANYWHERE ───────────────────────
+   Speaking an entry is the fastest way into this app and the one least
+   dependent on eyesight, yet it sat as a line in the menu, two taps deep and
+   behind an icon most people never open. It now has a button of its own on
+   every working screen.
+
+   It opens a sheet rather than switching tabs: whoever taps it is in the
+   middle of something, and a tab change would lose their place. The sheet
+   holds the same VoiceTab the menu opens, not a second copy of it — two
+   implementations of the same flow would drift apart within a month.
+
+   It does not start listening on tap. A microphone that opens already
+   recording turns every mis-tap into a recording nobody asked for. */
+function VoiceSheet({open,onClose,lang,homeId,homes,workingDays,syncKey,onSaved}){
+  var t=T[lang];
+  if(!open) return null;
+  return (
+    <div onClick={onClose}
+      style={{position:'fixed',inset:0,zIndex:60,background:'rgba(26,46,42,.45)',
+        display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+      <div onClick={function(e){e.stopPropagation();}}
+        className="fade-in"
+        style={{width:'100%',maxWidth:480,background:'var(--surface)',
+          borderTopLeftRadius:22,borderTopRightRadius:22,
+          maxHeight:'88vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div className="shrink-0" style={{padding:'10px 16px 8px',borderBottom:'1px solid var(--border)'}}>
+          <div style={{width:44,height:5,borderRadius:3,background:'var(--border)',margin:'0 auto 10px'}} />
+          <div className="flex items-center gap-2">
+            <span style={{color:'var(--accent)',display:'flex'}}><Icon name="mic" size={22} /></span>
+            <p style={{flex:1,fontSize:fsr(17),fontWeight:800,color:'var(--ink)',margin:0}}>{t.voiceTitle}</p>
+            <button onClick={onClose} aria-label={t.cancel}
+              className="rounded-full flex items-center justify-center"
+              style={{minWidth:40,minHeight:40,background:'var(--surface2)',border:'none',
+                cursor:'pointer',color:'var(--ink2)'}}>
+              <Icon name="close" size={20} />
+            </button>
+          </div>
+        </div>
+        <div style={{overflowY:'auto',flex:1,display:'flex',flexDirection:'column'}}>
+          <VoiceTab lang={lang} homeId={homeId} homes={homes} workingDays={workingDays}
+            syncKey={syncKey} compact={true} onSaved={onSaved} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Anchored inside the nav bar, floating just above it. The page scrolls at
+   document level here rather than inside an inner pane, so a button placed in
+   the content area simply scrolled off the bottom; the nav is the one thing
+   already pinned to the bottom of the screen. Riding on it also keeps the
+   button with the 480px app column on a wide screen instead of flying out to
+   the edge of the window, and lifts it correctly when the font size grows. */
+function MicFab({onClick,lang}){
+  var t=T[lang];
+  return (
+    <button onClick={onClick} aria-label={t.voiceTitle} title={t.voiceTitle}
+      style={{position:'absolute',right:16,bottom:'calc(100% + 14px)',zIndex:30,
+        width:'3.5rem',height:'3.5rem',borderRadius:999,
+        background:'var(--accent)',color:'#fff',border:'2px solid rgba(255,255,255,.55)',
+        boxShadow:'0 4px 16px rgba(26,110,94,.45)',cursor:'pointer',
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:'Nunito,sans-serif',padding:0}}>
+      <Icon name="mic" size={26} />
+    </button>
+  );
+}
+
 /* ── BOTTOM NAV ─────────────────────────────────────────────── */
-function BottomNav({tab,setTab,lang,layout}){
+function BottomNav({tab,setTab,lang,layout,fab}){
   var t=T[lang];
   var tabs=[
     {key:'staff',  icon:'staff',   label:t.navStaff},
@@ -5506,7 +5578,7 @@ function BottomNav({tab,setTab,lang,layout}){
     {key:'reports', icon:'reports',label:t.navReports},
   ];
   return (
-    <nav className="sticky bottom-0 z-20 shrink-0" style={{background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
+    <nav className="sticky bottom-0 z-20 shrink-0" style={{background:'var(--surface)',borderTop:'1px solid var(--border)',position:'sticky'}}>
       <div className="flex">
         {tabs.map(function(tb){
           var active=tab===tb.key;
@@ -5523,6 +5595,9 @@ function BottomNav({tab,setTab,lang,layout}){
           );
         })}
       </div>
+      {/* After the tabs in the DOM, though it floats above them, so anything
+          reading the page in order meets the four destinations first. */}
+      {fab}
     </nav>
   );
 }
@@ -5793,6 +5868,8 @@ function App(){
   var [homeId,setHomeId]=useState('');
   var [tab,setTab]=useState('home');
   var [layout,setLayout]=useState(function(){return getSettings().layout||'classic';});
+  var [voiceOpen,setVoiceOpen]=useState(false);
+  var micSupported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   /* The simple layout has fewer, broader destinations, so several classic tab
      keys have no bar of their own there. Everything still routes — the keys
      are mapped to whichever tab now contains them, rather than each caller
@@ -6103,7 +6180,7 @@ function App(){
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden" style={{position:'relative'}}>
         {tab==='home'     && <DashboardTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onNavigate={goTab} />}
         {tab==='staff'    && <StaffTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onStaffChange={function(){setStaffKey(function(k){return k+1;});}} />}
         {tab==='salary'   && <SalaryTab key={homeId+'-'+staffKey+'-'+preselectSalaryStaff} lang={lang} homeId={homeId} homes={homes} refreshKey={staffKey} workingDays={workingDays} syncKey={syncKey} defaultStaffId={preselectSalaryStaff} />}
@@ -6124,9 +6201,21 @@ function App(){
             saveSettings(Object.assign({},getSettings(),{tutorialDone:false}));
             setTab('staff'); setShowTutorial(true);
           }} />}
+
       </div>
 
-      <BottomNav tab={tab} setTab={setTab} lang={lang} layout={layout} />
+      <VoiceSheet open={voiceOpen} onClose={function(){setVoiceOpen(false);}}
+        lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey}
+        onSaved={function(){ setStaffKey(function(k){return k+1;}); setSyncKey(function(k){return k+1;}); }} />
+
+      {/* Only on the screens where speaking an entry makes sense. Settings,
+          feedback and the voice screen itself have nothing to add by voice, and
+          the tutorial owns the screen while it runs. Hidden outright where the
+          browser has no speech recognition — a button that can never work is
+          worse than no button at all. */}
+      <BottomNav tab={tab} setTab={setTab} lang={lang} layout={layout}
+        fab={micSupported&&!showTutorial&&['home','staff','money','reports','salary','leaves','adv','annual'].indexOf(tab)>-1
+          ? <MicFab lang={lang} onClick={function(){setVoiceOpen(true);}} /> : null} />
       <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={goTab} lang={lang} homeId={homeId} workingDays={workingDays} layout={layout} />
       {showTutorial && <TutorialOverlay lang={lang} tab={tab} onNavigate={setTab} onDone={finishTutorial} />}
     </div>
