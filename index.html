@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GharSeva — Staff Manager</title>
+  <title>GharSeva - Staff Manager</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <!-- pinned versions on jsDelivr for reliability; no crossorigin attr for file:// compat -->
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.5/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase v9-compat SDK — global window.firebase.* API, no build step needed -->
+  <!-- Firebase v9-compat SDK - global window.firebase.* API, no build step needed -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -152,7 +152,7 @@ function memberColor(uid){
   return MEMBER_COLORS[h%MEMBER_COLORS.length];
 }
 function memberLabel(uid,members,t){
-  if(!uid) return t?t.notRecorded:'—';
+  if(!uid) return t?t.notRecorded:'-';
   var m=members&&members[uid];
   return (m&&m.name)||(t?t.memberUnknown:'Member');
 }
@@ -160,7 +160,7 @@ function memberLabel(uid,members,t){
    (paidBy:'other' + a free-text paidByName). Prefer this over memberLabel
    directly wherever the full record (not just a uid) is available. */
 function payerLabel(rec,members,t){
-  if(!rec||!rec.paidBy) return t?t.notRecorded:'—';
+  if(!rec||!rec.paidBy) return t?t.notRecorded:'-';
   if(rec.paidBy==='other') return (rec.paidByName&&rec.paidByName.trim())||(t?t.paidBySomeoneElse:'Someone else');
   return memberLabel(rec.paidBy,members,t);
 }
@@ -381,7 +381,7 @@ const TC={
 const T={
 en:{
   app:'GharSeva',tag:'Household Staff Manager',
-  addHome:'Add household',homeName:'Household name',homeEx:'e.g. Nagpur — Main House',
+  addHome:'Add household',homeName:'Household name',homeEx:'e.g. Nagpur, Main House',
   noHomes:'No households yet.',manageHomes:'Households',
   navStaff:'Staff',navSalary:'Pay',navLeaves:'Attend',navAdv:'Records',navAnn:'Annual',navVoice:'Voice',
   navSettings:'Settings',navSettingsTitle:'App Settings',
@@ -393,7 +393,7 @@ en:{
   exportSalaryLine:'Salary (paid or still due)',
   exportNone:'Nothing recorded for this period',exportWorking:'Preparing…',
   exportSheetPayments:'Salary Payments',exportSheetEntries:'Records',
-  hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'Restored — reloading…',hmRestoreErr:'Invalid backup file.',
+  hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'Restored. Reloading…',hmRestoreErr:'Invalid backup file.',
   addStaff:'Add staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly salary',
   fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
@@ -435,7 +435,7 @@ en:{
   aTotSal:'Salary',aTotAdv:'Advances',aTotExp:'Expenses',aTotBon:'Bonuses',aTotLoan:'Loan Balance',
   months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
   mFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
-  micSpeak:'Speak',micStop:'Stop',micListening:'Listening…',micFillDone:'Form filled from voice — please review',
+  micSpeak:'Speak',micStop:'Stop',micListening:'Listening…',micFillDone:'Form filled from voice. Please review',
   voiceTitle:'Voice Input',voiceHint:'Tap the mic and speak. Hindi & English both work!',
   voiceEx:'Examples:',startListen:'Tap to Speak',stopListen:'■ Stop',
   voiceListening:'Listening…',voiceHeard:'You said:',voiceUnderstood:'Saving this:',voiceShowEx:'Show examples',voiceHideEx:'Hide examples',
@@ -454,27 +454,27 @@ en:{
   perThisMonth:'This month',perLastMonth:'Last month',perThisYear:'This year',perAll:'All time',
   profTxnPaid:'Salary paid',profTxnGiven:'Extra money given',profTxnSalary:'Salary',
   dashPay:'Salary due',dashRecent:'Recent Entries',dashSpend:'Spent this month',
-  dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet — go to Staff tab',
+  dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet. Go to Staff tab',
   dashPayBtn:'Pay',dashNoRecent:'No entries yet',dashTomorrow:'Tomorrow',dashToday:'Today',
   tutWelcomeT:'Welcome to GharSeva',
-  tutWelcomeB:'Let us add your first helper together — it takes two minutes. The two people listed are only samples.',
+  tutWelcomeB:'Let us add your first helper together. It takes two minutes. The two people listed are only samples.',
   tutAddT:'Add your first helper',
   tutAddHint:'Tap the green + Add Staff button at the top',
   tutFormT:'Fill in three things',
   tutFormB:'Name, the work they do, and monthly salary. Leave the rest blank for now.',
   tutSaveT:'Now save',
   tutSaveHint:'Tap Save to add them to your list',
-  tutSavedT:'Well done — they are on your list',
+  tutSavedT:'Well done, they are on your list',
   tutSavedB:'The four buttons along the bottom of the screen move you between Staff, Attendance, Pay and Records. They are always there.',
-  tutSavedHint:'Tap Attend — second from the left, at the bottom',
+  tutSavedHint:'Tap Attend (second from the left, at the bottom)',
   tutAttendT:'Attendance',
   tutAttendB:'Tap Present, Leave or Holiday for today. To change an earlier day, tap that date on the calendar below. Leave is cut from the salary on its own.',
-  tutAttendHint:'Tap Records — last on the right, at the bottom',
+  tutAttendHint:'Tap Records (last on the right, at the bottom)',
   tutRecordsT:'Money records',
   tutRecordsB:'Advances, loans, bonuses and expenses go here, using + Add Entry. Each one adjusts the salary on its own.',
-  tutRecordsHint:'Tap Pay — third from the left, at the bottom',
+  tutRecordsHint:'Tap Pay (third from the left, at the bottom)',
   tutPayT:'Salary is worked out for you',
-  tutPayB:'Pick a person and month, then tap Calculate — leaves and advances are already subtracted. Reports and settings sit in the menu, top right.',
+  tutPayB:'Pick a person and month, then tap Calculate. Leaves and advances are already subtracted. Reports and settings sit in the menu, top right.',
   hmFeedback:'Feedback & Ideas',
   fbTitle:'Tell me what would help',
   fbIntro:'Tell us what is missing or broken. It goes straight to the person building this app.',
@@ -484,7 +484,7 @@ en:{
   fbMessageHint:'What were you trying to do?',
   fbPlaceholder:'For example: I would like to see last year\'s salary total for each person on one screen.',
   fbSend:'Send feedback',fbSending:'Sending…',
-  fbThanks:'Thank you — this has been received.',
+  fbThanks:'Thank you, this has been received.',
   fbQueued:'Saved. It will send as soon as you are back online.',
   fbError:'Could not send. Please try again.',
   fbYours:'WHAT YOU HAVE SENT',
@@ -498,7 +498,7 @@ en:{
   errPayerName:'Please enter their name',
   whoPaid:'Who paid what',whoPaidHint:'Money paid out this year, split by household member',
   tExtraHelp:'Extra Help',
-  fHelperName:'Helper’s Name',fHelperNameHint:'Optional — who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
+  fHelperName:'Helper’s Name',fHelperNameHint:'Optional: who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
   generalNoStaff:'General (not linked to a staff member)',
   aTotExtraHelp:'Extra Help Cost',
   extraHelpCardTitle:'Extra Help',extraHelpCardSubtitle:'times used this year',extraHelpEntryCount:'Number of Entries',
@@ -539,7 +539,7 @@ en:{
   undoneOn:'undone on',
   raiseFromLabel:'Salary changed: {old} → {new}',
   raiseFromHint:'From which month?',raiseFromHelp:'Months before this keep the old salary, so your old records do not change.',
-  raiseSince:'since',
+  raiseSince:'since',raiseSinceJoining:'since joining',
   navHome:'Home',navMoney:'Money',navReports:'Reports',
   moneyRecords:'Records',moneyPay:'Pay Salary',
   layoutLabel:'App Layout',
@@ -547,12 +547,12 @@ en:{
   layoutClassic:'Classic',
   layoutClassicDesc:'Staff · Attendance · Pay · Records',
   layoutSimple:'Simple (new)',
-  layoutSimpleDesc:'Home · Staff · Money · Reports — fewer tabs, home screen always reachable',
+  layoutSimpleDesc:'Home · Staff · Money · Reports. Fewer tabs, home screen always reachable',
   markMany:'Mark many days',
   markManyHint:'Choose the first day and the last day',markManyHelp:'Good for a trip to the village. You can also mark days that have not come yet.',
   markFrom:'From',markTo:'To',
   markManyDone:'{n} day(s) marked',
-  plannedDay:'Planned — has not happened yet',
+  plannedDay:'Planned, has not happened yet',
   fleaving:'Last Working Day',
   fleavingHint:'Only when someone leaves',fleavingHelp:'All their old records stay safe. They simply stop showing up in attendance and in pay reminders.',
   leftBadge:'Left',
@@ -582,7 +582,7 @@ en:{
 },
 hi:{
   app:'घरसेवा',tag:'घरेलू स्टाफ मैनेजर',
-  addHome:'घर जोड़ें',homeName:'घर का नाम',homeEx:'जैसे: नागपुर — मुख्य घर',
+  addHome:'घर जोड़ें',homeName:'घर का नाम',homeEx:'जैसे: नागपुर, मुख्य घर',
   noHomes:'कोई घर नहीं।',manageHomes:'घर प्रबंधन',
   navStaff:'स्टाफ',navSalary:'भुगतान',navLeaves:'उपस्थिति',navAdv:'रिकॉर्ड',navAnn:'वार्षिक',navVoice:'आवाज़',
   navSettings:'सेटिंग',navSettingsTitle:'एप्प सेटिंग्स',
@@ -594,7 +594,7 @@ hi:{
   exportSalaryLine:'वेतन (दिया या बाकी)',
   exportNone:'इस अवधि में कुछ दर्ज नहीं',exportWorking:'तैयार हो रहा है…',
   exportSheetPayments:'वेतन भुगतान',exportSheetEntries:'रिकॉर्ड',
-  hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'रिस्टोर हो गया — लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
+  hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'रिस्टोर हो गया। लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
   addStaff:'स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन',
   fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
@@ -636,7 +636,7 @@ hi:{
   aTotSal:'वेतन',aTotAdv:'अग्रिम',aTotExp:'खर्च',aTotBon:'बोनस',aTotLoan:'लोन बकाया',
   months:['जन','फर','मार','अप्र','मई','जून','जुल','अग','सित','अक्त','नव','दिस'],
   mFull:['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्तूबर','नवंबर','दिसंबर'],
-  micSpeak:'बोलें',micStop:'रोकें',micListening:'सुन रहे हैं…',micFillDone:'आवाज़ से फॉर्म भरा — कृपया जांचें',
+  micSpeak:'बोलें',micStop:'रोकें',micListening:'सुन रहे हैं…',micFillDone:'आवाज़ से फॉर्म भरा। कृपया जांचें',
   voiceTitle:'आवाज़ से एंट्री',voiceHint:'माइक्रोफोन दबाएं और बोलें!',
   voiceEx:'उदाहरण:',startListen:'बोलने के लिए दबाएं',stopListen:'■ रोकें',
   voiceListening:'सुन रहे हैं…',voiceHeard:'आपने कहा:',voiceUnderstood:'यह सहेजा जाएगा:',voiceShowEx:'उदाहरण दिखाएं',voiceHideEx:'छुपाएं',
@@ -655,27 +655,27 @@ hi:{
   perThisMonth:'इस महीने',perLastMonth:'पिछले महीने',perThisYear:'इस साल',perAll:'शुरू से अब तक',
   profTxnPaid:'वेतन दिया',profTxnGiven:'अलग से दिया पैसा',profTxnSalary:'वेतन',
   dashPay:'वेतन देना है',dashRecent:'हाल की एंट्री',dashSpend:'इस महीने खर्च',
-  dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं — स्टाफ टैब पर जाएं',
+  dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं। स्टाफ टैब पर जाएं',
   dashPayBtn:'दें',dashNoRecent:'कोई एंट्री नहीं',dashTomorrow:'कल',dashToday:'आज',
   tutWelcomeT:'घरसेवा में आपका स्वागत है',
-  tutWelcomeB:'आइए मिलकर पहला स्टाफ जोड़ें — दो मिनट लगेंगे। सूची में दिख रहे दो लोग सिर्फ नमूने हैं।',
+  tutWelcomeB:'आइए मिलकर पहला स्टाफ जोड़ें, दो मिनट लगेंगे। सूची में दिख रहे दो लोग सिर्फ नमूने हैं।',
   tutAddT:'अपना पहला स्टाफ जोड़ें',
   tutAddHint:'ऊपर हरा "+ स्टाफ जोड़ें" बटन दबाएं',
   tutFormT:'तीन चीज़ें भरें',
   tutFormB:'नाम, वे क्या काम करते हैं, और महीने का वेतन। बाकी अभी खाली छोड़ दें।',
   tutSaveT:'अब सेव करें',
   tutSaveHint:'सूची में जोड़ने के लिए सेव दबाएं',
-  tutSavedT:'बढ़िया — वे सूची में आ गए',
+  tutSavedT:'बढ़िया, वे सूची में आ गए',
   tutSavedB:'स्क्रीन के सबसे नीचे चार बटन आपको स्टाफ, उपस्थिति, भुगतान और रिकॉर्ड के बीच ले जाते हैं। ये हमेशा वहीं रहते हैं।',
-  tutSavedHint:'उपस्थिति दबाएं — सबसे नीचे, बाएं से दूसरा',
+  tutSavedHint:'उपस्थिति दबाएं (सबसे नीचे, बाएं से दूसरा)',
   tutAttendT:'उपस्थिति',
   tutAttendB:'आज के लिए उपस्थित, छुट्टी या अवकाश दबाएं। पिछला दिन बदलना हो तो नीचे कैलेंडर में उस तारीख को दबाएं। छुट्टी वेतन से अपने आप कट जाती है।',
-  tutAttendHint:'रिकॉर्ड दबाएं — सबसे नीचे, दाएं छोर पर',
+  tutAttendHint:'रिकॉर्ड दबाएं (सबसे नीचे, दाएं छोर पर)',
   tutRecordsT:'पैसों का रिकॉर्ड',
   tutRecordsB:'एडवांस, लोन, बोनस और खर्च यहाँ "+ एंट्री जोड़ें" से लिखें। हर एक वेतन में अपने आप समायोजित हो जाता है।',
-  tutRecordsHint:'भुगतान दबाएं — सबसे नीचे, बाएं से तीसरा',
+  tutRecordsHint:'भुगतान दबाएं (सबसे नीचे, बाएं से तीसरा)',
   tutPayT:'वेतन अपने आप गिना जाता है',
-  tutPayB:'व्यक्ति और महीना चुनें, फिर गणना दबाएं — छुट्टियाँ और एडवांस पहले ही घटे होते हैं। रिपोर्ट और सेटिंग्स ऊपर दाईं ओर मेन्यू में हैं।',
+  tutPayB:'व्यक्ति और महीना चुनें, फिर गणना दबाएं। छुट्टियाँ और एडवांस पहले ही घटे होते हैं। रिपोर्ट और सेटिंग्स ऊपर दाईं ओर मेन्यू में हैं।',
   hmFeedback:'सुझाव और राय',
   fbTitle:'बताएं क्या बेहतर हो सकता है',
   fbIntro:'क्या कम है या क्या काम नहीं कर रहा, बताएं। यह सीधे बनाने वाले तक जाता है।',
@@ -685,7 +685,7 @@ hi:{
   fbMessageHint:'आप क्या करना चाह रहे थे?',
   fbPlaceholder:'जैसे: हर व्यक्ति का पिछले साल का कुल वेतन एक ही स्क्रीन पर दिखे।',
   fbSend:'भेजें',fbSending:'भेज रहे हैं…',
-  fbThanks:'धन्यवाद — आपका संदेश मिल गया।',
+  fbThanks:'धन्यवाद, आपका संदेश मिल गया।',
   fbQueued:'सहेज लिया। इंटरनेट आते ही भेज दिया जाएगा।',
   fbError:'भेजा नहीं जा सका। फिर कोशिश करें।',
   fbYours:'आपके भेजे संदेश',
@@ -699,7 +699,7 @@ hi:{
   errPayerName:'कृपया नाम लिखें',
   whoPaid:'किसने कितना दिया',whoPaidHint:'इस साल दिए गए पैसे, हर सदस्य के हिसाब से',
   tExtraHelp:'अतिरिक्त मदद',
-  fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक — मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
+  fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक: मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
   generalNoStaff:'सामान्य (किसी स्टाफ से नहीं जुड़ा)',
   aTotExtraHelp:'अतिरिक्त मदद खर्च',
   extraHelpCardTitle:'अतिरिक्त मदद',extraHelpCardSubtitle:'बार इस साल इस्तेमाल हुई',extraHelpEntryCount:'कितनी बार',
@@ -740,7 +740,7 @@ hi:{
   undoneOn:'वापस लिया',
   raiseFromLabel:'वेतन बदला: {old} → {new}',
   raiseFromHint:'किस महीने से?',raiseFromHelp:'इससे पहले के महीनों में पुराना वेतन ही रहेगा, पुराने रिकॉर्ड नहीं बदलेंगे।',
-  raiseSince:'से',
+  raiseSince:'से',raiseSinceJoining:'जॉइनिंग से',
   navHome:'होम',navMoney:'पैसा',navReports:'रिपोर्ट',
   moneyRecords:'रिकॉर्ड',moneyPay:'वेतन भुगतान',
   layoutLabel:'ऐप का लेआउट',
@@ -748,12 +748,12 @@ hi:{
   layoutClassic:'क्लासिक',
   layoutClassicDesc:'स्टाफ · उपस्थिति · भुगतान · रिकॉर्ड',
   layoutSimple:'सरल (नया)',
-  layoutSimpleDesc:'होम · स्टाफ · पैसा · रिपोर्ट — कम टैब, होम स्क्रीन हमेशा सामने',
+  layoutSimpleDesc:'होम · स्टाफ · पैसा · रिपोर्ट। कम टैब, होम स्क्रीन हमेशा सामने',
   markMany:'कई दिन एक साथ',
   markManyHint:'पहला दिन और आखिरी दिन चुनें',markManyHelp:'गाँव जाने जैसी छुट्टी के लिए अच्छा है। आप आगे आने वाले दिन भी दर्ज कर सकते हैं।',
   markFrom:'से',markTo:'तक',
   markManyDone:'{n} दिन दर्ज हुए',
-  plannedDay:'योजना — अभी हुआ नहीं है',
+  plannedDay:'योजना, अभी हुआ नहीं है',
   fleaving:'काम का आखिरी दिन',
   fleavingHint:'सिर्फ़ तब जब कोई काम छोड़े',fleavingHelp:'उनके पुराने रिकॉर्ड सुरक्षित रहते हैं। वे बस उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
   leftBadge:'छोड़ दिया',
@@ -906,7 +906,7 @@ function buildReportData(homeId,period,lang,members,workingDays){
   var entryRows=periodLedger.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');})
     .map(function(e){
       var s=staff.find(function(x){return x.id===e.staffId;});
-      var name=s?s.name:(e.type==='extra_help'?t.generalNoStaff:'—');
+      var name=s?s.name:(e.type==='extra_help'?t.generalNoStaff:'-');
       if(e.type==='extra_help'&&e.helperName) name+=' ('+e.helperName+')';
       return {date:toDate(e.date),name:name,typeKey:e.type,type:typeLabels[e.type]||e.type,
         amount:e.amount||0,paidBy:payerLabel(e,members,t),reason:e.reason||''};
@@ -1012,7 +1012,7 @@ function exportExcel(homeId,period,lang,members,workingDays){
 
     /* Title */
     row++; var title=span(row);
-    title.value='GharSeva — '+d.home.name;
+    title.value='GharSeva - '+d.home.name;
     title.font={bold:true,size:18,color:{argb:'FFFFFFFF'},name:'Calibri'};
     title.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREEN}};
     title.alignment={vertical:'middle',horizontal:'center'};
@@ -1385,8 +1385,8 @@ function buildDemoData(lang){
   var lv={};
   if(d>6) lv[ym+'-06']='leave';
   if(d>12) lv[ym+'-12']='leave';
-  var homes=[{id:SH1,name:hi?'नागपुर — मुख्य घर':'Nagpur — Main House'},
-             {id:'hm_mumbai',name:hi?'मुंबई — ससुराल':'Mumbai — In-laws'}];
+  var homes=[{id:SH1,name:hi?'नागपुर, मुख्य घर':'Nagpur, Main House'},
+             {id:'hm_mumbai',name:hi?'मुंबई, ससुराल':'Mumbai, In-laws'}];
   return {homes:homes, staff:staff, ledger:ledger, leaves:{staffId:'st1', ym:ym, dates:lv}};
 }
 
@@ -1509,8 +1509,8 @@ function toISODate(d){
 }
 function todayStr(){ return toISODate(new Date()); }
 function padYM(y,m){return y+'-'+String(m).padStart(2,'0');}
-function maskAadhaar(n){if(!n)return '—';var c=n.replace(/\D/g,'');return c.length>=4?'****-****-'+c.slice(-4):'****';}
-function maskAccount(n){if(!n)return '—';return n.length<=4?n:'*'.repeat(Math.max(0,n.length-4))+n.slice(-4);}
+function maskAadhaar(n){if(!n)return '-';var c=n.replace(/\D/g,'');return c.length>=4?'****-****-'+c.slice(-4):'****';}
+function maskAccount(n){if(!n)return '-';return n.length<=4?n:'*'.repeat(Math.max(0,n.length-4))+n.slice(-4);}
 function roleLabel(key,lang){var r=getRoles().find(function(r){return r.key===key;});return r?(lang==='hi'?r.hi:r.en):key;}
 
 /* What is genuinely still owed on one loan entry. */
@@ -1804,7 +1804,7 @@ function waTemplate(type,staff,amount,date,homeName,lang,waLang){
   var lines=[];
   if(mode!=='en') lines.push('नमस्ते! 🙏\n'+hi[type]);
   if(mode!=='hi') lines.push((mode==='en'?'Hello! 🙏\n':'')+en[type]);
-  var sign=mode==='hi'?'— घरसेवा':mode==='en'?'— GharSeva':'— घरसेवा · GharSeva';
+  var sign=mode==='hi'?'घरसेवा':mode==='en'?'GharSeva':'घरसेवा · GharSeva';
   return lines.join('\n\n')+'\n\n'+sign+(h?' · '+h:'');
 }
 
@@ -1938,7 +1938,7 @@ function Help({text,label}){
   return (
     <>
       <button type="button" onClick={function(){setOpen(function(v){return !v;});}}
-        aria-label={(label?label+' — ':'')+'?'} aria-expanded={open}
+        aria-label={(label?label+' - ':'')+'?'} aria-expanded={open}
         style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',padding:0,
           border:'2px solid '+(open?'var(--accent)':'var(--border)'),
           background:open?'var(--accent)':'var(--surface)',
@@ -2199,7 +2199,7 @@ function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
 
   return (
     <div className="rounded-2xl mb-3 fade-in overflow-hidden" style={{background:'var(--surface)',border:'1px solid var(--border)',boxShadow:'0 1px 4px rgba(26,46,42,.07)'}}>
-      {/* Tappable main area — navigates to profile */}
+      {/* Tappable main area - navigates to profile */}
       <div className="p-4" onClick={onView} style={{cursor:'pointer'}}>
         <div className="flex items-center gap-3">
           <Avatar staff={staff} size={56} />
@@ -2209,7 +2209,7 @@ function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
             <p style={{fontSize:fsr(13),color:'var(--ink2)'}}>{roleLabel(staff.role,lang)}</p>
             <div className="flex items-center gap-2 flex-wrap" style={{marginTop:2}}>
               <p style={{fontSize:fsr(15),fontWeight:700,color:'var(--accent)',margin:0}}>{fmt(staff.salary)}{t.perMonth}</p>
-              {/* Someone who has left is neither paid nor due — the pay badges
+              {/* Someone who has left is neither paid nor due - the pay badges
                   would be asking a question that no longer applies. */}
               {hasLeft(staff)
                 ? <span className="pill pill-muted" style={{fontSize:fsr(10),padding:'2px 8px'}}>{t.leftBadge} {fmtD(staff.leavingDate)}</span>
@@ -2245,9 +2245,9 @@ function StaffCard({staff,lang,onEdit,onDelete,onView,loanBal,isPaid}){
             <p style={{fontSize:fsr(11),fontWeight:700,color:'var(--muted)',marginBottom:8}}>{t.vault}</p>
             <div className="grid grid-cols-2 gap-2" style={{fontSize:fsr(12)}}>
               <div><p style={{color:'var(--muted)'}}>{t.vaadhaar}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{maskAadhaar(staff.aadhaar)}</p></div>
-              <div><p style={{color:'var(--muted)'}}>{t.vbank}</p><p style={{fontWeight:700,color:'var(--ink)'}} className="truncate">{staff.bankName||'—'}</p></div>
+              <div><p style={{color:'var(--muted)'}}>{t.vbank}</p><p style={{fontWeight:700,color:'var(--ink)'}} className="truncate">{staff.bankName||'-'}</p></div>
               <div><p style={{color:'var(--muted)'}}>{t.vaccount}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{maskAccount(staff.accountNo)}</p></div>
-              <div><p style={{color:'var(--muted)'}}>{t.vifsc}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{staff.ifsc||'—'}</p></div>
+              <div><p style={{color:'var(--muted)'}}>{t.vifsc}</p><p style={{fontWeight:700,color:'var(--ink)'}}>{staff.ifsc||'-'}</p></div>
             </div>
           </div>
         </div>
@@ -2660,7 +2660,8 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
               {(staff.salaryHistory||[]).length>1&&(
                 <p style={{fontSize:fsr(10),color:'var(--muted)',margin:'4px 0 0',lineHeight:1.5}}>
                   {staff.salaryHistory.slice().reverse().slice(0,3).map(function(e){
-                    return fmt(e.amount)+' '+t.raiseSince+' '+(e.ym==='0000-01'?'—':t.months[Number(e.ym.slice(5,7))-1]+' '+e.ym.slice(0,4));
+                    return e.ym==='0000-01'?fmt(e.amount)+' '+t.raiseSinceJoining
+                      :fmt(e.amount)+' '+t.raiseSince+' '+t.months[Number(e.ym.slice(5,7))-1]+' '+e.ym.slice(0,4);
                   }).join(' · ')}
                 </p>
               )}
@@ -2688,7 +2689,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
 
         {/* ② Financial Summary */}
         <div className="card fade-in">
-          <CardTitle icon="money">{t.profFinancials} — {t.mFull[month-1]} {year}</CardTitle>
+          <CardTitle icon="money">{t.profFinancials} · {t.mFull[month-1]} {year}</CardTitle>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="rounded-xl p-3 text-center" style={{background:'var(--surface2)',border:'1px solid var(--border)'}}>
               <p style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,marginBottom:4}}>{t.profGross}</p>
@@ -2820,7 +2821,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
 
         {/* ④ Attendance */}
         <div className="card fade-in">
-          <CardTitle icon="calendar">{t.profAttend} — {t.mFull[month-1]}</CardTitle>
+          <CardTitle icon="calendar">{t.profAttend} · {t.mFull[month-1]}</CardTitle>
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
               {v:Math.floor(presentDays),label:t.tPresent,color:'var(--ok)',bg:'#D8EEE2'},
@@ -2981,7 +2982,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
                     var on=cur===o.v;
                     return (
                       <button key={o.v} onClick={function(){markTodayFor(s.id,o.v);}}
-                        aria-label={s.name+' — '+o.lbl} aria-pressed={on}
+                        aria-label={s.name+' - '+o.lbl} aria-pressed={on}
                         style={{flex:1,minHeight:46,padding:'10px',borderRadius:12,cursor:'pointer',
                           fontSize:fsr(15),fontWeight:800,fontFamily:'Nunito,sans-serif',lineHeight:1,
                           border:'2px solid '+(on?o.c:'var(--border)'),
@@ -3299,7 +3300,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
                     </span>
                     {canWaive&&(
                       <button onClick={function(){toggleWaive(row.k);}}
-                        title={off?t.waiveUndo:t.waiveOff} aria-label={(off?t.waiveUndo:t.waiveOff)+' — '+row.label}
+                        title={off?t.waiveUndo:t.waiveOff} aria-label={(off?t.waiveUndo:t.waiveOff)+' - '+row.label}
                         style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',lineHeight:1,
                           border:'1px solid '+(off?'var(--ok)':'var(--border)'),
                           background:off?'#D8EEE2':'var(--surface2)',
@@ -3835,7 +3836,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
                 <option value="">{t.selStaffPh}</option>
                 {activeLoans.map(function(ln){
                   var bal=Math.max(0,ln.amount-(ln.paidInstallments||0)*(ln.installment||0)-(ln.manualRepaid||0));
-                  return <option key={ln.id} value={ln.id}>{fmtD(ln.date)} — {fmt(ln.amount)} (bal: {fmt(bal)})</option>;
+                  return <option key={ln.id} value={ln.id}>{fmtD(ln.date)} · {fmt(ln.amount)} (bal: {fmt(bal)})</option>;
                 })}
               </FSelect>
           }
@@ -3846,7 +3847,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         <div className="fade-in" style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end',justifyContent:'center',background:'rgba(26,46,42,0.6)'}}>
           <div style={{background:'var(--surface)',borderRadius:'24px 24px 0 0',padding:24,width:'100%',maxWidth:480}}>
             <p style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)',marginBottom:6,textAlign:'center'}}>
-              {confirmEntry.type} — {fmt(confirmEntry.amount)}
+              {confirmEntry.type} · {fmt(confirmEntry.amount)}
             </p>
             <p style={{fontSize:fsr(14),color:'var(--ink2)',textAlign:'center',marginBottom:20}}>
               {confirmEntry.name}
@@ -4569,7 +4570,7 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey,compact,onSaved}){
         </div>
       )}
 
-      {/* Partial entry card — fill in missing fields */}
+      {/* Partial entry card - fill in missing fields */}
       {isPartial && (
         <VoicePartialEntry
           parsed={parsed} staffList={staff} lang={lang} workingDays={workingDays}
@@ -5015,7 +5016,7 @@ function FeedbackTab({lang,guestMode,user}){
       lang:lang,
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),
       createdAtMs:Date.now(),
-      pinned:false           /* reserved — upvoting lands here in a later version */
+      pinned:false           /* reserved - upvoting lands here in a later version */
     };
     /* Offline, the add() promise stays pending until the network returns.
        Firestore has already stored it durably, so after a short wait say so
@@ -5676,7 +5677,7 @@ function AuthScreen({lang,onGuest,onAuth}){
           )}
         </div>
 
-        <div style={{textAlign:'center',margin:'0 0 16px',color:'var(--muted)',fontSize:fsr(13)}}>— or —</div>
+        <div style={{textAlign:'center',margin:'0 0 16px',color:'var(--muted)',fontSize:fsr(13)}}>or</div>
         <button className="btn btn-ghost btn-full mb-5" onClick={signInGoogle} disabled={loading}>
           {t.googleSignIn}
         </button>
@@ -6132,9 +6133,9 @@ function App(){
     <div className="flex flex-col" style={{minHeight:'100vh'}}>
       <header className="shrink-0" style={{background:'var(--accent)',color:'#fff',padding:'12px 16px 10px'}}>
         <div className="flex items-center justify-between mb-2">
-          {/* The wordmark goes home, the way a masthead does on any site — it
+          {/* The wordmark goes home, the way a masthead does on any site - it
               is the thing people already try to tap when they are lost. */}
-          <button onClick={function(){setTab('home');}} aria-label={t.app+' — '+t.navHome}
+          <button onClick={function(){setTab('home');}} aria-label={t.app+' - '+t.navHome}
             className="flex items-center gap-2.5"
             style={{background:'none',border:'none',padding:0,margin:0,cursor:'pointer',
               textAlign:'left',fontFamily:'Nunito,sans-serif',minHeight:44}}>
@@ -6174,7 +6175,7 @@ function App(){
             style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 36px 8px 12px',fontWeight:600,fontSize:fsr(14),color:'#fff',width:'100%',appearance:'none',WebkitAppearance:'none',fontFamily:'Nunito,sans-serif',outline:'none'}}>
             {homes.map(function(h){return <option key={h.id} value={h.id} style={{background:'#1A2E2A',color:'#fff'}}>{h.name}</option>;})}
           </select>
-          {/* This is a dropdown, so it says so — a house here only repeated
+          {/* This is a dropdown, so it says so - a house here only repeated
               the word already printed inside it. */}
           <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'rgba(255,255,255,0.75)',display:'flex'}}><Icon name="chevronDown" size={18} /></span>
         </div>
