@@ -31,7 +31,13 @@
       --ok:#1C7A48; --danger:#C0393B; --warn:#B45309; --purple:#5B4A9B;
     }
     html{font-size:16px;}
-    html,body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--ink);font-size:1rem;font-weight:600;}
+    /* Body sits at 500, headings and figures at 700-800. Everything used to be
+       600 against 800, which is close enough that nothing looked emphasised —
+       when it is all bold, none of it is. 500 rather than the usual 400
+       because this is read by older eyes and thin strokes vanish first;
+       Nunito already sets its digits on a fixed width, so money lines up in a
+       column without any further help. */
+    html,body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--ink);font-size:1rem;font-weight:500;}
     #root{background:var(--bg);}
     *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
     body{margin:0;}
@@ -47,6 +53,11 @@
     @keyframes tutNudge{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
     .cal-btn{min-height:44px;min-width:44px;}
     ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+    /* Chip rows scroll sideways. The bar under them was being read as part of
+       the interface — a grey slab between two filters — so it is hidden while
+       the row still scrolls. */
+    .chip-row{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+    .chip-row::-webkit-scrollbar{display:none;height:0;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(26,46,42,.06);}
     .inp{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-family:'Nunito',sans-serif;font-size:1.0625rem!important;font-weight:600;outline:none;width:100%;color:var(--ink);}
     .inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,110,94,.15);}
@@ -309,9 +320,13 @@ function CardTitle({icon,children,size}){
 /* Size defaults to 22 — bigger than the 16-18 most interfaces use, because
    the people this is for should not have to look twice. */
 function Icon({name,size,style,strokeWidth}){
-  var px=size||22;
+  /* Sized in rem, not pixels, so icons grow with the Aa control alongside the
+     text they label. Fixed pixels meant that at the largest setting the words
+     doubled while the icon beside them stayed put, which is backwards — the
+     reader who enlarged the text is the one who needs the bigger icon. */
+  var rem=fsr(size||22);
   return (
-    <svg width={px} height={px} viewBox="0 0 24 24" fill="none"
+    <svg width={rem} height={rem} viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth={strokeWidth||2}
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
       style={Object.assign({flexShrink:0,display:'block'},style||{})}
@@ -405,7 +420,7 @@ en:{
   Ps:'P',Ls:'L',Hs:'H',
   addEntry:'Add entry',amountPh:'e.g. 500',salaryPh:'e.g. 9000',editEntry:'Edit Entry',
   loanLockedHint:'Repayment has started, so the amount and instalment are locked. Date and note can still be changed.',
-  filterAll:'All',
+  filterAll:'All',filterAllTypes:'All types',filterAllStaff:'All staff',
   tAdv:'Advance',tLoan:'Loan',tExp:'Expense',tBonus:'Bonus',
   famount:'Amount',fdate:'Date',freason:'Why? (optional)',freasonPh:'e.g. Medical emergency',
   finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
@@ -606,7 +621,7 @@ hi:{
   Ps:'उ',Ls:'छ',Hs:'अ',
   addEntry:'एंट्री जोड़ें',amountPh:'जैसे 500',salaryPh:'जैसे 9000',editEntry:'एंट्री बदलें',
   loanLockedHint:'चुकाना शुरू हो चुका है, इसलिए राशि और किस्त बदली नहीं जा सकतीं। तारीख और नोट अब भी बदल सकते हैं।',
-  filterAll:'सभी',
+  filterAll:'सभी',filterAllTypes:'सभी प्रकार',filterAllStaff:'सभी स्टाफ',
   tAdv:'अग्रिम',tLoan:'लोन',tExp:'खर्च',tBonus:'बोनस',
   famount:'राशि',fdate:'तारीख',freason:'किसलिए? (ज़रूरी नहीं)',freasonPh:'जैसे: चिकित्सा आपात',
   finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
@@ -3947,9 +3962,12 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
       </div>
 
       <div className="px-4 pt-3 shrink-0">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 chip-row pb-2">
           {['all','advance','loan','loan_repay','expense','bonus','extra_work','short_hours','extra_help'].map(function(f){
-            var labels={all:t.filterAll,advance:t.tAdv,loan:t.tLoan,loan_repay:t.tLoanRepay,expense:t.tExp,bonus:t.tBonus,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
+            /* Three filters sat one above another and two of them said only
+               "All", so the screen showed the same word twice with nothing to
+               say what each one filtered. Each now names its own subject. */
+            var labels={all:t.filterAllTypes,advance:t.tAdv,loan:t.tLoan,loan_repay:t.tLoanRepay,expense:t.tExp,bonus:t.tBonus,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
             var active=filter===f;
             var tc=TC[f];
             var pillCls='pill '+(active?(tc?tc.pillCls:'pill-accent'):'pill-muted');
@@ -3965,13 +3983,13 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
         {staff.length>1 && (
           <div className="mb-2">
             <FSelect value={filterStaff} onChange={setFilterStaff}>
-              <option value="all">{t.filterAll}</option>
+              <option value="all">{t.filterAllStaff}</option>
               {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
             </FSelect>
           </div>
         )}
         {showMembers && memberIds.length>1 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-2 chip-row pb-2">
             {['all'].concat(memberIds,['other','none']).map(function(mid){
               var active=filterMember===mid;
               var label=mid==='all'?t.allMembers:mid==='none'?t.notRecorded:mid==='other'?t.paidBySomeoneElse:memberLabel(mid,mc.members,t);
