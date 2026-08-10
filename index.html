@@ -499,7 +499,7 @@ en:{
   whoPaid:'Who paid what',whoPaidHint:'Money paid out this year, split by household member',
   tExtraHelp:'Extra Help',
   fHelperName:'Helper’s Name',fHelperNameHint:'Optional: who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
-  generalNoStaff:'General (not linked to a staff member)',
+  generalNoStaff:'General help',
   aTotExtraHelp:'Extra Help Cost',
   extraHelpCardTitle:'Extra Help',extraHelpCardSubtitle:'times used this year',extraHelpEntryCount:'Number of Entries',
   fphoneHint:'Paste from contacts is fine',fphoneHelp:'Spaces, dashes and +91 are removed for you. Only the 10 digits are kept.',
@@ -700,7 +700,7 @@ hi:{
   whoPaid:'किसने कितना दिया',whoPaidHint:'इस साल दिए गए पैसे, हर सदस्य के हिसाब से',
   tExtraHelp:'अतिरिक्त मदद',
   fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक: मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
-  generalNoStaff:'सामान्य (किसी स्टाफ से नहीं जुड़ा)',
+  generalNoStaff:'सामान्य मदद',
   aTotExtraHelp:'अतिरिक्त मदद खर्च',
   extraHelpCardTitle:'अतिरिक्त मदद',extraHelpCardSubtitle:'बार इस साल इस्तेमाल हुई',extraHelpEntryCount:'कितनी बार',
   fphoneHint:'कॉन्टैक्ट्स से पेस्ट कर सकते हैं',fphoneHelp:'स्पेस, डैश और +91 अपने आप हट जाते हैं। सिर्फ़ 10 अंक रहते हैं।',
@@ -907,7 +907,10 @@ function buildReportData(homeId,period,lang,members,workingDays){
     .map(function(e){
       var s=staff.find(function(x){return x.id===e.staffId;});
       var name=s?s.name:(e.type==='extra_help'?t.generalNoStaff:'-');
-      if(e.type==='extra_help'&&e.helperName) name+=' ('+e.helperName+')';
+      /* !s as well as the type check: an entry saved before helperName was
+         restricted to the unlinked case could still carry both a staffId and
+         a helperName, and a found staff member's name must win. */
+      if(!s&&e.type==='extra_help'&&e.helperName) name+=' ('+e.helperName+')';
       return {date:toDate(e.date),name:name,typeKey:e.type,type:typeLabels[e.type]||e.type,
         amount:e.amount||0,paidBy:payerLabel(e,members,t),reason:e.reason||''};
     });
@@ -3686,7 +3689,11 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
     }
     if(form.type==='loan_repay') entry.targetLoanId=form.targetLoanId;
     if(isTimeBased){entry.hours=Number(form.hours);entry.rate=effectiveRate;}
-    if(form.type==='extra_help'&&form.helperName.trim()) entry.helperName=form.helperName.trim();
+    /* Only meaningful when there is no staff link - it exists to name a
+       helper who is not on the staff list at all. Saving it alongside a real
+       staffId would show both a staff name and a helper name for the same
+       entry everywhere this is displayed. */
+    if(form.type==='extra_help'&&!form.staffId&&form.helperName.trim()) entry.helperName=form.helperName.trim();
     if(showPaidBy&&form.paidBy){
       entry.paidBy=form.paidBy;
       if(form.paidBy==='other'&&form.paidByName.trim()) entry.paidByName=form.paidByName.trim();
@@ -3727,10 +3734,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
     short_hours:{active:{background:'#FDF3DC',border:'2px solid var(--warn)',color:'#8B5E08'},inactive:inactive},
     extra_help: {active:{background:'#EAE4F5',border:'2px solid var(--purple)',color:'#3A2E7A'},inactive:inactive},
   };
-  /* extra_help renders as its own full-width row at the end (see JSX below),
-     not in this grid, since it's the odd one out — not tied to a specific
-     staff member's regular pay the way the rest of these are. */
-  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
+  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay','extra_help'];
   var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
   /* Loans and repayments are entangled — a repayment mutates the loan it
@@ -3776,12 +3780,17 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         </FSelect>
       </FLabel>
 
+      {/* Extra Help used to sit apart in its own full-width row, at the same
+          visual weight as Advance above it - the single most common entry -
+          even though it is a rare, secondary one. It is not tied to a staff
+          member's regular pay (see calcSalary), which is why it still does
+          not require picking a person, but that is a math distinction, not a
+          reason to make the button itself bigger than the rest. */}
       <div className="mb-4">
         <div className="mb-2">{typeBtn('advance',true)}</div>
         <div className="grid grid-cols-3 gap-2 mb-2">
           {otherTypes.map(function(key){return typeBtn(key,false);})}
         </div>
-        <div>{typeBtn('extra_help',true)}</div>
       </div>
 
       {isTimeBased ? (
@@ -3809,7 +3818,10 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         </div>
       )}
       <FLabel label={t.fdate}><FInput type="date" value={form.date} onChange={function(v){set('date',v);}} /></FLabel>
-      {form.type==='extra_help' && (
+      {/* Only shown for an unlinked helper - once a staff member is picked
+          above, that already answers "who", so asking again here would just
+          invite two different names to be saved on the same entry. */}
+      {form.type==='extra_help'&&!form.staffId && (
         <FLabel label={t.fHelperName} hint={t.fHelperNameHint}>
           <FInput value={form.helperName} onChange={function(v){set('helperName',v);}} placeholder={t.fHelperNamePh} />
         </FLabel>
@@ -4040,7 +4052,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                       )}
                     </div>
                   </div>
-                  {entry.type==='extra_help'&&entry.helperName&&(
+                  {!sObj&&entry.type==='extra_help'&&entry.helperName&&(
                     <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8,fontWeight:700}} className="flex items-center gap-2"><Icon name="extrahelp" size={15} />{t.fHelperName}: {entry.helperName}</p>
                   )}
                   {entry.reason ? <p style={{fontSize:fsr(13),color:'var(--ink2)',marginTop:8,fontStyle:'italic'}}>"{entry.reason}"</p> : null}
