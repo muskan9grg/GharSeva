@@ -375,11 +375,11 @@ en:{
   hmData:'Data',hmExportMonth:'This Month (Excel)',hmExportYear:'Full Year (Excel)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
   exportSummaryTitle:'Household Summary',exportGeneratedOn:'Generated On',exportStaffCount:'Total Staff',exportMonthCol:'Month',
   exportKeyFigures:'AT A GLANCE',exportTotal:'TOTAL',
-  exportSalaryLine:'Salary (paid, or due where unpaid)',
+  exportSalaryLine:'Salary (paid or still due)',
   exportNone:'Nothing recorded for this period',exportWorking:'Preparing…',
   exportSheetPayments:'Salary Payments',exportSheetEntries:'Records',
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'Restored — reloading…',hmRestoreErr:'Invalid backup file.',
-  addStaff:'+ Add Staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
+  addStaff:'Add staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly Salary (₹)',
   fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
   fphoto:'Photo',fnotes:'Notes / Duties',fnotesPh:'e.g. Cleans all rooms, washes utensils',
@@ -392,30 +392,30 @@ en:{
   vault:'Documents (optional)',vaadhaar:'Aadhaar No.',vaadhaarH:'Only last 4 digits are shown',
   vbank:'Bank Name',vbankPh:'e.g. State Bank of India',vaccount:'Account No.',vifsc:'IFSC Code',
   viewDoc:'View Documents',hideDoc:'Hide',
-  selStaff:'Select Staff',selMonth:'Month',selYear:'Year',calcBtn:'Calculate',
-  rBase:'Base Salary',rLeave:'Leave Deduction',rAdv:'Advances (this month)',
-  rLoan:'Loan Installment',rExp:'Expenses (this month)',rBonus:'Bonus (this month)',
-  rNet:'Net Payable',markPaid:'Mark as Paid',paidOn:'Paid on',
+  selStaff:'Who is this for?',selStaffPh:'Choose a person',selMonth:'Month',selYear:'Year',calcBtn:'Show salary',
+  rBase:'Full salary',rLeave:'Less: leave',rAdv:'Less: advance given',
+  rLoan:'Less: loan this month',rExp:'Less: money spent for them',rBonus:'Plus: bonus',
+  rNet:'Amount to pay',markPaid:'Save as paid',paidOn:'Paid on',
   noCalc:'Select a staff member and month above to see the salary breakdown.',
-  wdays:'Working days base:',
+  wdays:'Counted as working days:',
   markToday:'Mark Today',markTodayDone:'Marked!',
   calTitle:'Leave Calendar',calHint:'Tap any date to change its status',
   days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   tlLeave:'Leave Days',tlDed:'Deduction',
   Ps:'P',Ls:'L',Hs:'H',
-  addEntry:'+ Add Entry',editEntry:'Edit Entry',tapToEdit:'Tap to view or edit',
+  addEntry:'Add entry',amountPh:'e.g. 500',salaryPh:'e.g. 9000',editEntry:'Edit Entry',
   loanLockedHint:'Repayment has started, so the amount and instalment are locked. Date and note can still be changed.',
   filterAll:'All',
   tAdv:'Advance',tLoan:'Loan',tExp:'Expense',tBonus:'Bonus',
-  famount:'Amount (₹)',fdate:'Date',freason:'Reason / Note',freasonPh:'e.g. Medical emergency',
+  famount:'Amount (₹)',fdate:'Date',freason:'Why? (optional)',freasonPh:'e.g. Medical emergency',
   finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
   noEntries:'No entries. Tap "+ Add Entry".',
   tLoanRepay:'Loan Repayment',fApplyLoan:'Apply Against Loan',noActiveLoans:'No active loans for this staff',
   tExtraWork:'Overtime',tShortHours:'Half Day',fhours:'Hours',frate:'Rate / Hour (₹)',
-  rExtraWork:'Overtime Pay',rShortHours:'Half Day Deduction',aTotExtra:'Overtime',aTotShort:'Half Days',
+  rExtraWork:'Plus: extra work',rShortHours:'Less: half days',aTotExtra:'Overtime',aTotShort:'Half Days',
   voiceCompleteEntry:'Complete This Entry',voiceRerecord:'Re-record',voiceStaffIs:'Detected:',voiceStaffChange:'Change',voiceSaveEntry:'Save Entry',
   tDays:'days',tType:'Type',tAction:'Action',loanDue:'due',perMonth:'/month',perDayCost:'1 day cost:',tLeave:'Leave',tPresent:'Present',tHoliday:'Holiday',
-  loanActive:'Active',loanClosed:'Closed',loanBal:'Remaining Balance',rLoanBal:'Total Loan Outstanding',
+  loanActive:'Active',loanClosed:'Closed',loanBal:'Remaining Balance',rLoanBal:'Loan still to repay',
   annTitle:'Annual Report',annYear:'Year',annTotal:'Total Household Spend',annEstTotal:'Estimated Salary This Year',annPer:'Per Staff Summary',
   aTotSal:'Salary',aTotAdv:'Advances',aTotExp:'Expenses',aTotBon:'Bonuses',aTotLoan:'Loan Balance',
   months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
@@ -437,7 +437,7 @@ en:{
   profTxns:'Transactions',
   profNoTxns:'Nothing recorded for this period.',
   perThisMonth:'This month',perLastMonth:'Last month',perThisYear:'This year',perAll:'All time',
-  profTxnPaid:'Salary paid',profTxnGiven:'Advances & expenses',profTxnSalary:'Salary',
+  profTxnPaid:'Salary paid',profTxnGiven:'Extra money given',profTxnSalary:'Salary',
   dashPay:'Upcoming Pay Days',dashRecent:'Recent Entries',dashSpend:'This Month',
   dashPaid:'Paid so far',dashOf:'of',dashNoStaff:'No staff added yet — go to Staff tab',
   dashPayBtn:'Pay',dashNoRecent:'No entries yet',dashTomorrow:'Tomorrow',dashToday:'Today',
@@ -446,7 +446,7 @@ en:{
   tutAddT:'Add your first helper',
   tutAddHint:'Tap the green + Add Staff button at the top',
   tutFormT:'Fill in three things',
-  tutFormB:'Name, the work they do, and monthly salary in rupees — for example 6000. Leave the rest blank for now.',
+  tutFormB:'Name, the work they do, and monthly salary. Leave the rest blank for now.',
   tutSaveT:'Now save',
   tutSaveHint:'Tap Save to add them to your list',
   tutSavedT:'Well done — they are on your list',
@@ -462,11 +462,11 @@ en:{
   tutPayB:'Pick a person and month, then tap Calculate — leaves and advances are already subtracted. Reports and settings sit in the menu, top right.',
   hmFeedback:'Feedback & Ideas',
   fbTitle:'Tell me what would help',
-  fbIntro:'This app is still growing. If something is missing, awkward, or broken, say so here — it goes straight to the person building it.',
+  fbIntro:'Tell us what is missing or broken. It goes straight to the person building this app.',
   fbWhatKind:'What is this about?',
   fbIdea:'Idea',fbProblem:'Problem',fbOther:'Other',
   fbYourMessage:'Your message',
-  fbMessageHint:'The more specific, the more useful. What were you trying to do?',
+  fbMessageHint:'What were you trying to do?',
   fbPlaceholder:'For example: I would like to see last year\'s salary total for each person on one screen.',
   fbSend:'Send feedback',fbSending:'Sending…',
   fbThanks:'Thank you — this has been received.',
@@ -475,8 +475,8 @@ en:{
   fbYours:'WHAT YOU HAVE SENT',
   fbWithdraw:'Withdraw',
   fbNeedAccount:'Sign in to send feedback',
-  fbNeedAccountWhy:'Feedback has to travel to the cloud to reach us, so it needs an account. Everything else in the app keeps working without one.',
-  paidBy:'Paid by',paidByHint:'Who actually gave the money — change it if someone else paid',
+  fbNeedAccountWhy:'Only feedback needs an account. Everything else works without one.',
+  paidBy:'Paid by',paidByHint:'Change it if someone else paid',
   paidByYou:'you',allMembers:'Everyone',notRecorded:'Not recorded',memberUnknown:'Member',
   paidBySomeoneElse:'Someone else…',
   paidByNameLabel:'Their name',paidByNameHint:'So you can tell them apart later',paidByNamePh:'e.g. Rita (neighbour)',
@@ -487,43 +487,43 @@ en:{
   generalNoStaff:'General (not linked to a staff member)',
   aTotExtraHelp:'Extra Help Cost',
   extraHelpCardTitle:'Extra Help',extraHelpCardSubtitle:'times used this year',extraHelpEntryCount:'Number of Entries',
-  fphoneHint:'You can paste a number straight from your contacts — spaces and the country code are removed automatically',
+  fphoneHint:'Paste from contacts is fine',fphoneHelp:'Spaces, dashes and +91 are removed for you. Only the 10 digits are kept.',
   tutActionHint:'Press the highlighted button to continue',
   tutStepWord:'STEP',tutOfWord:'OF',
   tutNext:'Next',tutBack:'Back',tutSkip:'Skip the guide',tutDone:'Finish',tutReplayBtn:'Show Tutorial Again',
   voiceExamples:['say: "Kamla took leave today"','say: "Give Ramu 500 advance"','say: "Santosh 2000 bonus"','say: "Ramu ko 1000 loan"'],
   roleManagement:'Staff Roles',addRole:'Add new role…',addRolePh:'e.g. Ironing Maid',addRoleBtn:'Add',
   defaultRole:'Default (locked)',
-  workingDaysLabel:'Working Days / Month',workingDaysHint:'Used for leave deduction calculation',
+  workingDaysLabel:'Working days in a month',workingDaysHelp:'One day of leave costs one day of pay. This number decides how much one day is worth: salary divided by this.',
   waLangLabel:'WhatsApp Message Language',
-  waLangHint:'The language your staff receive messages in. This is separate from the app language above.',
+  waLangHint:'What your staff receive',waLangHelp:'This is not the app language above. That one is for you; this one is for them.',
   waLangBoth:'Hindi + English',waLangHi:'हिंदी only',waLangEn:'English only',
   inviteWaText:'Join my household on GharSeva! Code: {code} 🏠 ({home})',
   rUnrecovered:'Could not be deducted',
-  unrecoveredHint:'Deductions were more than the salary. This much is still owed to you.',
+  unrecoveredHint:'They still owe you this much.',
   duesTitle:'Unrecovered dues',
-  duesHint:'Left over from earlier months when deductions were more than the salary.',
+  duesHint:'Left over from earlier months.',
   staleTitle:'This month changed after it was paid',
   staleRecorded:'You recorded',
   staleNow:'Now works out to',
   staleMore:'You paid {amt} more than needed.',
   staleLess:'You paid {amt} less than needed.',
-  rCarry:'Dues from last month',
-  waiveOff:'Do not charge this month',
-  waiveUndo:'Charge this again',
-  waiveNote:'{n} cancelled this month. Tap the arrow to bring one back.',
+  rCarry:'Less: left from last month',
+  waiveOff:'Skip this month',
+  waiveUndo:'Put it back',
+  waiveNote:'{n} skipped this month.',
   undoPay:'Undo this payment',
   undoConfirm:'Undo this salary payment?',
   undoWillRemove:'The record of {amt} paid will be removed.',
   undoWillRestore:'{n} loan instalment(s) will be put back.',
-  undoLoanUnknown:'This payment is from an older version, so its loan instalments cannot be put back automatically. Please check the loan afterwards.',
+  undoLoanUnknown:'This is an old payment. Please check the loan yourself afterwards.',
   undoYes:'Yes, undo',
   undoneOk:'Payment undone',
   undoBlocked:'To undo this, first undo {m}.',
   undoHistory:'Undone payments',
   undoneOn:'undone on',
   raiseFromLabel:'Salary changed: {old} → {new}',
-  raiseFromHint:'From which month does the new salary apply? Earlier months keep the old rate.',
+  raiseFromHint:'From which month?',raiseFromHelp:'Months before this keep the old salary, so your old records do not change.',
   raiseSince:'since',
   navHome:'Home',navMoney:'Money',navReports:'Reports',
   moneyRecords:'Records',moneyPay:'Pay Salary',
@@ -534,18 +534,18 @@ en:{
   layoutSimple:'Simple (new)',
   layoutSimpleDesc:'Home · Staff · Money · Reports — fewer tabs, home screen always reachable',
   markMany:'Mark several days at once',
-  markManyHint:'Pick the first and last day, then choose what to mark them as. Useful for a trip to the village — and you can mark days ahead of time.',
+  markManyHint:'Choose the first day and the last day',markManyHelp:'Good for a trip to the village. You can also mark days that have not come yet.',
   markFrom:'From',markTo:'To',
   markManyDone:'{n} day(s) marked',
   plannedDay:'Planned — has not happened yet',
   fleaving:'Last Working Day',
-  fleavingHint:'Fill this only when someone leaves. Their records are kept, but they stop appearing in attendance and pay reminders.',
+  fleavingHint:'Only when someone leaves',fleavingHelp:'All their old records stay safe. They simply stop showing up in attendance and in pay reminders.',
   leftBadge:'Left',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
   profJoined:'Joined',profPayDay:'Pay Day',
-  profFinancials:'This Month',profGross:'Gross',
-  profAlreadyPaid:'Salary Paid',profConfirmPay:'Confirm & Pay',
+  profFinancials:'This Month',profGross:'Full salary',
+  profAlreadyPaid:'Salary Paid',profConfirmPay:'Save as paid',
   profNoAdv:'No advances this month',profLoans:'Active Loans',profLoanEMI:'EMI',
   profAttend:'Attendance',profQA:'Quick Actions',
   profPaySalary:'Pay Salary',profRecAdv:'Record Advance',
@@ -576,11 +576,11 @@ hi:{
   hmData:'डेटा',hmExportMonth:'इस महीने की Excel',hmExportYear:'पूरे साल की Excel',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
   exportSummaryTitle:'घर का सारांश',exportGeneratedOn:'जनरेट किया गया',exportStaffCount:'कुल स्टाफ',exportMonthCol:'महीना',
   exportKeyFigures:'एक नज़र में',exportTotal:'कुल',
-  exportSalaryLine:'वेतन (दिया, और बाकी जहाँ नहीं दिया)',
+  exportSalaryLine:'वेतन (दिया या बाकी)',
   exportNone:'इस अवधि में कुछ दर्ज नहीं',exportWorking:'तैयार हो रहा है…',
   exportSheetPayments:'वेतन भुगतान',exportSheetEntries:'रिकॉर्ड',
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'रिस्टोर हो गया — लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
-  addStaff:'+ स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
+  addStaff:'स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन (₹)',
   fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
   fphoto:'फोटो',fnotes:'नोट्स / काम',fnotesPh:'जैसे: सभी कमरे साफ, बर्तन',
@@ -593,30 +593,30 @@ hi:{
   vault:'दस्तावेज़ (वैकल्पिक)',vaadhaar:'आधार नंबर',vaadhaarH:'केवल अंतिम 4 अंक दिखेंगे',
   vbank:'बैंक का नाम',vbankPh:'जैसे: भारतीय स्टेट बैंक',vaccount:'खाता नंबर',vifsc:'IFSC कोड',
   viewDoc:'दस्तावेज़ देखें',hideDoc:'छुपाएं',
-  selStaff:'स्टाफ चुनें',selMonth:'महीना',selYear:'साल',calcBtn:'गणना करें',
-  rBase:'मूल वेतन',rLeave:'छुट्टी कटौती',rAdv:'अग्रिम (इस महीने)',
-  rLoan:'लोन किस्त',rExp:'खर्च (इस महीने)',rBonus:'बोनस (इस महीने)',
-  rNet:'कुल देय',markPaid:'भुगतान किया',paidOn:'भुगतान हुआ',
+  selStaff:'किसके लिए?',selStaffPh:'व्यक्ति चुनें',selMonth:'महीना',selYear:'साल',calcBtn:'वेतन दिखाएं',
+  rBase:'पूरा वेतन',rLeave:'घटाया: छुट्टी',rAdv:'घटाया: दिया हुआ अग्रिम',
+  rLoan:'घटाया: इस महीने की लोन किस्त',rExp:'घटाया: उनके लिए खर्च',rBonus:'जोड़ा: बोनस',
+  rNet:'कितना देना है',markPaid:'दिया हुआ दर्ज करें',paidOn:'भुगतान हुआ',
   noCalc:'वेतन देखने के लिए स्टाफ और महीना चुनें।',
-  wdays:'कार्य दिवस आधार:',
+  wdays:'काम के दिन गिने:',
   markToday:'आज मार्क करें',markTodayDone:'हो गया!',
   calTitle:'छुट्टी कैलेंडर',calHint:'किसी भी तारीख को दबाकर स्थिति बदलें',
   days:['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'],
   tlLeave:'छुट्टी के दिन',tlDed:'कटौती',
   Ps:'उ',Ls:'छ',Hs:'अ',
-  addEntry:'+ एंट्री जोड़ें',editEntry:'एंट्री बदलें',tapToEdit:'देखने या बदलने के लिए दबाएं',
+  addEntry:'एंट्री जोड़ें',amountPh:'जैसे 500',salaryPh:'जैसे 9000',editEntry:'एंट्री बदलें',
   loanLockedHint:'चुकाना शुरू हो चुका है, इसलिए राशि और किस्त बदली नहीं जा सकतीं। तारीख और नोट अब भी बदल सकते हैं।',
   filterAll:'सभी',
   tAdv:'अग्रिम',tLoan:'लोन',tExp:'खर्च',tBonus:'बोनस',
-  famount:'राशि (₹)',fdate:'तारीख',freason:'कारण / नोट',freasonPh:'जैसे: चिकित्सा आपात',
+  famount:'राशि (₹)',fdate:'तारीख',freason:'किसलिए? (ज़रूरी नहीं)',freasonPh:'जैसे: चिकित्सा आपात',
   finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
   noEntries:'कोई एंट्री नहीं।',
   tLoanRepay:'लोन चुकाना',fApplyLoan:'लोन में लगाएं',noActiveLoans:'इस स्टाफ का कोई सक्रिय लोन नहीं',
   tExtraWork:'ओवरटाइम',tShortHours:'आधा दिन',fhours:'घंटे',frate:'दर / घंटा (₹)',
-  rExtraWork:'ओवरटाइम भत्ता',rShortHours:'आधे दिन की कटौती',aTotExtra:'ओवरटाइम',aTotShort:'आधे दिन',
+  rExtraWork:'जोड़ा: ज़्यादा काम',rShortHours:'घटाया: आधे दिन',aTotExtra:'ओवरटाइम',aTotShort:'आधे दिन',
   voiceCompleteEntry:'एंट्री पूरी करें',voiceRerecord:'फिर से बोलें',voiceStaffIs:'मिला:',voiceStaffChange:'बदलें',voiceSaveEntry:'एंट्री सहेजें',
   tDays:'दिन',tType:'प्रकार',tAction:'क्रिया',loanDue:'बकाया',perMonth:'/महीना',perDayCost:'1 दिन का वेतन:',tLeave:'छुट्टी',tPresent:'उपस्थित',tHoliday:'अवकाश',
-  loanActive:'सक्रिय',loanClosed:'बंद',loanBal:'बकाया',rLoanBal:'कुल लोन बकाया',
+  loanActive:'सक्रिय',loanClosed:'बंद',loanBal:'बकाया',rLoanBal:'लोन अभी बाकी',
   annTitle:'वार्षिक रिपोर्ट',annYear:'साल',annTotal:'कुल वार्षिक खर्च',annEstTotal:'इस साल का अनुमानित वेतन',annPer:'स्टाफ-वार सारांश',
   aTotSal:'वेतन',aTotAdv:'अग्रिम',aTotExp:'खर्च',aTotBon:'बोनस',aTotLoan:'लोन बकाया',
   months:['जन','फर','मार','अप्र','मई','जून','जुल','अग','सित','अक्त','नव','दिस'],
@@ -638,7 +638,7 @@ hi:{
   profTxns:'लेन-देन',
   profNoTxns:'इस अवधि में कुछ दर्ज नहीं है।',
   perThisMonth:'इस महीने',perLastMonth:'पिछले महीने',perThisYear:'इस साल',perAll:'शुरू से अब तक',
-  profTxnPaid:'वेतन दिया',profTxnGiven:'अग्रिम और खर्च',profTxnSalary:'वेतन',
+  profTxnPaid:'वेतन दिया',profTxnGiven:'अलग से दिया पैसा',profTxnSalary:'वेतन',
   dashPay:'इस महीने वेतन तारीखें',dashRecent:'हाल की एंट्री',dashSpend:'इस महीने',
   dashPaid:'भुगतान हुआ',dashOf:'में से',dashNoStaff:'कोई स्टाफ नहीं — स्टाफ टैब पर जाएं',
   dashPayBtn:'दें',dashNoRecent:'कोई एंट्री नहीं',dashTomorrow:'कल',dashToday:'आज',
@@ -647,7 +647,7 @@ hi:{
   tutAddT:'अपना पहला स्टाफ जोड़ें',
   tutAddHint:'ऊपर हरा "+ स्टाफ जोड़ें" बटन दबाएं',
   tutFormT:'तीन चीज़ें भरें',
-  tutFormB:'नाम, काम का प्रकार, और महीने का वेतन रुपयों में — जैसे 6000। बाकी खाने अभी खाली छोड़ दें।',
+  tutFormB:'नाम, वे क्या काम करते हैं, और महीने का वेतन। बाकी अभी खाली छोड़ दें।',
   tutSaveT:'अब सेव करें',
   tutSaveHint:'सूची में जोड़ने के लिए सेव दबाएं',
   tutSavedT:'बढ़िया — वे सूची में आ गए',
@@ -663,11 +663,11 @@ hi:{
   tutPayB:'व्यक्ति और महीना चुनें, फिर गणना दबाएं — छुट्टियाँ और एडवांस पहले ही घटे होते हैं। रिपोर्ट और सेटिंग्स ऊपर दाईं ओर मेन्यू में हैं।',
   hmFeedback:'सुझाव और राय',
   fbTitle:'बताएं क्या बेहतर हो सकता है',
-  fbIntro:'यह एप्प अभी बन रहा है। कुछ कमी लगे, मुश्किल हो या काम न करे, तो यहाँ लिखें — यह सीधे बनाने वाले तक जाता है।',
+  fbIntro:'क्या कम है या क्या काम नहीं कर रहा, बताएं। यह सीधे बनाने वाले तक जाता है।',
   fbWhatKind:'बात किस बारे में है?',
   fbIdea:'सुझाव',fbProblem:'समस्या',fbOther:'अन्य',
   fbYourMessage:'आपका संदेश',
-  fbMessageHint:'जितना साफ लिखेंगे, उतना काम आएगा। आप क्या करना चाह रहे थे?',
+  fbMessageHint:'आप क्या करना चाह रहे थे?',
   fbPlaceholder:'जैसे: हर व्यक्ति का पिछले साल का कुल वेतन एक ही स्क्रीन पर दिखे।',
   fbSend:'भेजें',fbSending:'भेज रहे हैं…',
   fbThanks:'धन्यवाद — आपका संदेश मिल गया।',
@@ -676,8 +676,8 @@ hi:{
   fbYours:'आपके भेजे संदेश',
   fbWithdraw:'वापस लें',
   fbNeedAccount:'भेजने के लिए साइन इन करें',
-  fbNeedAccountWhy:'संदेश हम तक पहुँचने के लिए क्लाउड से जाता है, इसलिए खाता ज़रूरी है। एप्प का बाकी सब कुछ बिना खाते भी चलता रहेगा।',
-  paidBy:'किसने दिया',paidByHint:'पैसे असल में किसने दिए — कोई और हो तो बदल दें',
+  fbNeedAccountWhy:'सिर्फ़ सुझाव के लिए खाता चाहिए। बाकी सब बिना खाते के चलता है।',
+  paidBy:'किसने दिया',paidByHint:'अगर किसी और ने दिया तो बदलें',
   paidByYou:'आप',allMembers:'सभी',notRecorded:'दर्ज नहीं',memberUnknown:'सदस्य',
   paidBySomeoneElse:'कोई और…',
   paidByNameLabel:'उनका नाम',paidByNameHint:'ताकि बाद में पहचान सकें',paidByNamePh:'जैसे: रीता (पड़ोसी)',
@@ -688,43 +688,43 @@ hi:{
   generalNoStaff:'सामान्य (किसी स्टाफ से नहीं जुड़ा)',
   aTotExtraHelp:'अतिरिक्त मदद खर्च',
   extraHelpCardTitle:'अतिरिक्त मदद',extraHelpCardSubtitle:'बार इस साल इस्तेमाल हुई',extraHelpEntryCount:'कितनी बार',
-  fphoneHint:'संपर्कों से सीधे नंबर पेस्ट कर सकते हैं — स्पेस और कंट्री कोड अपने आप हट जाएंगे',
+  fphoneHint:'कॉन्टैक्ट्स से पेस्ट कर सकते हैं',fphoneHelp:'स्पेस, डैश और +91 अपने आप हट जाते हैं। सिर्फ़ 10 अंक रहते हैं।',
   tutActionHint:'आगे बढ़ने के लिए चमकता हुआ बटन दबाएं',
   tutStepWord:'चरण',tutOfWord:'/',
   tutNext:'आगे',tutBack:'पीछे',tutSkip:'गाइड छोड़ें',tutDone:'समाप्त',tutReplayBtn:'ट्यूटोरियल फिर से देखें',
   voiceExamples:['"कमला ने आज छुट्टी ली"','"रामू को 500 रुपये अग्रिम दिए"','"संतोष को 2000 बोनस मिला"','"रामू को 1000 का लोन दिया"'],
   roleManagement:'स्टाफ भूमिकाएं',addRole:'नई भूमिका जोड़ें…',addRolePh:'जैसे: प्रेस वाली',addRoleBtn:'जोड़ें',
   defaultRole:'डिफ़ॉल्ट (लॉक)',
-  workingDaysLabel:'कार्य दिवस / माह',workingDaysHint:'छुट्टी कटौती के लिए उपयोग होता है',
+  workingDaysLabel:'महीने में काम के दिन',workingDaysHelp:'एक दिन की छुट्टी पर एक दिन का वेतन कटता है। एक दिन कितने का है, यह इसी संख्या से तय होता है: वेतन भाग यह संख्या।',
   waLangLabel:'व्हाट्सएप संदेश की भाषा',
-  waLangHint:'आपके स्टाफ को संदेश किस भाषा में जाएगा। यह ऊपर वाली ऐप भाषा से अलग है।',
+  waLangHint:'स्टाफ को क्या मिलेगा',waLangHelp:'यह ऊपर वाली ऐप भाषा नहीं है। वह आपके लिए है, यह उनके लिए।',
   waLangBoth:'हिंदी + अंग्रेज़ी',waLangHi:'सिर्फ़ हिंदी',waLangEn:'सिर्फ़ अंग्रेज़ी',
   inviteWaText:'घरसेवा पर मेरे घर से जुड़ें! कोड: {code} 🏠 ({home})',
   rUnrecovered:'कट नहीं सका',
-  unrecoveredHint:'कटौती वेतन से ज़्यादा थी। इतना अभी भी आपको देना बाकी है।',
+  unrecoveredHint:'इतना उन्हें अब भी आपको देना है।',
   duesTitle:'बकाया राशि',
-  duesHint:'पिछले महीनों से बचा हुआ, जब कटौती वेतन से ज़्यादा थी।',
+  duesHint:'पिछले महीनों से बचा हुआ।',
   staleTitle:'भुगतान के बाद इस महीने में बदलाव हुआ है',
   staleRecorded:'आपने दर्ज किया',
   staleNow:'अब बनता है',
   staleMore:'आपने {amt} ज़्यादा दिया है।',
   staleLess:'आपने {amt} कम दिया है।',
-  rCarry:'पिछले महीने का बकाया',
-  waiveOff:'इस महीने न काटें',
-  waiveUndo:'फिर से काटें',
-  waiveNote:'इस महीने {n} कटौती रद्द की गई है। वापस लाने के लिए तीर दबाएँ।',
+  rCarry:'घटाया: पिछले महीने से बचा',
+  waiveOff:'इस महीने छोड़ें',
+  waiveUndo:'वापस लगाएं',
+  waiveNote:'इस महीने {n} छोड़ी गई है।',
   undoPay:'यह भुगतान वापस लें',
   undoConfirm:'क्या यह वेतन भुगतान वापस लेना है?',
   undoWillRemove:'{amt} भुगतान का रिकॉर्ड हट जाएगा।',
   undoWillRestore:'{n} लोन किस्त वापस जुड़ जाएगी।',
-  undoLoanUnknown:'यह भुगतान पुराने वर्जन का है, इसलिए इसकी लोन किस्तें अपने आप वापस नहीं हो सकतीं। कृपया बाद में लोन जाँच लें।',
+  undoLoanUnknown:'यह पुराना भुगतान है। कृपया बाद में लोन खुद जाँच लें।',
   undoYes:'हाँ, वापस लें',
   undoneOk:'भुगतान वापस लिया गया',
   undoBlocked:'इसे वापस लेने के लिए, पहले {m} वापस लें।',
   undoHistory:'वापस लिए गए भुगतान',
   undoneOn:'वापस लिया',
   raiseFromLabel:'वेतन बदला: {old} → {new}',
-  raiseFromHint:'नया वेतन किस महीने से लागू है? पिछले महीनों में पुराना वेतन ही रहेगा।',
+  raiseFromHint:'किस महीने से?',raiseFromHelp:'इससे पहले के महीनों में पुराना वेतन ही रहेगा, पुराने रिकॉर्ड नहीं बदलेंगे।',
   raiseSince:'से',
   navHome:'होम',navMoney:'पैसा',navReports:'रिपोर्ट',
   moneyRecords:'रिकॉर्ड',moneyPay:'वेतन भुगतान',
@@ -735,18 +735,18 @@ hi:{
   layoutSimple:'सरल (नया)',
   layoutSimpleDesc:'होम · स्टाफ · पैसा · रिपोर्ट — कम टैब, होम स्क्रीन हमेशा सामने',
   markMany:'एक साथ कई दिन दर्ज करें',
-  markManyHint:'पहला और आखिरी दिन चुनें, फिर तय करें कि क्या दर्ज करना है। गाँव जाने जैसी छुट्टी के लिए — आप आने वाले दिन भी पहले से दर्ज कर सकते हैं।',
+  markManyHint:'पहला दिन और आखिरी दिन चुनें',markManyHelp:'गाँव जाने जैसी छुट्टी के लिए अच्छा है। आप आगे आने वाले दिन भी दर्ज कर सकते हैं।',
   markFrom:'से',markTo:'तक',
   markManyDone:'{n} दिन दर्ज हुए',
   plannedDay:'योजना — अभी हुआ नहीं है',
   fleaving:'काम का आखिरी दिन',
-  fleavingHint:'यह तभी भरें जब कोई काम छोड़ रहा हो। रिकॉर्ड सुरक्षित रहेंगे, पर वे उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
+  fleavingHint:'सिर्फ़ तब जब कोई काम छोड़े',fleavingHelp:'उनके पुराने रिकॉर्ड सुरक्षित रहते हैं। वे बस उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
   leftBadge:'छोड़ दिया',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
   profJoined:'जॉइनिंग',profPayDay:'वेतन दिन',
-  profFinancials:'इस महीने',profGross:'सकल',
-  profAlreadyPaid:'वेतन दिया',profConfirmPay:'भुगतान करें',
+  profFinancials:'इस महीने',profGross:'पूरा वेतन',
+  profAlreadyPaid:'वेतन दिया',profConfirmPay:'दिया हुआ दर्ज करें',
   profNoAdv:'इस महीने कोई अग्रिम नहीं',profLoans:'सक्रिय लोन',profLoanEMI:'किस्त',
   profAttend:'उपस्थिति',profQA:'त्वरित क्रिया',
   profPaySalary:'वेतन दें',profRecAdv:'अग्रिम दर्ज',
@@ -1912,12 +1912,41 @@ function FSelect({value,onChange,children,tut}){
   </select>;
 }
 
-function FLabel({label,hint,children,req}){
+/* A question mark that opens the long explanation, so the label itself can
+   stay short. The alternative was a paragraph under every field, which is
+   read once, skipped forever, and pushes the actual control off the screen —
+   and shrinking that paragraph to fit only makes it unreadable to the people
+   most likely to need it. Kept at a full 28px target and reads as a button. */
+function Help({text,label}){
+  var [open,setOpen]=useState(false);
+  if(!text) return null;
+  return (
+    <>
+      <button type="button" onClick={function(){setOpen(function(v){return !v;});}}
+        aria-label={(label?label+' — ':'')+'?'} aria-expanded={open}
+        style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',padding:0,
+          border:'2px solid '+(open?'var(--accent)':'var(--border)'),
+          background:open?'var(--accent)':'var(--surface)',
+          color:open?'#fff':'var(--ink2)',fontWeight:800,fontSize:fsr(14),
+          fontFamily:'Nunito,sans-serif',lineHeight:1,flexShrink:0}}>?</button>
+      {open&&(
+        <p style={{flexBasis:'100%',order:9,fontSize:fsr(14),color:'var(--ink2)',lineHeight:1.5,
+          background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:12,
+          padding:'10px 12px',margin:'8px 0 0'}}>{text}</p>
+      )}
+    </>
+  );
+}
+
+function FLabel({label,hint,help,children,req}){
   return (
     <div className="mb-4">
-      <label style={{display:'block',fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',marginBottom:5}}>
-        {label}{req && <span style={{color:'var(--danger)'}}> *</span>}
-      </label>
+      <div className="flex items-center gap-2 flex-wrap" style={{marginBottom:5}}>
+        <label style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink2)',flex:1}}>
+          {label}{req && <span style={{color:'var(--danger)'}}> *</span>}
+        </label>
+        <Help text={help} label={label} />
+      </div>
       {hint && <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:5}}>{hint}</p>}
       {children}
     </div>
@@ -2100,21 +2129,21 @@ function StaffModal({lang,onClose,onSave,existing}){
           </div>
         )}
       </FLabel>
-      <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder="0" /></FLabel>
+      <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder={t.salaryPh} /></FLabel>
       {salaryChanged&&(
         <div className="rounded-2xl mb-4" style={{background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px'}}>
           <p style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08',margin:'0 0 4px'}}>
             {t.raiseFromLabel.replace('{old}',fmt(existing.salary||0)).replace('{new}',fmt(Number(form.salary)||0))}
           </p>
-          <p style={{fontSize:fsr(12),color:'#8B5E08',margin:'0 0 8px'}}>{t.raiseFromHint}</p>
+          <div className="flex items-center gap-2" style={{margin:'0 0 8px'}}><p style={{fontSize:fsr(12),color:'#8B5E08',margin:0,flex:1}}>{t.raiseFromHint}</p><Help text={t.raiseFromHelp} label={t.raiseFromHint} /></div>
           <input type="month" value={raiseFrom} onChange={function(e){setRaiseFrom(e.target.value);}}
             className="inp" style={{width:'100%'}} />
         </div>
       )}
-      <FLabel label={t.fphone} hint={t.fphoneHint}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
+      <FLabel label={t.fphone} hint={t.fphoneHint} help={t.fphoneHelp}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
       <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
       {existing&&(
-        <FLabel label={t.fleaving} hint={t.fleavingHint}>
+        <FLabel label={t.fleaving} hint={t.fleavingHint} help={t.fleavingHelp}>
           <FInput type="date" value={form.leavingDate||''} onChange={function(v){set('leavingDate',v);}} />
         </FLabel>
       )}
@@ -3194,7 +3223,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
       <div className="rounded-2xl p-4 mb-4" style={{background:'var(--surface2)'}}>
         <FLabel label={t.selStaff} req={true}>
           <FSelect tut="salary-staff" value={selStaff} onChange={function(v){setSelStaff(v);setCalc(null);setWAMsg('');}}>
-            <option value="">{t.selStaff}</option>
+            <option value="">{t.selStaffPh}</option>
             {staff.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
           </FSelect>
         </FLabel>
@@ -3236,7 +3265,11 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
               {label:t.rBonus, val:calc.bonuses, sign:1},
               {label:t.rExtraWork, val:calc.extraWork, sign:1},
               {label:t.rShortHours, val:calc.shortHours, sign:-1, k:'shortHours'},
-            ].map(function(row){
+            /* Only the lines that carry a figure. Six rows of ₹0 were six
+               things to read past to reach the one number that mattered, and
+               the salary modal already showed it this way — the two screens
+               now agree. The full salary always stays, even at zero. */
+            ].filter(function(row){ return row.sign===0||row.val>0; }).map(function(row){
               var off=row.k&&calc.waived.indexOf(row.k)>=0;
               var color=off?'var(--muted)':row.sign===-1&&row.val>0?'var(--danger)':row.sign===1&&row.val>0?'var(--ok)':'var(--ink)';
               /* A charge can only be cancelled while the month is still open —
@@ -3450,7 +3483,7 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
       </button>
       {rangeOpen&&(
         <div className="rounded-2xl mb-3" style={{background:'var(--surface2)',border:'1px solid var(--border)',padding:'12px 14px'}}>
-          <p style={{fontSize:fsr(12),color:'var(--ink2)',margin:'0 0 10px'}}>{t.markManyHint}</p>
+          <div className="flex items-center gap-2 flex-wrap" style={{margin:'0 0 10px'}}><p style={{fontSize:fsr(13),color:'var(--ink2)',margin:0,flex:1}}>{t.markManyHint}</p><Help text={t.markManyHelp} label={t.markMany} /></div>
           <div className="flex gap-3 mb-3">
             <div style={{flex:1}}>
               <label style={{display:'block',fontSize:fsr(12),fontWeight:700,color:'var(--ink2)',marginBottom:4}}>{t.markFrom}</label>
@@ -3722,7 +3755,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
       )}
       <FLabel label={t.selStaff} req={form.type!=='extra_help'}>
         <FSelect value={form.staffId} onChange={function(v){set('staffId',v);}}>
-          <option value="">{form.type==='extra_help'?t.generalNoStaff:t.selStaff}</option>
+          <option value="">{form.type==='extra_help'?t.generalNoStaff:t.selStaffPh}</option>
           {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
         </FSelect>
       </FLabel>
@@ -3750,7 +3783,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         </div>
       ) : (
         <div>
-          <FLabel label={t.famount} req={true}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder="0" disabled={loanLocked} /></FLabel>
+          <FLabel label={t.famount} req={true}><FInput type="number" value={form.amount} onChange={function(v){set('amount',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
           {isHalfDay&&dailyRate>0&&(
             <div className="mb-4 px-3 py-2 rounded-xl flex justify-between items-center" style={{background:'#FDF3DC',marginTop:-8}}>
               <span style={{fontSize:fsr(13),fontWeight:700,color:'#8B5E08'}}>{t.perDayCost}</span>
@@ -3774,7 +3807,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
 
       {form.type==='loan' && (
         <div>
-          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){set('installment',v);}} placeholder="0" disabled={loanLocked} /></FLabel>
+          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){set('installment',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
           <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" disabled={loanLocked} /></FLabel>
         </div>
       )}
@@ -3784,7 +3817,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
           {activeLoans.length===0
             ? <p style={{fontSize:fsr(13),color:'var(--muted)',padding:'8px 0'}}>{t.noActiveLoans}</p>
             : <FSelect value={form.targetLoanId} onChange={function(v){set('targetLoanId',v);}}>
-                <option value="">{t.selStaff}</option>
+                <option value="">{t.selStaffPh}</option>
                 {activeLoans.map(function(ln){
                   var bal=Math.max(0,ln.amount-(ln.paidInstallments||0)*(ln.installment||0)-(ln.manualRepaid||0));
                   return <option key={ln.id} value={ln.id}>{fmtD(ln.date)} — {fmt(ln.amount)} (bal: {fmt(bal)})</option>;
@@ -4007,7 +4040,6 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
                       style={{fontSize:fsr(12),color:'#1A6E5E',border:'1px solid #A8D4C4',borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
                       <Icon name="share" size={15} style={{display:'inline-block',verticalAlign:'-2px',marginRight:6}} />WhatsApp
                     </button>}
-                    <span style={{fontSize:fsr(11),color:'var(--muted)',fontWeight:700,alignSelf:'center'}}>{t.tapToEdit}</span>
                   </div>
                   {activeWA===entry.id && sObj && (
                     <div onClick={function(e){e.stopPropagation();}}>
@@ -4364,7 +4396,7 @@ function VoicePartialEntry({parsed,staffList,lang,workingDays,onSave,onRerecord}
       ) : (
         <FLabel label={t.selStaff}>
           <FSelect value={staffId} onChange={setStaffId}>
-            <option value="">{t.selStaff}</option>
+            <option value="">{t.selStaffPh}</option>
             {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
           </FSelect>
         </FLabel>
@@ -4394,7 +4426,7 @@ function VoicePartialEntry({parsed,staffList,lang,workingDays,onSave,onRerecord}
       )}
       {needsAmount && (
         <FLabel label={t.famount}>
-          <FInput type="number" value={amount} onChange={setAmount} placeholder="0" />
+          <FInput type="number" value={amount} onChange={setAmount} placeholder={t.amountPh} />
         </FLabel>
       )}
 
@@ -4818,8 +4850,8 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
           {lang==='en'?'🇮🇳 हिंदी में बदलें':'🇬🇧 Switch to English'}
         </button>
 
-        <label style={{display:'block',fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),marginBottom:4}}>{t.workingDaysLabel}</label>
-        <p style={{fontSize:fsr(12),color:'var(--muted)',marginBottom:8}}>{t.workingDaysHint}</p>
+        <div className="flex items-center gap-2 flex-wrap" style={{marginBottom:6}}><label style={{fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),flex:1}}>{t.workingDaysLabel}</label><Help text={t.workingDaysHelp} label={t.workingDaysLabel} /></div>
+        
         <div className="flex gap-2 items-center">
           <input type="number" min="1" max="31" value={wdInput}
             onChange={function(e){setWdInput(e.target.value);}}
@@ -4847,7 +4879,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
           })}
         </div>
 
-        <label style={{display:'block',fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),marginTop:20,marginBottom:4}}>{t.waLangLabel}</label>
+        <div className="flex items-center gap-2 flex-wrap" style={{marginTop:20,marginBottom:6}}><label style={{fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),flex:1}}>{t.waLangLabel}</label><Help text={t.waLangHelp} label={t.waLangLabel} /></div>
         <p style={{fontSize:fsr(12),color:'var(--muted)',marginBottom:8}}>{t.waLangHint}</p>
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {[['both',t.waLangBoth],['hi',t.waLangHi],['en',t.waLangEn]].map(function(o){
