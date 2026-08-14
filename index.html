@@ -1917,8 +1917,17 @@ function PrimaryBtn({onClick,children,disabled,color,full,small,tut}){
 }
 
 function FInput({value,onChange,placeholder,type,maxLength,tut,disabled}){
-  return <input type={type||'text'} value={value||''} onChange={function(e){onChange(e.target.value);}}
+  /* Nothing this app tracks - money, hours, a day-of-month - is ever
+     meaningfully negative, so a number field simply refuses a value below
+     zero rather than accepting it and failing later at save. */
+  function handleChange(e){
+    var v=e.target.value;
+    if(type==='number'&&v!==''&&Number(v)<0) return;
+    onChange(v);
+  }
+  return <input type={type||'text'} value={value||''} onChange={handleChange}
     placeholder={placeholder} maxLength={maxLength} data-tut={tut} disabled={!!disabled} className="inp"
+    min={type==='number'?0:undefined}
     style={disabled?{opacity:.55,cursor:'not-allowed'}:undefined} />;
 }
 
@@ -4992,7 +5001,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
         
         <div className="flex gap-2 items-center">
           <input type="number" min="1" max="31" value={wdInput}
-            onChange={function(e){setWdInput(e.target.value);}}
+            onChange={function(e){if(Number(e.target.value)<0)return;setWdInput(e.target.value);}}
             className="inp" style={{width:80}} />
           <button onClick={saveWD} className="btn btn-ok btn-sm">
             {wdSaved?t.save:t.save}
@@ -5002,7 +5011,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
         <div className="flex items-center gap-2 flex-wrap" style={{marginTop:20,marginBottom:6}}><label style={{fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),flex:1}}>{t.standardRateLabel}</label><Help text={t.standardRateHelp} label={t.standardRateLabel} /></div>
         <div className="flex gap-2 items-center">
           <input type="number" min="0" value={rateInput}
-            onChange={function(e){setRateInput(e.target.value);}}
+            onChange={function(e){if(Number(e.target.value)<0)return;setRateInput(e.target.value);}}
             className="inp" style={{width:80}} />
           <button onClick={saveStdRate} className="btn btn-ok btn-sm">
             {rateSaved?t.save:t.save}
