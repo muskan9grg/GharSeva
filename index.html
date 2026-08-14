@@ -396,6 +396,7 @@ en:{
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'Restored. Reloading…',hmRestoreErr:'Invalid backup file.',
   addStaff:'Add staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly salary',
+  fHoursPerDay:'Hours worked per day',fHoursPerDayHint:'Optional — used for the Overtime rate. Defaults to 5 if left blank.',
   fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
   fphoto:'Photo',fnotes:'Notes / Duties',fnotesPh:'e.g. Cleans all rooms, washes utensils',
   addPhoto:'Add Photo',changePhoto:'Change',
@@ -407,7 +408,7 @@ en:{
   vault:'Documents',vaadhaar:'Aadhaar No.',vaadhaarH:'Only last 4 digits are shown',
   vbank:'Bank Name',vbankPh:'e.g. State Bank of India',vaccount:'Account No.',vifsc:'IFSC Code',
   viewDoc:'View Documents',hideDoc:'Hide',
-  selStaff:'Who is this for?',selStaffPh:'Choose a person',selMonth:'Month',selYear:'Year',calcBtn:'Show salary',
+  selStaff:'Who is this for?',selStaffPh:'Choose a person',selLoanPh:'Choose a loan',selMonth:'Month',selYear:'Year',calcBtn:'Show salary',
   rBase:'Full salary',rLeave:'Less: leave',rAdv:'Less: advance given',
   rLoan:'Less: loan this month',rExp:'Less: money spent for them',rBonus:'Plus: bonus',
   rNet:'Amount to pay',markPaid:'Save as paid',paidOn:'Paid on',
@@ -424,9 +425,12 @@ en:{
   tAdv:'Advance',tLoan:'Loan',tExp:'Expense',tBonus:'Bonus',
   famount:'Amount',fdate:'Date',freason:'Why? (optional)',freasonPh:'e.g. Medical emergency',
   finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
+  loanInstNoteOver:'The last installment will be smaller — {amount} — to settle the loan exactly.',
+  loanInstNoteUnder:'This won’t fully repay the loan in {n} months; {amount} will still remain.',
   noEntries:'No entries. Tap "+ Add Entry".',
   tLoanRepay:'Loan Repayment',fApplyLoan:'Apply Against Loan',noActiveLoans:'No active loans for this staff',
   tExtraWork:'Overtime',tShortHours:'Half Day',fhours:'Hours',frate:'Rate / Hour (₹)',
+  useStdRateLabel:'Use standard rate (₹{rate}/hr)',
   rExtraWork:'Plus: extra work',rShortHours:'Less: half days',aTotExtra:'Overtime',aTotShort:'Half Days',
   voiceCompleteEntry:'Complete This Entry',voiceRerecord:'Re-record',voiceStaffIs:'Detected:',voiceStaffChange:'Change',voiceSaveEntry:'Save Entry',
   tDays:'days',tType:'Type',tAction:'Action',loanDue:'due',perMonth:'/month',perDayCost:'1 day cost:',tLeave:'Leave',tPresent:'Present',tHoliday:'Holiday',
@@ -446,6 +450,7 @@ en:{
   delStaff:'Delete this staff member and all their data?',delEntry:'Delete this entry?',
   savedOk:'Entry saved!',paidOk:'Salary marked as paid!',
   errName:'Please enter the staff name',errAmount:'Please enter an amount',errStaff:'Please select a staff member',
+  errLoanExceeds:'Amount is more than the remaining balance ({bal})',
   tPaidBadge:'Paid',tDueBadge:'Due this month',
   dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',
   dashFullCalendar:'Attendance calendar',
@@ -497,6 +502,8 @@ en:{
   tExtraHelp:'Extra Help',
   fHelperName:'Helper’s Name',fHelperNameHint:'Optional: who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
   generalNoStaff:'General help',
+  extraHelpDivider:'── Not on staff ──',
+  extraHelpLockedHint:'These options don’t apply to Extra Help — pick a staff member above to use them.',
   aTotExtraHelp:'Extra Help Cost',
   extraHelpCardTitle:'Extra Help',extraHelpCardSubtitle:'times used this year',extraHelpEntryCount:'Number of Entries',
   fphoneHint:'Paste from contacts is fine',fphoneHelp:'Spaces, dashes and +91 are removed for you. Only the 10 digits are kept.',
@@ -507,6 +514,7 @@ en:{
   roleManagement:'Staff Roles',addRole:'Add new role…',addRolePh:'e.g. Ironing Maid',addRoleBtn:'Add',
   defaultRole:'Default (locked)',
   workingDaysLabel:'Working days in a month',workingDaysHelp:'One day of leave costs one day of pay. This number decides how much one day is worth: salary divided by this.',
+  standardRateLabel:'Standard hourly rate',standardRateHelp:'A flat rate per hour you can apply to any Overtime entry with one tap, instead of the rate calculated from someone’s salary.',
   waLangLabel:'WhatsApp Message Language',
   waLangHint:'What your staff receive',waLangHelp:'This is not the app language above. That one is for you; this one is for them.',
   waLangBoth:'Hindi + English',waLangHi:'हिंदी only',waLangEn:'English only',
@@ -588,6 +596,7 @@ hi:{
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'रिस्टोर हो गया। लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
   addStaff:'स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन',
+  fHoursPerDay:'रोज़ काम के घंटे',fHoursPerDayHint:'वैकल्पिक — ओवरटाइम की दर के लिए उपयोग होता है। खाली छोड़ने पर 5 माना जाएगा।',
   fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
   fphoto:'फोटो',fnotes:'नोट्स / काम',fnotesPh:'जैसे: सभी कमरे साफ, बर्तन',
   addPhoto:'फोटो जोड़ें',changePhoto:'बदलें',
@@ -599,7 +608,7 @@ hi:{
   vault:'दस्तावेज़',vaadhaar:'आधार नंबर',vaadhaarH:'केवल अंतिम 4 अंक दिखेंगे',
   vbank:'बैंक का नाम',vbankPh:'जैसे: भारतीय स्टेट बैंक',vaccount:'खाता नंबर',vifsc:'IFSC कोड',
   viewDoc:'दस्तावेज़ देखें',hideDoc:'छुपाएं',
-  selStaff:'किसके लिए?',selStaffPh:'व्यक्ति चुनें',selMonth:'महीना',selYear:'साल',calcBtn:'वेतन दिखाएं',
+  selStaff:'किसके लिए?',selStaffPh:'व्यक्ति चुनें',selLoanPh:'लोन चुनें',selMonth:'महीना',selYear:'साल',calcBtn:'वेतन दिखाएं',
   rBase:'पूरा वेतन',rLeave:'घटाया: छुट्टी',rAdv:'घटाया: दिया हुआ अग्रिम',
   rLoan:'घटाया: इस महीने की लोन किस्त',rExp:'घटाया: उनके लिए खर्च',rBonus:'जोड़ा: बोनस',
   rNet:'कितना देना है',markPaid:'दिया हुआ दर्ज करें',paidOn:'भुगतान हुआ',
@@ -616,9 +625,12 @@ hi:{
   tAdv:'अग्रिम',tLoan:'लोन',tExp:'खर्च',tBonus:'बोनस',
   famount:'राशि',fdate:'तारीख',freason:'किसलिए? (ज़रूरी नहीं)',freasonPh:'जैसे: चिकित्सा आपात',
   finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
+  loanInstNoteOver:'आखिरी किस्त छोटी होगी — {amount} — ताकि लोन ठीक-ठीक चुक जाए।',
+  loanInstNoteUnder:'{n} महीनों में लोन पूरा नहीं चुकेगा; {amount} बाकी रहेगा।',
   noEntries:'कोई एंट्री नहीं।',
   tLoanRepay:'लोन चुकाना',fApplyLoan:'लोन में लगाएं',noActiveLoans:'इस स्टाफ का कोई सक्रिय लोन नहीं',
   tExtraWork:'ओवरटाइम',tShortHours:'आधा दिन',fhours:'घंटे',frate:'दर / घंटा (₹)',
+  useStdRateLabel:'मानक दर लगाएं (₹{rate}/घंटा)',
   rExtraWork:'जोड़ा: ज़्यादा काम',rShortHours:'घटाया: आधे दिन',aTotExtra:'ओवरटाइम',aTotShort:'आधे दिन',
   voiceCompleteEntry:'एंट्री पूरी करें',voiceRerecord:'फिर से बोलें',voiceStaffIs:'मिला:',voiceStaffChange:'बदलें',voiceSaveEntry:'एंट्री सहेजें',
   tDays:'दिन',tType:'प्रकार',tAction:'क्रिया',loanDue:'बकाया',perMonth:'/महीना',perDayCost:'1 दिन का वेतन:',tLeave:'छुट्टी',tPresent:'उपस्थित',tHoliday:'अवकाश',
@@ -638,6 +650,7 @@ hi:{
   delStaff:'इस स्टाफ सदस्य का सारा डेटा हटाएं?',delEntry:'यह एंट्री हटाएं?',
   savedOk:'एंट्री सहेजी गई!',paidOk:'वेतन भुगतान दर्ज हो गया!',
   errName:'कृपया स्टाफ का नाम डालें',errAmount:'कृपया राशि डालें',errStaff:'कृपया स्टाफ चुनें',
+  errLoanExceeds:'राशि बकाया रकम ({bal}) से ज़्यादा है',
   tPaidBadge:'भुगतान',tDueBadge:'बाकी है',
   dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',
   dashFullCalendar:'उपस्थिति कैलेंडर',
@@ -689,6 +702,8 @@ hi:{
   tExtraHelp:'अतिरिक्त मदद',
   fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक: मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
   generalNoStaff:'सामान्य मदद',
+  extraHelpDivider:'── स्टाफ में नहीं ──',
+  extraHelpLockedHint:'ये विकल्प अतिरिक्त मदद पर लागू नहीं होते — इस्तेमाल के लिए ऊपर एक स्टाफ सदस्य चुनें।',
   aTotExtraHelp:'अतिरिक्त मदद खर्च',
   extraHelpCardTitle:'अतिरिक्त मदद',extraHelpCardSubtitle:'बार इस साल इस्तेमाल हुई',extraHelpEntryCount:'कितनी बार',
   fphoneHint:'कॉन्टैक्ट्स से पेस्ट कर सकते हैं',fphoneHelp:'स्पेस, डैश और +91 अपने आप हट जाते हैं। सिर्फ़ 10 अंक रहते हैं।',
@@ -699,6 +714,7 @@ hi:{
   roleManagement:'स्टाफ भूमिकाएं',addRole:'नई भूमिका जोड़ें…',addRolePh:'जैसे: प्रेस वाली',addRoleBtn:'जोड़ें',
   defaultRole:'डिफ़ॉल्ट (लॉक)',
   workingDaysLabel:'महीने में काम के दिन',workingDaysHelp:'एक दिन की छुट्टी पर एक दिन का वेतन कटता है। एक दिन कितने का है, यह इसी संख्या से तय होता है: वेतन भाग यह संख्या।',
+  standardRateLabel:'मानक प्रति घंटा दर',standardRateHelp:'हर घंटे की एक तय दर, जिसे आप किसी भी ओवरटाइम एंट्री में एक टैप से लगा सकते हैं, बजाय किसी के वेतन से निकाली गई दर के।',
   waLangLabel:'व्हाट्सएप संदेश की भाषा',
   waLangHint:'स्टाफ को क्या मिलेगा',waLangHelp:'यह ऊपर वाली ऐप भाषा नहीं है। वह आपके लिए है, यह उनके लिए।',
   waLangBoth:'हिंदी + अंग्रेज़ी',waLangHi:'सिर्फ़ हिंदी',waLangEn:'सिर्फ़ अंग्रेज़ी',
@@ -2047,7 +2063,7 @@ function WACard({message,phone,t}){
 /* ── ADD / EDIT STAFF MODAL ─────────────────────────────────── */
 function StaffModal({lang,onClose,onSave,existing}){
   var t=T[lang];
-  var blank={name:'',nickname:'',role:'maid',salary:'',phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
+  var blank={name:'',nickname:'',role:'maid',salary:'',hoursPerDay:'',phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
              aadhaar:'',bankName:'',accountNo:'',ifsc:''};
   var [form,setForm]=useState(existing?Object.assign({nickname:''},existing):blank);
   var [showVault,setShowVault]=useState(false);
@@ -2130,6 +2146,7 @@ function StaffModal({lang,onClose,onSave,existing}){
         )}
       </FLabel>
       <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder={t.salaryPh} /></FLabel>
+      <FLabel label={t.fHoursPerDay} hint={t.fHoursPerDayHint}><FInput type="number" value={form.hoursPerDay} onChange={function(v){set('hoursPerDay',v);}} placeholder="5" /></FLabel>
       {salaryChanged&&(
         <div className="rounded-2xl mb-4" style={{background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px'}}>
           <p style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08',margin:'0 0 4px'}}>
@@ -3653,8 +3670,25 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   var isHalfDay=form.type==='short_hours';
   var selStaff=staffList.find(function(x){return x.id===form.staffId;});
   var dailyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)):0;
-  var defaultRate=selStaff?Math.round(dailyRate/8):0;
+  /* A staff member's own hours-per-day, when they've set one, otherwise a
+     flat assumption - was hardcoded to 8, which suited a full-time helper
+     but overstated the hourly rate for anyone working shorter days. */
+  var hoursPerDay=selStaff&&Number(selStaff.hoursPerDay)>0?Number(selStaff.hoursPerDay):5;
+  var defaultRate=selStaff?Math.round(dailyRate/hoursPerDay):0;
   var halfDayAmt=selStaff?Math.round(dailyRate/2):0;
+  var standardRate=Number(getSettings().standardHourlyRate)||0;
+  var [useStdRate,setUseStdRate]=useState(false);
+  /* Toggling this feeds the corresponding suggestion into the rate field
+     right away; typing over it afterwards is the manual override, same as
+     the field already supports today. */
+  function toggleStdRate(){
+    setUseStdRate(function(v){
+      var next=!v;
+      var suggested=next&&standardRate?standardRate:defaultRate;
+      if(suggested) set('rate',String(suggested));
+      return next;
+    });
+  }
   var effectiveRate=Number(form.rate)||defaultRate;
   var computedAmount=isTimeBased&&form.hours?Math.round(Number(form.hours)*effectiveRate):0;
 
@@ -3664,9 +3698,25 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   var autoFillReady=useRef(!existing);
   useEffect(function(){
     if(!autoFillReady.current){ autoFillReady.current=true; return; }
-    if(isTimeBased&&form.staffId&&defaultRate) set('rate',String(defaultRate));
+    if(isTimeBased&&form.staffId){
+      var suggested=useStdRate&&standardRate?standardRate:defaultRate;
+      if(suggested) set('rate',String(suggested));
+    }
     if(isHalfDay&&form.staffId&&halfDayAmt) set('amount',String(halfDayAmt));
   },[form.staffId,form.type]);
+
+  /* The monthly installment is suggested from amount ÷ count the moment
+     both are known, so typing the count is normally the last thing needed -
+     but once the user edits the installment by hand, that choice sticks and
+     further amount/count changes stop overwriting it. */
+  var installmentTouched=useRef(!!(existing&&existing.type==='loan'&&existing.installment));
+  useEffect(function(){
+    if(form.type!=='loan'||installmentTouched.current) return;
+    var n=Number(form.totalInstallments);
+    if(n>0&&form.amount) set('installment',String(Math.round(Number(form.amount)/n)));
+  },[form.amount,form.totalInstallments,form.type]);
+  var loanInstMismatch=form.type==='loan'&&Number(form.installment)>0&&Number(form.totalInstallments)>0&&Number(form.amount)>0
+    ?Math.round(Number(form.installment)*Number(form.totalInstallments)-Number(form.amount)):0;
 
   var activeLoans=(ledger||[]).filter(function(e){return e.staffId===form.staffId&&e.type==='loan'&&e.status==='active';});
 
@@ -3710,6 +3760,11 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
     if(isTimeBased&&(!form.hours||computedAmount<=0)){setErrMsg(t.errAmount);return;}
     if(!isTimeBased&&form.type!=='loan_repay'&&!form.amount){setErrMsg(t.errAmount);return;}
     if(form.type==='loan_repay'&&(!form.amount||!form.targetLoanId)){setErrMsg(t.errAmount);return;}
+    if(form.type==='loan_repay'&&form.targetLoanId){
+      var targetLoan=activeLoans.find(function(ln){return ln.id===form.targetLoanId;});
+      var bal=targetLoan?loanRemaining(targetLoan):0;
+      if(Number(form.amount)>bal){setErrMsg(t.errLoanExceeds.replace('{bal}',fmt(bal)));return;}
+    }
     if(showPaidBy&&form.paidBy==='other'&&!form.paidByName.trim()){setErrMsg(t.errPayerName);return;}
     var finalAmount=isTimeBased?computedAmount:Number(form.amount);
     /* the large-amount check guards against a slip while entering something
@@ -3739,8 +3794,12 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
 
   /* Loans and repayments are entangled — a repayment mutates the loan it
      points at — so when editing, the type can move freely among the simple
-     types but never into or out of those two. */
+     types but never into or out of those two. Extra Help blocks every type
+     outright: it is money with no staff member behind it, and none of these
+     types make sense without one — the person field is where it is chosen
+     back out of Extra Help again. */
   function typeChangeBlocked(key){
+    if(form.type==='extra_help') return true;
     if(!existing) return false;
     var tangled=['loan','loan_repay'];
     return tangled.indexOf(existing.type)>-1 || tangled.indexOf(key)>-1;
@@ -3779,7 +3838,10 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
           {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
           {/* Not a real person — money with no staff member behind it, kept
               apart from the type grid below since it isn't really "a kind of
-              transaction" the way those are. */}
+              transaction" the way those are. The divider above it is
+              disabled and unselectable, existing only so the option below
+              reads as visibly separate from the real names above it. */}
+          <option value="__divider__" disabled>{t.extraHelpDivider}</option>
           <option value={EXTRA_HELP_SENTINEL}>{t.generalNoStaff}</option>
         </FSelect>
       </FLabel>
@@ -3788,6 +3850,11 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
           affects a staff member's pay (see calcSalary), so it never really
           was "a kind of transaction" alongside these. Six types left, back to
           a clean 3-column, 2-row grid. */}
+      {form.type==='extra_help' && (
+        <div className="mb-3 px-3 py-2 rounded-xl" style={{background:'#EAE4F5',border:'1px solid var(--purple)'}}>
+          <p style={{fontSize:fsr(13),color:'#3A2E7A',fontWeight:700}} className="flex items-center gap-2"><Icon name="extrahelp" size={15} />{t.extraHelpLockedHint}</p>
+        </div>
+      )}
       <div className="mb-4">
         <div className="mb-2">{typeBtn('advance',true)}</div>
         <div className="grid grid-cols-3 gap-2 mb-2">
@@ -3801,6 +3868,21 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
             <FLabel label={t.fhours} req={true} style={{flex:1}}><FInput type="number" value={form.hours} onChange={function(v){set('hours',v);}} placeholder="e.g. 2.5" /></FLabel>
             <FLabel label={t.frate} style={{flex:1}}><FInput type="number" value={form.rate} onChange={function(v){set('rate',v);}} placeholder={String(defaultRate)} /></FLabel>
           </div>
+          {standardRate>0 && (
+            <button type="button" onClick={toggleStdRate} aria-pressed={useStdRate}
+              style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'8px 12px',
+                marginBottom:14,marginTop:-8,borderRadius:10,cursor:'pointer',
+                border:'2px solid '+(useStdRate?'var(--accent)':'var(--border)'),
+                background:useStdRate?'var(--accent)':'var(--surface)',
+                fontFamily:'Nunito,sans-serif',fontWeight:700,fontSize:fsr(13),
+                color:useStdRate?'#fff':'var(--ink2)'}}>
+              <span style={{width:18,height:18,borderRadius:5,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                border:'2px solid '+(useStdRate?'#fff':'var(--border)'),background:useStdRate?'rgba(255,255,255,.2)':'none'}}>
+                {useStdRate&&<Icon name="check" size={13} strokeWidth={3} />}
+              </span>
+              {t.useStdRateLabel.replace('{rate}',standardRate)}
+            </button>
+          )}
           {computedAmount>0 && (
             <div className="mb-4 px-3 py-2 rounded-xl flex justify-between items-center" style={{background:form.type==='extra_work'?'#D8EEE2':'#FDF3DC'}}>
               <span style={{fontSize:fsr(13),color:'var(--ink2)'}}>{t.famount}</span>
@@ -3837,8 +3919,17 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
 
       {form.type==='loan' && (
         <div>
-          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){set('installment',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
           <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" disabled={loanLocked} /></FLabel>
+          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){installmentTouched.current=true;set('installment',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
+          {loanInstMismatch!==0 && (
+            <div className="mb-4 px-3 py-2 rounded-xl" style={{background:'#FDF3DC',marginTop:-8}}>
+              <p style={{fontSize:fsr(12.5),color:'#8B5E08',fontWeight:600,lineHeight:1.4}}>
+                {loanInstMismatch>0
+                  ?t.loanInstNoteOver.replace('{amount}',fmt(Number(form.installment)-loanInstMismatch))
+                  :t.loanInstNoteUnder.replace('{n}',form.totalInstallments).replace('{amount}',fmt(-loanInstMismatch))}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -3847,7 +3938,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
           {activeLoans.length===0
             ? <p style={{fontSize:fsr(13),color:'var(--muted)',padding:'8px 0'}}>{t.noActiveLoans}</p>
             : <FSelect value={form.targetLoanId} onChange={function(v){set('targetLoanId',v);}}>
-                <option value="">{t.selStaffPh}</option>
+                <option value="">{t.selLoanPh}</option>
                 {activeLoans.map(function(ln){
                   var bal=Math.max(0,ln.amount-(ln.paidInstallments||0)*(ln.installment||0)-(ln.manualRepaid||0));
                   return <option key={ln.id} value={ln.id}>{fmtD(ln.date)} · {fmt(ln.amount)} (bal: {fmt(bal)})</option>;
@@ -4378,7 +4469,8 @@ function VoicePartialEntry({parsed,staffList,lang,workingDays,onSave,onRerecord}
 
   var selStaff=staffList.find(function(x){return x.id===staffId;});
   var dailyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)):0;
-  var hourlyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)/8):0;
+  var hoursPerDay=selStaff&&Number(selStaff.hoursPerDay)>0?Number(selStaff.hoursPerDay):5;
+  var hourlyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)/hoursPerDay):0;
   var halfDayAmt=Math.round(dailyRate/2);
 
   useEffect(function(){
@@ -4656,6 +4748,8 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   var [homeErr,setHomeErr]=useState('');
   var [wdInput,setWdInput]=useState(String(workingDays));
   var [wdSaved,setWdSaved]=useState(false);
+  var [rateInput,setRateInput]=useState(String(getSettings().standardHourlyRate||''));
+  var [rateSaved,setRateSaved]=useState(false);
   var [waLangSel,setWaLangSel]=useState(getSettings().waLang||'both');
   var [restoreConfirm,setRestoreConfirm]=useState(null);
   var [restoreMsg,setRestoreMsg]=useState('');
@@ -4758,6 +4852,14 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     setWdInput(String(n));
     setWdSaved(true);
     setTimeout(function(){setWdSaved(false);},2000);
+  }
+
+  function saveStdRate(){
+    var n=Math.max(0,Number(rateInput)||0);
+    saveSettings(Object.assign({},getSettings(),{standardHourlyRate:n}));
+    setRateInput(n?String(n):'');
+    setRateSaved(true);
+    setTimeout(function(){setRateSaved(false);},2000);
   }
 
   function toggleLang(){
@@ -4894,6 +4996,16 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
             className="inp" style={{width:80}} />
           <button onClick={saveWD} className="btn btn-ok btn-sm">
             {wdSaved?t.save:t.save}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap" style={{marginTop:20,marginBottom:6}}><label style={{fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),flex:1}}>{t.standardRateLabel}</label><Help text={t.standardRateHelp} label={t.standardRateLabel} /></div>
+        <div className="flex gap-2 items-center">
+          <input type="number" min="0" value={rateInput}
+            onChange={function(e){setRateInput(e.target.value);}}
+            className="inp" style={{width:80}} />
+          <button onClick={saveStdRate} className="btn btn-ok btn-sm">
+            {rateSaved?t.save:t.save}
           </button>
         </div>
 
