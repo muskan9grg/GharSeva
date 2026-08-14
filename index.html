@@ -383,10 +383,10 @@ en:{
   app:'GharSeva',tag:'Household Staff Manager',
   addHome:'Add household',homeName:'Household name',homeEx:'e.g. Nagpur, Main House',
   noHomes:'No households yet.',manageHomes:'Households',
-  navStaff:'Staff',navLeaves:'Attend',navVoice:'Voice',
+  navStaff:'Staff',navLeaves:'Attendance calendar',navVoice:'Voice',
   navSettings:'Settings',navSettingsTitle:'App Settings',
   hmMenu:'Menu',hmReports:'Reports',hmTools:'Tools',hmConfig:'Configuration',
-  hmAnnual:'Annual Summary',hmVoice:'Voice Entry',hmSettings:'App Settings',hmHomes:'Households',hmRoles:'Manage Roles',
+  hmVoice:'Voice Entry',hmVoiceFabToggle:'Floating mic button on other screens',hmSettings:'App Settings',hmHomes:'Households',hmRoles:'Manage Roles',
   hmData:'Data',hmExportMonth:'This Month (Excel)',hmExportYear:'Full Year (Excel)',hmBackup:'Download Backup',hmRestore:'Restore from Backup',
   exportSummaryTitle:'Household Summary',exportGeneratedOn:'Generated On',exportStaffCount:'Total Staff',exportMonthCol:'Month',
   exportKeyFigures:'AT A GLANCE',exportTotal:'TOTAL',
@@ -575,10 +575,10 @@ hi:{
   app:'घरसेवा',tag:'घरेलू स्टाफ मैनेजर',
   addHome:'घर जोड़ें',homeName:'घर का नाम',homeEx:'जैसे: नागपुर, मुख्य घर',
   noHomes:'कोई घर नहीं।',manageHomes:'घर प्रबंधन',
-  navStaff:'स्टाफ',navLeaves:'उपस्थिति',navVoice:'आवाज़',
+  navStaff:'स्टाफ',navLeaves:'उपस्थिति कैलेंडर',navVoice:'आवाज़',
   navSettings:'सेटिंग',navSettingsTitle:'एप्प सेटिंग्स',
   hmMenu:'मेनू',hmReports:'रिपोर्ट',hmTools:'टूल्स',hmConfig:'सेटिंग्स',
-  hmAnnual:'वार्षिक सारांश',hmVoice:'आवाज़ एंट्री',hmSettings:'एप्प सेटिंग्स',hmHomes:'घर प्रबंधन',hmRoles:'भूमिकाएं',
+  hmVoice:'आवाज़ एंट्री',hmVoiceFabToggle:'अन्य स्क्रीन पर फ्लोटिंग माइक बटन',hmSettings:'एप्प सेटिंग्स',hmHomes:'घर प्रबंधन',hmRoles:'भूमिकाएं',
   hmData:'डेटा',hmExportMonth:'इस महीने की Excel',hmExportYear:'पूरे साल की Excel',hmBackup:'बैकअप डाउनलोड करें',hmRestore:'बैकअप से रिस्टोर करें',
   exportSummaryTitle:'घर का सारांश',exportGeneratedOn:'जनरेट किया गया',exportStaffCount:'कुल स्टाफ',exportMonthCol:'महीना',
   exportKeyFigures:'एक नज़र में',exportTotal:'कुल',
@@ -5139,24 +5139,19 @@ function FeedbackTab({lang,guestMode,user}){
 }
 
 /* ── HAMBURGER MENU ─────────────────────────────────────────── */
-function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
+function HamburgerMenu({open,onClose,setTab,lang,voiceFabOn,onVoiceFabChange}){
   var t=T[lang];
-  var mc=React.useContext(MembersCtx);
-  var [showExport,setShowExport]=useState(false);
-  var [busy,setBusy]=useState('');
-  var fileRef=useRef(null);
 
   if(!open) return null;
 
   function go(tabKey){ setTab(tabKey); onClose(); }
 
   /* Attendance has no bar of its own - Home carries the daily case, this is
-     for the full calendar - so it is listed here instead. */
+     for the full calendar - so it is listed here instead. Annual Summary and
+     the Excel export used to have rows of their own too, but both just
+     duplicated buttons already on the Reports tab, so they are gone. */
   var menuItems=[
     {icon:'calendar',label:t.navLeaves,  action:function(){go('leaves');}},
-    {icon:'reports', label:t.hmAnnual,   action:function(){go('reports');}},
-    {icon:'mic',     label:t.hmVoice,    action:function(){go('voice');}},
-    {icon:'upload',  label:t.hmExportMonth, action:function(){setShowExport(function(v){return !v;});}},
     {icon:'chat',    label:t.hmFeedback, action:function(){go('feedback');}},
     {icon:'settings',label:t.hmSettings, action:function(){go('settings');}},
   ];
@@ -5179,38 +5174,25 @@ function HamburgerMenu({open,onClose,setTab,lang,homeId,workingDays}){
         <div style={{display:'flex',justifyContent:'center',paddingTop:14,paddingBottom:4}}>
           <div style={{width:44,height:4,background:'var(--border)',borderRadius:4}} />
         </div>
-        {menuItems.map(function(item){
-          var isExport=item.icon==='upload';
-          return (
-            <div key={item.label}>
-              {rowBtn(item)}
-              {isExport&&showExport&&(
-                <div className="fade-in flex gap-3 px-4 py-3" style={{background:'var(--surface2)',borderBottom:'1px solid var(--border)'}}>
-                  {/* the spreadsheet library is fetched on first use, so show
-                      progress rather than letting the button look dead */}
-                  <button disabled={!!busy} onClick={function(){
-                      setBusy('month');
-                      exportReport(homeId,'month',lang,mc.members,workingDays,function(st){
-                        setBusy(''); if(st!=='working') onClose();
-                      });
-                    }}
-                    style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
-                    {busy==='month'?t.exportWorking:t.hmExportMonth}
-                  </button>
-                  <button disabled={!!busy} onClick={function(){
-                      setBusy('year');
-                      exportReport(homeId,'year',lang,mc.members,workingDays,function(st){
-                        setBusy(''); if(st!=='working') onClose();
-                      });
-                    }}
-                    style={{flex:1,padding:'10px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
-                    {busy==='year'?t.exportWorking:t.hmExportYear}
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {rowBtn(menuItems[0])}
+        {/* Tapping the row still opens the full Voice Entry screen; the switch
+            beside it is a second, separate thing - whether the floating mic
+            button shows up on other screens - so it gets its own control
+            rather than a second menu row. */}
+        <div style={{display:'flex',alignItems:'center',gap:14,width:'100%',minHeight:56,padding:'0 20px',borderBottom:'1px solid var(--border)'}}>
+          <button onClick={function(){go('voice');}}
+            style={{display:'flex',alignItems:'center',gap:14,flex:1,minHeight:56,padding:0,background:'none',border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif',color:'var(--ink)',fontSize:fsr(16),fontWeight:700,textAlign:'left'}}>
+            <span style={{width:34,display:'flex',justifyContent:'center',color:'var(--accent)'}}><Icon name="mic" size={24} /></span>
+            <span style={{flex:1}}>{t.hmVoice}</span>
+          </button>
+          <button onClick={function(){ onVoiceFabChange(!voiceFabOn); }}
+            role="switch" aria-checked={voiceFabOn} aria-label={t.hmVoiceFabToggle} title={t.hmVoiceFabToggle}
+            style={{width:44,height:26,borderRadius:13,border:'none',padding:0,flexShrink:0,cursor:'pointer',background:voiceFabOn?'var(--accent)':'var(--border)',position:'relative',transition:'background .15s'}}>
+            <span style={{position:'absolute',top:3,left:voiceFabOn?21:3,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left .15s',boxShadow:'0 1px 3px rgba(0,0,0,.25)'}} />
+          </button>
+        </div>
+        {rowBtn(menuItems[1])}
+        {rowBtn(menuItems[2])}
         <button onClick={onClose}
           style={{width:'100%',padding:'16px',background:'none',border:'none',color:'var(--ink2)',fontSize:fsr(14),fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginTop:4}}>
           {t.cancel}
@@ -5856,6 +5838,11 @@ function App(){
   var [homeId,setHomeId]=useState('');
   var [tab,setTab]=useState('home');
   var [voiceOpen,setVoiceOpen]=useState(false);
+  var [voiceFabOn,setVoiceFabOn]=useState(function(){return getSettings().voiceFabOn!==false;});
+  function onVoiceFabChange(v){
+    setVoiceFabOn(v);
+    saveSettings(Object.assign({},getSettings(),{voiceFabOn:v}));
+  }
   var micSupported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   /* Thin wrapper over setTab that also carries a staff id along for the
      screens that can open pre-aimed at one person (Money's Pay Salary side). */
@@ -6181,9 +6168,9 @@ function App(){
           browser has no speech recognition — a button that can never work is
           worse than no button at all. */}
       <BottomNav tab={tab} setTab={setTab} lang={lang}
-        fab={micSupported&&!showTutorial&&['home','staff','money','reports','leaves'].indexOf(tab)>-1
+        fab={voiceFabOn&&micSupported&&!showTutorial&&['home','staff','money','reports','leaves'].indexOf(tab)>-1
           ? <MicFab lang={lang} onClick={function(){setVoiceOpen(true);}} /> : null} />
-      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={goTab} lang={lang} homeId={homeId} workingDays={workingDays} />
+      <HamburgerMenu open={menuOpen} onClose={function(){setMenuOpen(false);}} setTab={goTab} lang={lang} voiceFabOn={voiceFabOn} onVoiceFabChange={onVoiceFabChange} />
       {showTutorial && <TutorialOverlay lang={lang} tab={tab} onNavigate={setTab} onDone={finishTutorial} />}
     </div>
     </MembersCtx.Provider>
