@@ -6180,10 +6180,16 @@ function App(){
             </span>
           </button>
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
-            {/* Home has its own place in the bar under the simple layout, and
-                language is a set-once choice that lives in Settings, so the
-                header drops from four icons to two. Font size stays: it is the
-                one control a reader may want at any moment. */}
+            {/* Home has its own place in the bar under the simple layout, so
+                only classic needs a shortcut back to it here. Language used to
+                have its own quick-toggle button too, sitting right next to
+                this one - but Settings already has a full "Language" section
+                that does the exact same thing, so classic layout was showing
+                the identical control in two places while simple showed it in
+                only one. Settings is the one a user would look for it in, so
+                that is the copy that stays; this one is gone from both
+                layouts now, not just simple. Font size stays regardless: it
+                is the one control a reader may want at any moment. */}
             {layout!=='simple'&&tab!=='home'&&<button onClick={function(){setTab('home');}} title="Home" aria-label="Home"
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 11px',color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,minHeight:40,display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Icon name="home" size={22} />
@@ -6192,10 +6198,6 @@ function App(){
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 10px',fontWeight:800,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,lineHeight:1}}>
               {fontSz==='normal'?'Aa':fontSz==='large'?'A+':'A++'}
             </button>
-            {layout!=='simple'&&<button onClick={toggleLang}
-              style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'6px 14px',fontWeight:700,fontSize:fsr(13),color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-              {lang==='en'?'हिं':'EN'}
-            </button>}
             <button onClick={function(){setMenuOpen(true);}} title="Menu" aria-label="Menu" data-tut="menu"
               style={{background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'8px 11px',color:'#fff',cursor:'pointer',fontFamily:'Nunito,sans-serif',minWidth:44,minHeight:40,display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Icon name="menu" size={22} />
