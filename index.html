@@ -3633,13 +3633,31 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
   var blank={staffId:prefillStaffId||'',type:prefillType||'advance',amount:'',date:todayStr(),reason:'',installment:'',totalInstallments:'',targetLoanId:'',hours:'',rate:'',paidBy:mc.uid||'',paidByName:'',helperName:''};
   var [form,setForm]=useState(existing?{
-    staffId:existing.staffId||'',type:existing.type,amount:String(existing.amount||''),
+    /* Extra Help used to be linkable to a real staff member; that link never
+       did anything (calcSalary excludes it from pay either way), so it has
+       been retired. An entry saved during the brief window that allowed it
+       is migrated back to unlinked the moment it is opened here. */
+    staffId:existing.type==='extra_help'?'':(existing.staffId||''),type:existing.type,amount:String(existing.amount||''),
     date:existing.date||todayStr(),reason:existing.reason||'',
     installment:String(existing.installment||''),totalInstallments:String(existing.totalInstallments||''),
     targetLoanId:existing.targetLoanId||'',hours:String(existing.hours||''),rate:String(existing.rate||''),
     paidBy:existing.paidBy||'',paidByName:existing.paidByName||'',helperName:existing.helperName||''
   }:blank);
   function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
+  /* Extra Help is offered as a choice in the person field rather than as its
+     own type button, since it is not really "a kind of transaction" the way
+     the others are — it is simply money with no staff member behind it. The
+     sentinel never touches form.staffId directly; the select's displayed
+     value is derived from form.type instead, so what is stored always
+     matches what gets saved. */
+  var EXTRA_HELP_SENTINEL='__extra_help__';
+  function onPersonChange(v){
+    if(v===EXTRA_HELP_SENTINEL){
+      setForm(function(f){return Object.assign({},f,{staffId:'',type:'extra_help'});});
+    } else {
+      setForm(function(f){return Object.assign({},f,{staffId:v,type:f.type==='extra_help'?'advance':f.type});});
+    }
+  }
   /* Once a loan has been repaid against — by instalment or by hand — its
      amount and instalment lock, so the principal can't be edited below what
      has already come back and leave the balance impossible to reconcile.
@@ -3734,7 +3752,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
     short_hours:{active:{background:'#FDF3DC',border:'2px solid var(--warn)',color:'#8B5E08'},inactive:inactive},
     extra_help: {active:{background:'#EAE4F5',border:'2px solid var(--purple)',color:'#3A2E7A'},inactive:inactive},
   };
-  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay','extra_help'];
+  var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
   var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
   /* Loans and repayments are entangled — a repayment mutates the loan it
@@ -3774,18 +3792,20 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         </div>
       )}
       <FLabel label={t.selStaff} req={form.type!=='extra_help'}>
-        <FSelect value={form.staffId} onChange={function(v){set('staffId',v);}}>
-          <option value="">{form.type==='extra_help'?t.generalNoStaff:t.selStaffPh}</option>
+        <FSelect value={form.type==='extra_help'?EXTRA_HELP_SENTINEL:form.staffId} onChange={onPersonChange}>
+          <option value="">{t.selStaffPh}</option>
           {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
+          {/* Not a real person — money with no staff member behind it, kept
+              apart from the type grid below since it isn't really "a kind of
+              transaction" the way those are. */}
+          <option value={EXTRA_HELP_SENTINEL}>{t.generalNoStaff}</option>
         </FSelect>
       </FLabel>
 
-      {/* Extra Help used to sit apart in its own full-width row, at the same
-          visual weight as Advance above it - the single most common entry -
-          even though it is a rare, secondary one. It is not tied to a staff
-          member's regular pay (see calcSalary), which is why it still does
-          not require picking a person, but that is a math distinction, not a
-          reason to make the button itself bigger than the rest. */}
+      {/* Extra Help is chosen above, in the person field, not here - it never
+          affects a staff member's pay (see calcSalary), so it never really
+          was "a kind of transaction" alongside these. Six types left, back to
+          a clean 3-column, 2-row grid. */}
       <div className="mb-4">
         <div className="mb-2">{typeBtn('advance',true)}</div>
         <div className="grid grid-cols-3 gap-2 mb-2">
@@ -4138,36 +4158,37 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     var tBon  =yLed.filter(function(e){return e.type==='bonus';      }).reduce(function(a,e){return a+e.amount;},0);
     var tExtra=yLed.filter(function(e){return e.type==='extra_work'; }).reduce(function(a,e){return a+e.amount;},0);
     var tShort=yLed.filter(function(e){return e.type==='short_hours';}).reduce(function(a,e){return a+e.amount;},0);
-    /* informational only — never subtracted from this staff member's own
-       pay; extra_help can also carry no staffId at all (see calcSalary's
-       filter, which only ever matches by staffId so this never applies) */
-    var tExtraHelp=yLed.filter(function(e){return e.type==='extra_help';}).reduce(function(a,e){return a+e.amount;},0);
     var aLoan=sLed.filter(function(e){return e.type==='loan'&&e.status==='active';});
     var lBal=aLoan.reduce(function(a,e){return a+Math.max(0,e.amount-(e.paidInstallments||0)*(e.installment||0)-(e.manualRepaid||0));},0);
     var paid=payments.filter(function(p){return p.staffId===s.id&&p.year===selYear;}).reduce(function(a,p){return a+p.amount;},0);
     /* Twelve times the current salary would misreport any year containing a
        raise, so the estimate adds up each month at the rate in force then. */
     var estYear=0; for(var em=1;em<=12;em++) estYear+=salaryFor(s,selYear,em);
-    return {id:s.id,name:s.name,role:s.role,tSal:paid||estYear,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort,tExtraHelp:tExtraHelp};
+    /* Extra Help is deliberately absent here - it is no longer ever tied to a
+       staff member, so a per-staff total for it would only ever read zero.
+       It still appears once, below, in the single household-wide card. */
+    return {id:s.id,name:s.name,role:s.role,tSal:paid||estYear,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort};
   });
 
-  /* Extra Help entries not tied to any current staff member (no staffId, or
-     one that no longer matches — e.g. that staff member was later deleted)
-     never get counted in any card above, so they'd otherwise be invisible
-     as a category. One combined card covers them all, broken down by
-     helper name when more than one has been used. */
+  /* Extra Help never gets a per-staff card above — it is never tied to a
+     staff member's own pay, so a per-staff total for it would only ever read
+     zero. One combined card covers all of it instead, broken down by name
+     when more than one has been used. A handful of entries from the brief
+     window when linking to a real staff member was possible may still carry
+     a staffId; they are included here too rather than going uncounted, and
+     are labelled with that staff member's real name rather than "General
+     help" in the breakdown below. */
   var unlinkedExtraHelp=useMemo(function(){
     var yPfx=selYear+'-';
-    var staffIds=staff.map(function(s){return s.id;});
     var entries=ledger.filter(function(e){
-      return e.type==='extra_help'&&e.date&&e.date.startsWith(yPfx)
-        &&(!e.staffId||staffIds.indexOf(e.staffId)===-1);
+      return e.type==='extra_help'&&e.date&&e.date.startsWith(yPfx);
     });
     if(entries.length===0) return null;
     var total=entries.reduce(function(a,e){return a+(e.amount||0);},0);
     var buckets={};
     entries.forEach(function(e){
-      var raw=(e.helperName&&e.helperName.trim())||null;
+      var linked=staff.find(function(s){return s.id===e.staffId;});
+      var raw=(linked&&linked.name)||(e.helperName&&e.helperName.trim())||null;
       var key=raw?raw.toLowerCase():'__unnamed__';
       if(!buckets[key]) buckets[key]={name:raw||t.generalNoStaff,total:0};
       buckets[key].total+=(e.amount||0);
@@ -4311,7 +4332,6 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
                 {l:t.aTotLoan,  v:s.lBal,   k:'lBal'},
                 {l:t.aTotExtra, v:s.tExtra, k:'tExtra'},
                 {l:t.aTotShort, v:s.tShort, k:'tShort'},
-                {l:t.aTotExtraHelp, v:s.tExtraHelp, k:'tExtraHelp'},
               ].map(function(row){
                 return (
                   <div key={row.l} className="rounded-xl p-2" style={{background:'var(--surface2)'}}>
