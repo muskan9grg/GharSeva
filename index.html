@@ -532,6 +532,12 @@ en:{
   waiveOff:'Skip this month',
   waiveUndo:'Put it back',
   waiveNote:'{n} skipped this month.',
+  reduceEdit:'Collect a smaller amount this month',
+  reduceAmountLabel:'Amount to collect this month',
+  reduceSave:'Save',reduceCancel:'Cancel',reduceRevert:'Back to full amount',
+  reduceNote:'{amount} carried to next month.',
+  errReduceMin:'Amount must be more than ₹0',
+  errReduceMax:'Amount must be less than the full amount ({full})',
   undoPay:'Undo this payment',
   undoConfirm:'Undo this salary payment?',
   undoWillRemove:'The record of {amt} paid will be removed.',
@@ -732,6 +738,12 @@ hi:{
   waiveOff:'इस महीने छोड़ें',
   waiveUndo:'वापस लगाएं',
   waiveNote:'इस महीने {n} छोड़ी गई है।',
+  reduceEdit:'इस महीने कम राशि लें',
+  reduceAmountLabel:'इस महीने कितनी राशि लेनी है',
+  reduceSave:'सहेजें',reduceCancel:'रद्द करें',reduceRevert:'पूरी राशि पर वापस जाएं',
+  reduceNote:'{amount} अगले महीने जुड़ेगा।',
+  errReduceMin:'राशि ₹0 से ज़्यादा होनी चाहिए',
+  errReduceMax:'राशि पूरी राशि ({full}) से कम होनी चाहिए',
   undoPay:'यह भुगतान वापस लें',
   undoConfirm:'क्या यह वेतन भुगतान वापस लेना है?',
   undoWillRemove:'{amt} भुगतान का रिकॉर्ड हट जाएगा।',
@@ -1208,14 +1220,38 @@ const saveUndos=(h,u)=>lsSet(SK.undos(h),u);
    A charge the employer has cancelled for one staff member for one month —
    "don't cut the loan this month". Keyed by staff+month, holding the names of
    the deduction lines to skip. Waiving is a decision about the household, not
-   about one phone, so it syncs like everything else. */
+   about one phone, so it syncs like everything else.
+
+   Each entry started out as a bare array of waived keys; it now also carries
+   a `reduced` map (deduction key -> a custom lower amount for that month,
+   "take some, not all, not none" - a different act from waiving, which
+   cancels a charge outright). Old entries are still bare arrays, so every
+   reader below treats an array as "no reductions" rather than rewriting
+   existing data. */
 function waiveKey(staffId,year,month){ return staffId+'_'+year+'_'+month; }
 function getWaived(homeId,staffId,year,month){
-  return getWaivers(homeId)[waiveKey(staffId,year,month)]||[];
+  var e=getWaivers(homeId)[waiveKey(staffId,year,month)];
+  if(!e) return [];
+  return Array.isArray(e)?e:(e.waived||[]);
 }
 function setWaived(homeId,staffId,year,month,list){
   var all=getWaivers(homeId), k=waiveKey(staffId,year,month);
-  if(list&&list.length) all[k]=list; else delete all[k];
+  var cur=all[k], curReduced=(cur&&!Array.isArray(cur)&&cur.reduced)||{};
+  var hasWaived=!!(list&&list.length), hasReduced=Object.keys(curReduced).length>0;
+  if(hasWaived||hasReduced) all[k]={waived:hasWaived?list:[],reduced:curReduced};
+  else delete all[k];
+  fbSaveWaivers(homeId,all);
+}
+function getReduced(homeId,staffId,year,month){
+  var e=getWaivers(homeId)[waiveKey(staffId,year,month)];
+  return (e&&!Array.isArray(e)&&e.reduced)||{};
+}
+function setReduced(homeId,staffId,year,month,map){
+  var all=getWaivers(homeId), k=waiveKey(staffId,year,month);
+  var cur=all[k], curWaived=cur?(Array.isArray(cur)?cur:(cur.waived||[])):[];
+  var hasReduced=!!(map&&Object.keys(map).length), hasWaived=curWaived.length>0;
+  if(hasWaived||hasReduced) all[k]={waived:curWaived,reduced:hasReduced?map:{}};
+  else delete all[k];
   fbSaveWaivers(homeId,all);
 }
 
@@ -1267,7 +1303,10 @@ function fbSaveWaivers(homeId, newW){
   saveWaivers(homeId,newW);
   if(!FIREBASE_ENABLED||!fbDb) return;
   var batch=fbDb.batch();
-  Object.keys(newW).forEach(function(k){ batch.set(fbDb.doc('homes/'+homeId+'/waivers/'+k),{items:newW[k]}); });
+  Object.keys(newW).forEach(function(k){
+    var v=newW[k], w=Array.isArray(v)?v:(v.waived||[]), r=Array.isArray(v)?{}:(v.reduced||{});
+    batch.set(fbDb.doc('homes/'+homeId+'/waivers/'+k),{items:w,reduced:r});
+  });
   Object.keys(old).forEach(function(k){ if(!newW[k]) batch.delete(fbDb.doc('homes/'+homeId+'/waivers/'+k)); });
   batch.commit().catch(function(e){console.warn('fbSaveWaivers:',e);});
 }
@@ -1606,6 +1645,13 @@ function withSalaryChange(staff,newAmount,fromYm){
    member, so there is nothing to cancel. */
 const DEDUCTION_KEYS=['leave','advances','expenses','loan','shortHours','carry'];
 
+/* Of the lines above, only these represent genuine recoverable debt - money
+   actually owed back - so only these can be reduced to a custom partial
+   amount instead of taken in full or waived outright. Leave is not a debt
+   (a day simply not worked); carry is already the output of this same
+   shortfall mechanism, so reducing it would just be carrying a carry. */
+const REDUCIBLE_KEYS=['advances','loan'];
+
 /* What last month could not recover, now due this month. Only a month that
    was actually paid carries anything: an unsettled month is still open, so
    its shortfall is not yet a debt. */
@@ -1647,9 +1693,11 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
     carry:      getCarryIn(homeId,staff.id,year,month)
   };
   var waived=homeId?getWaived(homeId,staff.id,year,month):[];
+  var reduced=homeId?getReduced(homeId,staff.id,year,month):{};
   var eff={}, totalDeduct=0;
   DEDUCTION_KEYS.forEach(function(k){
-    eff[k]=waived.indexOf(k)>=0?0:raw[k];
+    var r=REDUCIBLE_KEYS.indexOf(k)>=0?reduced[k]:undefined;
+    eff[k]=waived.indexOf(k)>=0?0:(r>0&&r<raw[k]?r:raw[k]);
     totalDeduct+=eff[k];
   });
 
@@ -1664,7 +1712,14 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
           bonuses:bonuses,extraWork:extraWork,
           loanBal:getLoanBal(staff.id,ledger),
           fullRate:fullRate,partMonth:emp.partial,partDays:emp.days,monthDays:emp.monthDays,
-          raw:raw,eff:eff,waived:waived,totalDeduct:totalDeduct,
+          raw:raw,eff:eff,waived:waived,reduced:reduced,totalDeduct:totalDeduct,
+          /* The part of a deliberate reduction that has nowhere loan-native to
+             live (loan's shortfall instead rides manualRepaid, handled where
+             the loan itself is advanced) - this is what a payment record adds
+             into `unrecovered` on top of whatever the net already falls short
+             by, so it still reaches next month's carry-in. */
+          nonLoanShortfall:REDUCIBLE_KEYS.filter(function(k){return k!=='loan';})
+            .reduce(function(s,k){return s+(raw[k]-eff[k]);},0),
           netPayable:Math.max(0,net),unrecovered:Math.max(0,-net)};
 }
 
@@ -1687,24 +1742,41 @@ function getOutstandingDues(staffId,payments){
    the two cannot drift apart. A loan closes once nothing is left owing, not
    merely once the instalment count is reached, so an uneven final instalment
    settles the loan instead of leaving a stray active balance. */
-function applyLoanInstalments(ledger,staffId,waived){
+function applyLoanInstalments(ledger,staffId,waived,reducedAmount){
   /* If the instalment was waived for this month, no money changed hands, so
      the loan must not move at all — advancing it here would pay the loan down
      out of nothing and quietly rob the staff member of an instalment. */
   if((waived||[]).indexOf('loan')>=0) return {ledger:ledger||[],advanced:[]};
-  /* Which loans this payment actually moved is recorded on the payment, so an
-     undo can put back exactly those and nothing else — loans taken out later,
-     or closed by a cash repayment in the meantime, must not be disturbed. */
+  /* Which loans this payment actually moved, and how, is recorded on the
+     payment (`kind`: a full instalment, or a partial amount), so an undo can
+     put back exactly those and nothing else — loans taken out later, or
+     closed by a cash repayment in the meantime, must not be disturbed. */
   var advanced=[];
+  /* A reduced total is spent oldest-loan-first, one loan's own due paid in
+     full before the next is touched, until the budget runs out - invisible
+     as a per-loan breakdown, but it decides which loan's balance actually
+     shrinks. A partial amount rides manualRepaid, not paidInstallments: it is
+     structurally the same thing as an out-of-band loan repayment, less than a
+     full instalment, so loanRemaining/loanDue recover the gap naturally next
+     month with no separate carry-forward bucket needed. */
+  var budget=reducedAmount>0?reducedAmount:null;
   var next=(ledger||[]).map(function(e){
     if(e.staffId!==staffId||e.type!=='loan'||e.status!=='active') return e;
     var due=loanDue(e);
     /* Nothing left owing: tidy the status, but no instalment was taken, so
        this is not something an undo should reverse. */
     if(due<=0) return Object.assign({},e,{status:'closed'});
+    if(budget!=null){
+      var take=Math.min(due,budget);
+      budget-=take;
+      if(take<=0) return e;
+      var settledP=(loanRemaining(e)-take)<=0;
+      advanced.push({id:e.id,kind:'partial',amount:take});
+      return Object.assign({},e,{manualRepaid:(e.manualRepaid||0)+take,status:settledP?'closed':'active'});
+    }
     var p=(e.paidInstallments||0)+1;
     var settled=(loanRemaining(e)-due)<=0||p>=(e.totalInstallments||Infinity);
-    advanced.push(e.id);
+    advanced.push({id:e.id,kind:'installment'});
     return Object.assign({},e,{paidInstallments:p,status:settled?'closed':'active'});
   });
   return {ledger:next,advanced:advanced};
@@ -1714,12 +1786,19 @@ function applyLoanInstalments(ledger,staffId,waived){
    then let the outstanding balance decide whether it is open again, rather
    than assuming — a loan may since have been closed by a cash repayment, and
    that closure is not this payment's to undo. */
-function revertLoanInstalments(ledger,staffId,loanIds){
-  var ids=loanIds||[];
-  if(!ids.length) return ledger||[];
+function revertLoanInstalments(ledger,staffId,loanAdvances){
+  var list=loanAdvances||[];
+  if(!list.length) return ledger||[];
   return (ledger||[]).map(function(e){
-    if(e.staffId!==staffId||e.type!=='loan'||ids.indexOf(e.id)<0) return e;
-    var upd=Object.assign({},e,{paidInstallments:Math.max(0,(e.paidInstallments||0)-1)});
+    if(e.staffId!==staffId||e.type!=='loan') return e;
+    /* An older payment recorded loanAdvances as a bare array of loan IDs -
+       every one of those was a full instalment, so a plain string here means
+       the same thing `kind:'installment'` does. */
+    var adv=list.find(function(a){return (typeof a==='string'?a:a.id)===e.id;});
+    if(!adv) return e;
+    var upd=(typeof adv!=='string'&&adv.kind==='partial')
+      ?Object.assign({},e,{manualRepaid:Math.max(0,(e.manualRepaid||0)-(adv.amount||0))})
+      :Object.assign({},e,{paidInstallments:Math.max(0,(e.paidInstallments||0)-1)});
     upd.status=loanRemaining(upd)>0?'active':'closed';
     return upd;
   });
@@ -2459,12 +2538,17 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
     var rec={key:payKey,staffId:staff.id,year:year,month:month,amount:calc.netPayable,date:pDate};
-    if(calc.unrecovered>0) rec.unrecovered=calc.unrecovered;
+    /* A reduced (not waived) charge is never forgiven - whatever this month's
+       shortfall is beyond the ordinary negative-net case still owes forward,
+       even though this screen has no control to create that reduction; it
+       may already have been set from the Salary tab for this same month. */
+    var totalUnrecovered=calc.unrecovered+calc.nonLoanShortfall;
+    if(totalUnrecovered>0) rec.unrecovered=totalUnrecovered;
     if(showPaidBy&&payer){
       rec.paidBy=payer;
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
-    var loans=applyLoanInstalments(ledger,staff.id,calc.waived);
+    var loans=applyLoanInstalments(ledger,staff.id,calc.waived,calc.reduced.loan);
     rec.loanAdvances=loans.advanced;
     var newPays=payments.concat([rec]);
     fbSavePayments(homeId,newPays); fbSaveLedger(homeId,loans.ledger);
@@ -3179,6 +3263,11 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
   var [payerName,setPayerName]=useState('');
   var [payerErr,setPayerErr]=useState('');
   var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(homeId):[]; },[showPaidBy,homeId]);
+  /* Which reducible row, if any, has its amount editor open right now - a
+     transient, purely local choice, never persisted until Save is pressed. */
+  var [editingKey,setEditingKey]=useState(null);
+  var [editVal,setEditVal]=useState('');
+  var [reduceErr,setReduceErr]=useState('');
   var [staff,setStaff]=useState([]);
   var [ledger,setLedger]=useState([]);
   var [payments,setPayments]=useState([]);
@@ -3200,6 +3289,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
     if(!s) return;
     setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays,homeId));
     setWAMsg('');
+    setEditingKey(null); setEditVal(''); setReduceErr('');
   }
 
   /* Cancel or restore one charge for this staff member for this month. The
@@ -3209,8 +3299,43 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
     var s=staff.find(function(x){return x.id===selStaff;});
     if(!s) return;
     var cur=getWaived(homeId,selStaff,selYear,selMonth);
+    var nowOn=cur.indexOf(k)<0;
     setWaived(homeId,selStaff,selYear,selMonth,
-      cur.indexOf(k)>=0?cur.filter(function(x){return x!==k;}):cur.concat([k]));
+      nowOn?cur.concat([k]):cur.filter(function(x){return x!==k;}));
+    /* Waived and reduced can't both be true for the same key/month - one
+       cancels the charge outright, the other collects part of it, and a row
+       showing both at once would say two contradictory things. */
+    if(nowOn&&REDUCIBLE_KEYS.indexOf(k)>=0){
+      var red=getReduced(homeId,selStaff,selYear,selMonth);
+      if(red[k]!=null){
+        var next=Object.assign({},red); delete next[k];
+        setReduced(homeId,selStaff,selYear,selMonth,next);
+      }
+    }
+    setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays,homeId));
+  }
+
+  /* Collect less than the full amount for one key this month; the difference
+     is never forgiven, only deferred - a loan's shortfall stays on that
+     specific loan's own balance, everything else rejoins next month's carry.
+     Reducing a key clears any waive on it, for the same reason toggling waive
+     clears a reduction above. */
+  function setReducedAmount(k,amount){
+    var s=staff.find(function(x){return x.id===selStaff;});
+    if(!s) return;
+    var red=Object.assign({},getReduced(homeId,selStaff,selYear,selMonth));
+    red[k]=amount;
+    setReduced(homeId,selStaff,selYear,selMonth,red);
+    var wv=getWaived(homeId,selStaff,selYear,selMonth);
+    if(wv.indexOf(k)>=0) setWaived(homeId,selStaff,selYear,selMonth,wv.filter(function(x){return x!==k;}));
+    setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays,homeId));
+  }
+  function clearReduced(k){
+    var s=staff.find(function(x){return x.id===selStaff;});
+    if(!s) return;
+    var red=Object.assign({},getReduced(homeId,selStaff,selYear,selMonth));
+    delete red[k];
+    setReduced(homeId,selStaff,selYear,selMonth,red);
     setCalc(calcSalary(s,selYear,selMonth,ledger,workingDays,homeId));
   }
 
@@ -3224,12 +3349,13 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
     var pDate=todayStr();
     var home=homes.find(function(h){return h.id===homeId;})||{name:''};
     var rec={key:key,staffId:selStaff,year:selYear,month:selMonth,amount:calc.netPayable,date:pDate};
-    if(calc.unrecovered>0) rec.unrecovered=calc.unrecovered;
+    var totalUnrecovered=calc.unrecovered+calc.nonLoanShortfall;
+    if(totalUnrecovered>0) rec.unrecovered=totalUnrecovered;
     if(showPaidBy&&payer){
       rec.paidBy=payer;
       if(payer==='other'&&payerName.trim()) rec.paidByName=payerName.trim();
     }
-    var loans=applyLoanInstalments(ledger,selStaff,calc.waived);
+    var loans=applyLoanInstalments(ledger,selStaff,calc.waived,calc.reduced.loan);
     rec.loanAdvances=loans.advanced;
     var newPays=[...payments,rec];
     fbSavePayments(homeId,newPays); setPayments(newPays);
@@ -3302,25 +3428,84 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
               /* A charge can only be cancelled while the month is still open —
                  once paid, the figures are a record of what happened. */
               var canWaive=row.k&&row.val>0&&!paidRec;
+              /* Whether this line WAS reduced is a fact about the numbers,
+                 true whether or not the month is still open to edit - once
+                 paid, the edit/waive buttons disappear (canWaive), but the
+                 struck-through amount must keep telling the truth about what
+                 was actually collected, or the total below would stop
+                 matching the row above it. */
+              var reducedNow=row.k&&REDUCIBLE_KEYS.indexOf(row.k)>=0&&!off&&calc.eff[row.k]<row.val;
+              var reducible=canWaive&&REDUCIBLE_KEYS.indexOf(row.k)>=0;
+              var shortfall=reducedNow?row.val-calc.eff[row.k]:0;
+              var isEditing=editingKey===row.k;
+
+              if(isEditing) return (
+                <div key={row.label} className="py-3 px-4" style={{borderBottom:'1px solid var(--border)',background:'var(--surface2)'}}>
+                  <span style={{fontSize:fsr(15),color:'var(--ink2)'}}>{row.label}</span>
+                  <p style={{fontSize:fsr(12),color:'var(--muted)',margin:'4px 0 6px'}}>{t.reduceAmountLabel} ({fmt(row.val)})</p>
+                  <div className="flex gap-2 items-center">
+                    <input type="number" min="0" value={editVal}
+                      onChange={function(e){ if(Number(e.target.value)<0) return; setEditVal(e.target.value); }}
+                      className="inp" style={{flex:1}} autoFocus />
+                    <button onClick={function(){
+                        var n=Number(editVal);
+                        if(!editVal||n<=0){ setReduceErr(t.errReduceMin); return; }
+                        if(n>=row.val){ setReduceErr(t.errReduceMax.replace('{full}',fmt(row.val))); return; }
+                        setReducedAmount(row.k,n);
+                        setEditingKey(null); setEditVal(''); setReduceErr('');
+                      }}
+                      className="btn btn-ok btn-sm">{t.reduceSave}</button>
+                    <button onClick={function(){ setEditingKey(null); setEditVal(''); setReduceErr(''); }}
+                      className="btn btn-ghost btn-sm">{t.reduceCancel}</button>
+                  </div>
+                  {reduceErr&&<p style={{fontSize:fsr(12.5),color:'var(--danger)',fontWeight:700,marginTop:6}}>{reduceErr}</p>}
+                  {reducedNow&&(
+                    <button onClick={function(){ clearReduced(row.k); setEditingKey(null); setEditVal(''); setReduceErr(''); }}
+                      style={{background:'none',border:'none',color:'var(--ink2)',fontSize:fsr(12.5),fontWeight:700,
+                        textDecoration:'underline',cursor:'pointer',padding:0,marginTop:8}}>{t.reduceRevert}</button>
+                  )}
+                </div>
+              );
+
               return (
-                <div key={row.label} className="flex justify-between items-center py-3 px-4" style={{borderBottom:'1px solid var(--border)',background:off?'var(--surface2)':'var(--surface)'}}>
-                  <span style={{fontSize:fsr(15),color:off?'var(--muted)':'var(--ink2)',textDecoration:off?'line-through':'none'}}>{row.label}</span>
-                  <span className="flex items-center gap-2">
-                    <span style={{fontSize:fsr(15),fontWeight:700,color:color,textDecoration:off?'line-through':'none'}}>
-                      {row.sign===-1&&row.val>0?'− ':row.sign===1&&row.val>0?'+ ':''}{fmt(row.val)}
+                <div key={row.label} className="py-3 px-4" style={{borderBottom:'1px solid var(--border)',background:off?'var(--surface2)':'var(--surface)'}}>
+                  <div className="flex justify-between items-center">
+                    <span style={{fontSize:fsr(15),color:off?'var(--muted)':'var(--ink2)',textDecoration:off?'line-through':'none'}}>{row.label}</span>
+                    <span className="flex items-center gap-2">
+                      {reducedNow&&(
+                        <span style={{fontSize:fsr(13),color:'var(--muted)',textDecoration:'line-through'}}>{fmt(row.val)}</span>
+                      )}
+                      <span style={{fontSize:fsr(15),fontWeight:700,color:color,textDecoration:off?'line-through':'none'}}>
+                        {row.sign===-1&&row.val>0?'− ':row.sign===1&&row.val>0?'+ ':''}{fmt(reducedNow?calc.eff[row.k]:row.val)}
+                      </span>
+                      {reducible&&(
+                        <button onClick={function(){ setEditingKey(row.k); setEditVal(reducedNow?String(calc.eff[row.k]):''); setReduceErr(''); }}
+                          title={t.reduceEdit} aria-label={t.reduceEdit+' - '+row.label}
+                          style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',lineHeight:1,
+                            border:'1px solid '+(reducedNow?'var(--accent)':'var(--border)'),
+                            background:reducedNow?'#D8EEE8':'var(--surface2)',
+                            color:reducedNow?'var(--accent)':'var(--ink2)',
+                            fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif',padding:0,
+                            display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          <Icon name="edit" size={13} />
+                        </button>
+                      )}
+                      {canWaive&&(
+                        <button onClick={function(){toggleWaive(row.k);}}
+                          title={off?t.waiveUndo:t.waiveOff} aria-label={(off?t.waiveUndo:t.waiveOff)+' - '+row.label}
+                          style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',lineHeight:1,
+                            border:'1px solid '+(off?'var(--ok)':'var(--border)'),
+                            background:off?'#D8EEE2':'var(--surface2)',
+                            color:off?'var(--ok)':'var(--danger)',
+                            fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif',padding:0}}>
+                          <Icon name={off?'undo':'close'} size={15} />
+                        </button>
+                      )}
                     </span>
-                    {canWaive&&(
-                      <button onClick={function(){toggleWaive(row.k);}}
-                        title={off?t.waiveUndo:t.waiveOff} aria-label={(off?t.waiveUndo:t.waiveOff)+' - '+row.label}
-                        style={{width:28,height:28,minWidth:28,borderRadius:999,cursor:'pointer',lineHeight:1,
-                          border:'1px solid '+(off?'var(--ok)':'var(--border)'),
-                          background:off?'#D8EEE2':'var(--surface2)',
-                          color:off?'var(--ok)':'var(--danger)',
-                          fontWeight:800,fontSize:fsr(13),fontFamily:'Nunito,sans-serif',padding:0}}>
-                        <Icon name={off?'undo':'close'} size={15} />
-                      </button>
-                    )}
-                  </span>
+                  </div>
+                  {reducedNow&&(
+                    <p style={{fontSize:fsr(12),color:'var(--ink2)',marginTop:4}}>{t.reduceNote.replace('{amount}',fmt(shortfall))}</p>
+                  )}
                 </div>
               );
             })}
@@ -6107,7 +6292,7 @@ function App(){
         }); bump();
       }),
       db.collection('homes/'+homeId+'/waivers').onSnapshot(function(snap){
-        var w={}; snap.docs.forEach(function(d){ w[d.id]=d.data().items||[]; });
+        var w={}; snap.docs.forEach(function(d){ w[d.id]={waived:d.data().items||[],reduced:d.data().reduced||{}}; });
         saveWaivers(homeId,w); bump();
       }),
       db.collection('homes/'+homeId+'/undos').onSnapshot(function(snap){
