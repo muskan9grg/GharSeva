@@ -582,6 +582,15 @@ en:{
   migrateYes:'Yes, Import',migrateSkip:'Start Fresh',
   signOut:'Sign Out',members:'members',syncLive:'● Live',
   authError:'Authentication failed. Please try again.',
+  errPhoneBadNum:'That does not look like a valid mobile number. Check the digits.',
+  errPhoneRegion:'This app cannot send an SMS to that country yet. Use an Indian (+91) number.',
+  errPhoneTooMany:'Too many attempts from this device. Wait a while and try again.',
+  errPhoneQuota:'The daily SMS limit has been reached. Please try tomorrow.',
+  errPhoneNetwork:'No internet connection. Check your network and try again.',
+  errOtpWrong:'That code is not correct. Check the SMS and try again.',
+  errOtpExpired:'That code has expired. Ask for a new one.',
+  errAuthCode:'Could not sign in ({code}). Please try again.',
+  otpResend:'Send the code again',
   joining:'Joining…',creating:'Creating…',setupTitle:'Set Up Your Household',
   createDesc:'Start fresh with a new household code',joinDesc:'Enter the code shared by a family member',
 },
@@ -788,6 +797,15 @@ hi:{
   migrateYes:'हाँ, इम्पोर्ट करें',migrateSkip:'नया शुरू करें',
   signOut:'साइन आउट',members:'सदस्य',syncLive:'● लाइव',
   authError:'साइन इन नहीं हो सका। फिर कोशिश करें।',
+  errPhoneBadNum:'यह मोबाइल नंबर सही नहीं लगता। अंक जांच लें।',
+  errPhoneRegion:'यह ऐप अभी उस देश में SMS नहीं भेज सकता। भारतीय (+91) नंबर डालें।',
+  errPhoneTooMany:'इस फोन से बहुत बार कोशिश हुई। थोड़ी देर बाद फिर करें।',
+  errPhoneQuota:'आज की SMS सीमा पूरी हो गई। कल फिर कोशिश करें।',
+  errPhoneNetwork:'इंटरनेट नहीं है। कनेक्शन जांच कर फिर कोशिश करें।',
+  errOtpWrong:'यह कोड सही नहीं है। SMS देखकर फिर डालें।',
+  errOtpExpired:'इस कोड की समय-सीमा बीत गई। नया कोड मंगाएं।',
+  errAuthCode:'साइन इन नहीं हो सका ({code})। फिर कोशिश करें।',
+  otpResend:'कोड दोबारा भेजें',
   joining:'जुड़ रहे हैं…',creating:'बना रहे हैं…',setupTitle:'अपना घर सेट करें',
   createDesc:'नया घर और कोड बनाएं',joinDesc:'परिवार के सदस्य का दिया कोड डालें',
 },
@@ -5889,30 +5907,86 @@ function AuthScreen({lang,onGuest,onAuth}){
   var [confirmResult,setConfirmResult]=useState(null);
   var rcRef=useRef(null);
 
+  /* Say what actually went wrong. Every failure here used to collapse into one
+     "Authentication failed", which told the user nothing and left no way to
+     tell a wrong OTP from a blocked country from a dead network. Firebase's
+     own message is the fallback rather than a shrug, and the raw code is kept
+     visible so a problem that needs the Firebase console (rather than the
+     person holding the phone) can still be identified. */
+  function authMessage(e){
+    var code=(e&&e.code)||'';
+    var map={
+      'auth/invalid-phone-number':t.errPhoneBadNum,
+      'auth/missing-phone-number':t.errPhoneBadNum,
+      'auth/operation-not-allowed':t.errPhoneRegion,
+      'auth/unsupported-first-factor':t.errPhoneRegion,
+      'auth/too-many-requests':t.errPhoneTooMany,
+      'auth/quota-exceeded':t.errPhoneQuota,
+      'auth/network-request-failed':t.errPhoneNetwork,
+      'auth/invalid-verification-code':t.errOtpWrong,
+      'auth/code-expired':t.errOtpExpired
+    };
+    if(map[code]) return map[code];
+    /* A reCAPTCHA failure arrives as a bare Error with no .code at all, so
+       falling back to the message is what keeps it readable. */
+    return code?t.errAuthCode.replace('{code}',code):((e&&e.message)||t.authError);
+  }
+
+  /* A verifier is good for exactly one signInWithPhoneNumber, and its
+     container is unmounted the moment this screen switches to the OTP step.
+     Reusing one across attempts threw "reCAPTCHA client element has been
+     removed" - an error with no code, which the old catch-all then hid - so
+     every attempt now builds and renders a fresh one and disposes of it
+     afterwards, whether it succeeded or failed. */
+  function clearRecaptcha(){
+    if(rcRef.current){
+      try{ rcRef.current.clear(); }catch(err){}
+      rcRef.current=null;
+    }
+  }
+  useEffect(function(){ return clearRecaptcha; },[]);
+
   function sendOTP(){
     setError(''); setLoading(true);
-    var num=phone.startsWith('+')?phone:'+91'+phone;
-    if(!rcRef.current){
-      rcRef.current=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
-    }
-    firebase.auth().signInWithPhoneNumber(num,rcRef.current)
-      .then(function(res){setConfirmResult(res);setMode('otp');setLoading(false);})
-      .catch(function(){
-        setError(t.authError);setLoading(false);
-        if(rcRef.current){rcRef.current.clear();rcRef.current=null;}
+    var digits=phone.replace(/\D/g,'');
+    var num=phone.trim().charAt(0)==='+'?phone.replace(/[^\d+]/g,''):'+91'+digits;
+    clearRecaptcha();
+    var verifier;
+    try{
+      verifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
+      rcRef.current=verifier;
+    }catch(err){ setError(authMessage(err)); setLoading(false); return; }
+
+    verifier.render()
+      .then(function(){ return firebase.auth().signInWithPhoneNumber(num,verifier); })
+      .then(function(res){
+        setConfirmResult(res); setMode('otp'); setOtp(''); setLoading(false);
+        clearRecaptcha();
+      })
+      .catch(function(e){
+        console.warn('signInWithPhoneNumber:',e&&e.code,e&&e.message);
+        setError(authMessage(e)); setLoading(false);
+        clearRecaptcha();
       });
   }
   function verifyOTP(){
+    if(!confirmResult){ setError(t.errOtpExpired); setMode('phone'); return; }
     setError(''); setLoading(true);
     confirmResult.confirm(otp)
       .then(function(res){onAuth(res.user);})
-      .catch(function(){setError(t.authError);setLoading(false);});
+      .catch(function(e){
+        console.warn('confirmOtp:',e&&e.code,e&&e.message);
+        setError(authMessage(e)); setLoading(false);
+      });
   }
   function signInGoogle(){
     setLoading(true);
     firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
       .then(function(res){onAuth(res.user);})
-      .catch(function(){setError(t.authError);setLoading(false);});
+      .catch(function(e){
+        console.warn('signInWithPopup:',e&&e.code,e&&e.message);
+        setError(authMessage(e)); setLoading(false);
+      });
   }
 
   return (
@@ -5931,7 +6005,6 @@ function AuthScreen({lang,onGuest,onAuth}){
               <FLabel label={t.phoneNum}>
                 <FInput type="tel" value={phone} onChange={setPhone} placeholder="10-digit mobile number" />
               </FLabel>
-              <div id="recaptcha-container" />
               <button className="btn btn-accent btn-full" disabled={phone.replace(/\D/g,'').length<10||loading}
                 onClick={sendOTP}>{loading?'…':t.sendOtp}</button>
             </>
@@ -5940,16 +6013,32 @@ function AuthScreen({lang,onGuest,onAuth}){
             <>
               <p style={{fontSize:fsr(14),color:'var(--ink2)',marginBottom:14}}>{t.otpSent}</p>
               <FLabel label={t.verifyOtp}>
-                <FInput type="number" value={otp} onChange={setOtp} placeholder="6-digit code" />
+                {/* Not type="number": a numeric field silently reads back as
+                    empty for anything it cannot parse, drops a leading zero on
+                    some keyboards, and puts spinner arrows on a one-time code.
+                    inputMode keeps the numeric keypad on a phone; the filter
+                    keeps the value to digits without any of that. */}
+                <input type="text" inputMode="numeric" autoComplete="one-time-code"
+                  maxLength={6} value={otp}
+                  onChange={function(e){ setOtp(e.target.value.replace(/\D/g,'').slice(0,6)); }}
+                  placeholder="6-digit code" className="inp" />
               </FLabel>
               <button className="btn btn-accent btn-full" disabled={otp.length<6||loading}
                 onClick={verifyOTP}>{loading?'…':t.verifyOtp}</button>
-              <button onClick={function(){setMode('phone');setOtp('');setError('');}}
-                style={{width:'100%',marginTop:8,padding:'10px',background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif'}}>
+              <button onClick={function(){ setOtp(''); setError(''); setConfirmResult(null); sendOTP(); }}
+                disabled={loading}
+                style={{width:'100%',marginTop:8,padding:'10px',background:'none',border:'none',color:'var(--accent)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif'}}>
+                {t.otpResend}
+              </button>
+              <button onClick={function(){setMode('phone');setOtp('');setError('');setConfirmResult(null);}}
+                style={{width:'100%',marginTop:2,padding:'10px',background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif'}}>
                 {t.cancel}
               </button>
             </>
           )}
+          {/* Always mounted, in both steps: the verifier renders into this node,
+              and unmounting it mid-flow is what detached the old one. */}
+          <div id="recaptcha-container" />
         </div>
 
         <div style={{textAlign:'center',margin:'0 0 16px',color:'var(--muted)',fontSize:fsr(13)}}>or</div>
