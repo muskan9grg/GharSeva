@@ -5943,6 +5943,14 @@ function AuthScreen({lang,onGuest,onAuth}){
       try{ rcRef.current.clear(); }catch(err){}
       rcRef.current=null;
     }
+    /* clear() detaches the verifier but leaves grecaptcha's own widget sitting
+       in the node, so rendering a second one into the same element fails with
+       "reCAPTCHA has already been rendered in this element" - or worse, quietly
+       reuses the previous, already-spent token, which Firebase then rejects as
+       auth/invalid-app-credential. Emptying the host is what actually makes the
+       next attempt a clean one. */
+    var host=document.getElementById('recaptcha-container');
+    if(host) host.innerHTML='';
   }
   useEffect(function(){ return clearRecaptcha; },[]);
 
@@ -5967,7 +5975,14 @@ function AuthScreen({lang,onGuest,onAuth}){
     clearRecaptcha();
     var verifier;
     try{
-      verifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
+      /* A brand-new child node per attempt, rather than the host itself: a
+         reCAPTCHA widget cannot be rendered twice into the same element, and
+         reusing one is what spends a token twice. */
+      var host=document.getElementById('recaptcha-container');
+      if(!host) throw new Error('recaptcha container missing');
+      var slot=document.createElement('div');
+      host.appendChild(slot);
+      verifier=new firebase.auth.RecaptchaVerifier(slot,{size:'invisible'});
       rcRef.current=verifier;
     }catch(err){ setError(authMessage(err)); setLoading(false); return; }
 
