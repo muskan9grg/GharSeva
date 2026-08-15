@@ -5946,10 +5946,24 @@ function AuthScreen({lang,onGuest,onAuth}){
   }
   useEffect(function(){ return clearRecaptcha; },[]);
 
+  /* Firebase wants E.164 and nothing else. People do not type E.164: they
+     write the number off a visiting card with spaces, or with the 0 they
+     would dial from a landline, or with 91 already in front but no plus.
+     Pasting "91 98765 43210" straight through produced +9191..., which
+     Firebase rejects for reasons the user cannot possibly guess from the
+     screen, so each of those shapes is folded into the one correct form. */
+  function toE164(raw){
+    var s=String(raw||'').trim();
+    if(s.charAt(0)==='+') return '+'+s.slice(1).replace(/\D/g,'');
+    var d=s.replace(/\D/g,'').replace(/^0+/,'');       /* drop trunk prefix */
+    if(d.length===10) return '+91'+d;                  /* plain 10-digit mobile */
+    if(d.length===12&&d.indexOf('91')===0) return '+'+d; /* 91XXXXXXXXXX */
+    return '+91'+d;                                    /* let Firebase judge the rest */
+  }
+
   function sendOTP(){
     setError(''); setLoading(true);
-    var digits=phone.replace(/\D/g,'');
-    var num=phone.trim().charAt(0)==='+'?phone.replace(/[^\d+]/g,''):'+91'+digits;
+    var num=toE164(phone);
     clearRecaptcha();
     var verifier;
     try{
