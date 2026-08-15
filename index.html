@@ -572,7 +572,7 @@ en:{
   profRecLoan:'Loan Payment',profMarkLeave:'Mark Leave',profNoLoans:'No active loans',
   signIn:'Sign in to GharSeva',phoneNum:'Phone Number',sendOtp:'Send OTP',otpSent:'OTP sent! Enter the 6-digit code.',
   verifyOtp:'Verify Code',googleSignIn:'Continue with Google',
-  guestMode:'Use on this device only (no sharing)',guestWarning:'Data stays on this device. You can connect to cloud later.',
+  guestMode:'Guest Mode',guestWarning:'Data stays on this device only — nothing is shared with anyone. You can connect to the cloud later if you want to sync across devices.',
   createHome:'Create New Household',joinHome:'Join a Household',
   inviteCode:'Household Code',inviteCodeHint:'Share this 6-letter code with family members',
   copyCode:'Copy Code',shareWA:'Share on WhatsApp',newCode:'New code',
@@ -787,7 +787,7 @@ hi:{
   profRecLoan:'लोन भुगतान',profMarkLeave:'छुट्टी दर्ज',profNoLoans:'कोई सक्रिय लोन नहीं',
   signIn:'घरसेवा में साइन इन करें',phoneNum:'फोन नंबर',sendOtp:'OTP भेजें',otpSent:'OTP भेज दिया! 6 अंकों का कोड डालें।',
   verifyOtp:'कोड वेरीफाई करें',googleSignIn:'Google से जारी रखें',
-  guestMode:'केवल इस डिवाइस पर (शेयरिंग नहीं)',guestWarning:'डेटा इस डिवाइस पर रहेगा। बाद में क्लाउड से जोड़ सकते हैं।',
+  guestMode:'गेस्ट मोड',guestWarning:'डेटा सिर्फ़ इस डिवाइस पर रहता है — किसी के साथ साझा नहीं होता। बाद में चाहें तो क्लाउड से जोड़ सकते हैं।',
   createHome:'नया घर बनाएं',joinHome:'घर से जुड़ें',
   inviteCode:'घर का कोड',inviteCodeHint:'यह 6-अक्षर कोड परिवार के सदस्यों के साथ शेयर करें',
   copyCode:'कोड कॉपी करें',shareWA:'WhatsApp पर शेयर करें',newCode:'नया कोड',
@@ -6075,12 +6075,17 @@ function AuthScreen({lang,onGuest,onAuth}){
           {t.googleSignIn}
         </button>
 
-        <div style={{textAlign:'center'}}>
+        {/* One name for this choice, not a button label plus a paragraph
+            repeating the same idea in different words - the explanation is
+            a tap away instead of sitting on the screen for everyone whether
+            they need it or not, the same "?" pattern used for every other
+            field-level explanation in the app. */}
+        <div className="flex items-center justify-center flex-wrap" style={{gap:2}}>
           <button onClick={onGuest}
-            style={{background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif',padding:'8px 16px'}}>
+            style={{background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif',padding:'8px 4px 8px 16px'}}>
             {t.guestMode}
           </button>
-          <p style={{fontSize:fsr(12),color:'var(--muted)',margin:'4px 0 0'}}>{t.guestWarning}</p>
+          <Help text={t.guestWarning} label={t.guestMode} />
         </div>
       </div>
     </div>
