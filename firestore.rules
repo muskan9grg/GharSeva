@@ -105,9 +105,44 @@ service cloud.firestore {
 
     // ── Per-user profile ───────────────────────────────────────────
     // Yours alone. This is why member names are kept on the household
-    // document instead: one member cannot read another's profile here.
+    // document instead: one member cannot read another's profile here — so
+    // displayName is deliberately mirrored into homes/{homeId}.members, which
+    // household members CAN read, while email and phone stay only here.
+    //
+    // providerEmail / providerPhone are what the sign-in provider actually
+    // verified. email / phone are what the user typed and are NOT verified —
+    // keeping the two apart is what will make linking a phone account and a
+    // Google account possible later without pretending either was proven.
+    //
+    // The field list below must stay in step with every writer in index.html:
+    // household create, household join, leave-household, the profile form and
+    // the Settings editor. Because all of them use set({...},{merge:true}),
+    // request.resource.data is the MERGED document, so one hasOnly covers the
+    // union of every field any of them writes — a field missing from this
+    // list breaks sign-in for everyone, silently.
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      function ok(f, max) {
+        return !(f in request.resource.data)
+               || (request.resource.data[f] is string
+                   && request.resource.data[f].size() <= max);
+      }
+
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(
+             ['displayName','email','phone','providerEmail','providerPhone',
+              'profileVersion','updatedAt','homeIds','currentHomeId'])
+        && ok('displayName', 60)
+        && ok('email', 120)
+        && ok('phone', 20)
+        && ok('providerEmail', 120)
+        && ok('providerPhone', 20)
+        && ok('currentHomeId', 64);
+
+      // Nothing in the app deletes a profile.
+      allow delete: if false;
     }
   }
 }

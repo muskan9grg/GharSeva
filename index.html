@@ -171,9 +171,25 @@ function payerLabel(rec,members,t){
   if(rec.paidBy==='other') return (rec.paidByName&&rec.paidByName.trim())||(t?t.paidBySomeoneElse:'Someone else');
   return memberLabel(rec.paidBy,members,t);
 }
+/* What the sign-in provider knows us as. Google supplies a name; phone
+   sign-in supplies nothing at all, which is why a phone user used to appear
+   to the whole household as their own raw number. Kept as the fallback and
+   as the seed for the profile form, so it stays deliberately unaware of
+   anything the user has told us themselves. */
 function displayNameOf(user){
   if(!user) return '';
   return user.displayName||user.phoneNumber||user.email||'Member';
+}
+
+/* The signed-in user's own stored profile: {name,email,phone}. Held here,
+   next to the only function it overrides, for the same reason _activeHomeId
+   is - the write helpers that need the name are plain functions with no way
+   to receive React state. Hydrated from users/{uid} at sign-in, and updated
+   in place whenever the profile is saved, so nothing has to wait a round
+   trip to start using the new name. */
+var _profile = null;
+function profileNameOf(user){
+  return (_profile&&_profile.name)||displayNameOf(user);
 }
 
 /* Phone numbers pasted from a contacts app carry a country code, spaces,
@@ -188,6 +204,23 @@ function normalizePhone(digits){
   if(digits.length===12&&digits.slice(0,2)==='91') return digits.slice(2);
   if(digits.length===11&&digits.charAt(0)==='0') return digits.slice(1);
   return digits;
+}
+
+/* Firebase wants E.164 and nothing else. People do not type E.164: they
+   write the number off a visiting card with spaces, or with the 0 they
+   would dial from a landline, or with 91 already in front but no plus.
+   Pasting "91 98765 43210" straight through produced +9191..., which
+   Firebase rejects for reasons the user cannot possibly guess from the
+   screen, so each of those shapes is folded into the one correct form.
+   Lives out here rather than inside the sign-in screen because the profile
+   form stores a number in the same shape. */
+function toE164(raw){
+  var s=String(raw||'').trim();
+  if(s.charAt(0)==='+') return '+'+s.slice(1).replace(/\D/g,'');
+  var d=s.replace(/\D/g,'').replace(/^0+/,'');       /* drop trunk prefix */
+  if(d.length===10) return '+91'+d;                  /* plain 10-digit mobile */
+  if(d.length===12&&d.indexOf('91')===0) return '+'+d; /* 91XXXXXXXXXX */
+  return '+91'+d;                                    /* let Firebase judge the rest */
 }
 
 /* Names typed for "someone else" paid this, offered back as suggestions so
@@ -582,6 +615,17 @@ en:{
   verifyOtp:'Verify Code',googleSignIn:'Continue with Google',
   guestMode:'Guest Mode',guestWarning:'Data stays on this device only — nothing is shared with anyone. You can connect to the cloud later if you want to sync across devices.',
   createHome:'Create New Household',joinHome:'Join a Household',
+  mpTitle:'About you',
+  mpIntro:'So your family sees your name, not your number, next to what you record.',
+  mpName:'Your name',mpNameEx:'e.g. Muskan',
+  mpEmail:'Email',mpEmailEx:'e.g. you@gmail.com',
+  mpPhone:'Phone',mpPhoneEx:'10-digit mobile',
+  mpOptional:'Optional',
+  mpContactHelp:'These are so your family can reach you. They are not extra ways to sign in. Always sign in the way you did today: signing in with Google one time and with your phone another creates two separate accounts that do not share any data.',
+  mpSave:'Save and continue',mpSaving:'Saving…',mpSaved:'Saved',
+  mpErr:'Could not save. Please try again.',
+  mpSettingsTitle:'Your profile',mpSignedInWith:'You sign in with',
+  errProfileName:'Please enter your name',
   inviteCode:'Household Code',inviteCodeHint:'Share this 6-letter code with family members',
   copyCode:'Copy Code',shareWA:'Share on WhatsApp',newCode:'New code',
   enterCode:'Enter 6-letter household code',codeNotFound:'Code not found. Check and try again.',
@@ -798,6 +842,17 @@ hi:{
   verifyOtp:'कोड वेरीफाई करें',googleSignIn:'Google से जारी रखें',
   guestMode:'गेस्ट मोड',guestWarning:'डेटा सिर्फ़ इस डिवाइस पर रहता है — किसी के साथ साझा नहीं होता। बाद में चाहें तो क्लाउड से जोड़ सकते हैं।',
   createHome:'नया घर बनाएं',joinHome:'घर से जुड़ें',
+  mpTitle:'आपके बारे में',
+  mpIntro:'ताकि आपके परिवार को आपका नाम दिखे, नंबर नहीं।',
+  mpName:'आपका नाम',mpNameEx:'जैसे: मुस्कान',
+  mpEmail:'ईमेल',mpEmailEx:'जैसे: you@gmail.com',
+  mpPhone:'फोन',mpPhoneEx:'10 अंकों का नंबर',
+  mpOptional:'ज़रूरी नहीं',
+  mpContactHelp:'ये सिर्फ़ इसलिए हैं ताकि परिवार आप तक पहुँच सके। ये साइन इन करने के अलग तरीके नहीं हैं। हमेशा उसी तरह साइन इन करें जैसे आज किया: एक बार Google से और दूसरी बार फोन से साइन इन करने पर दो अलग खाते बन जाते हैं, जिनका डेटा आपस में नहीं जुड़ता।',
+  mpSave:'सहेजें और आगे बढ़ें',mpSaving:'सहेजा जा रहा है…',mpSaved:'सहेजा गया',
+  mpErr:'सहेजा नहीं जा सका। फिर कोशिश करें।',
+  mpSettingsTitle:'आपकी प्रोफ़ाइल',mpSignedInWith:'आप साइन इन करते हैं',
+  errProfileName:'कृपया अपना नाम डालें',
   inviteCode:'घर का कोड',inviteCodeHint:'यह 6-अक्षर कोड परिवार के सदस्यों के साथ शेयर करें',
   copyCode:'कोड कॉपी करें',shareWA:'WhatsApp पर शेयर करें',newCode:'नया कोड',
   enterCode:'6-अक्षर का घर कोड डालें',codeNotFound:'कोड नहीं मिला। फिर से जांचें।',
@@ -1514,7 +1569,7 @@ function seedDemoDataCloud(homeId, lang){
 function cloudCreateHome(user, name, lang){
   var homeId='hm_'+uid();
   var inviteCode=Math.random().toString(36).slice(2,8).toUpperCase();
-  var myName=displayNameOf(user);
+  var myName=profileNameOf(user);
   var homeDoc={name:name.trim(),ownerId:user.uid,memberIds:[user.uid],
     members:{[user.uid]:{name:myName,color:memberColor(user.uid)}},
     inviteCode:inviteCode,workingDays:26,roles:[],lang:lang};
@@ -1547,7 +1602,7 @@ function cloudJoinHome(user, code){
       homeId=inv.data().homeId;
       /* arrayUnion so we never have to read memberIds first */
       var patch={memberIds:firebase.firestore.FieldValue.arrayUnion(user.uid)};
-      patch['members.'+user.uid]={name:displayNameOf(user),color:memberColor(user.uid)};
+      patch['members.'+user.uid]={name:profileNameOf(user),color:memberColor(user.uid)};
       return fbDb.collection('homes').doc(homeId).update(patch);
     })
     .then(function(){
@@ -1556,7 +1611,7 @@ function cloudJoinHome(user, code){
     .then(function(doc){
       var hd=(doc.exists&&doc.data())||{};
       return fbDb.collection('users').doc(user.uid).set(
-        {displayName:displayNameOf(user),
+        {displayName:profileNameOf(user),
          homeIds:firebase.firestore.FieldValue.arrayUnion(homeId),
          currentHomeId:homeId},{merge:true}).then(function(){ return hd; });
     })
@@ -5014,6 +5069,55 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   var [restoreConfirm,setRestoreConfirm]=useState(null);
   var [restoreMsg,setRestoreMsg]=useState('');
   var restoreRef=useRef(null);
+  /* Seeded from the cache hydrated at sign-in, so opening Settings needs no
+     round trip before the fields have something in them. */
+  var [mpName,setMpName]=useState((_profile&&_profile.name)||'');
+  var [mpEmail,setMpEmail]=useState((_profile&&_profile.email)||'');
+  var [mpPhone,setMpPhone]=useState((_profile&&_profile.phone)||'');
+  var [mpBusy,setMpBusy]=useState(false);
+  var [mpSavedFlag,setMpSavedFlag]=useState(false);
+  var [mpError,setMpError]=useState('');
+
+  /* A renamed member has to be rewritten into EVERY household they belong
+     to, not just the one on screen - the others would otherwise keep showing
+     the old name to everyone in them until something else happened to touch
+     that document. One batch, so a half-applied rename is not possible.
+     homeIds is read from the user document rather than the local homes prop
+     because a household joined on another device is not in the prop yet. */
+  function saveProfile(){
+    if(!mpName.trim()){ setMpError(t.errProfileName); return; }
+    if(!FIREBASE_ENABLED||!fbDb||!user) return;
+    setMpBusy(true); setMpError('');
+    var nm=mpName.trim().slice(0,60);
+    var prof={displayName:nm,email:mpEmail.trim().slice(0,120),
+      phone:mpPhone.trim()?toE164(mpPhone).slice(0,20):'',
+      profileVersion:1,updatedAt:Date.now()};
+    var ref=fbDb.collection('users').doc(user.uid);
+    ref.set(prof,{merge:true})
+      .then(function(){
+        _profile={name:nm,email:prof.email,phone:prof.phone};
+        setMpName(nm); setMpPhone(prof.phone);
+        return ref.get();
+      })
+      .then(function(doc){
+        var ids=(doc.exists&&doc.data().homeIds)||[];
+        if(!ids.length) return null;
+        var batch=fbDb.batch();
+        ids.forEach(function(id){
+          var patch={}; patch['members.'+user.uid]={name:nm,color:memberColor(user.uid)};
+          batch.update(fbDb.collection('homes').doc(id),patch);
+        });
+        return batch.commit();
+      })
+      .then(function(){
+        setMpBusy(false); setMpSavedFlag(true);
+        setTimeout(function(){setMpSavedFlag(false);},2000);
+      })
+      .catch(function(e){
+        console.warn('saveProfile:',e&&e.code,e&&e.message);
+        setMpBusy(false); setMpError(t.mpErr);
+      });
+  }
 
   function handleRestoreFile(e){
     var file=e.target.files[0]; if(!file) return;
@@ -5324,12 +5428,42 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
         <input type="file" accept=".json" onChange={handleRestoreFile} className="hidden" ref={restoreRef} />
       </div>
 
+      {/* Your profile (cloud mode only) */}
+      {!guestMode&&user&&(
+        <div className="card mb-4">
+          <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.mpSettingsTitle}</p>
+          {mpError&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{mpError}</p>}
+          <FLabel label={t.mpName} req={true}>
+            <FInput value={mpName} onChange={setMpName} placeholder={t.mpNameEx} maxLength={60} />
+          </FLabel>
+          <div className="flex items-center gap-2 flex-wrap" style={{marginBottom:6}}>
+            <label style={{fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),flex:1}}>{t.mpOptional}</label>
+            <Help text={t.mpContactHelp} label={t.mpSettingsTitle} />
+          </div>
+          <FLabel label={t.mpEmail}>
+            <FInput type="email" value={mpEmail} onChange={setMpEmail} placeholder={t.mpEmailEx} maxLength={120} />
+          </FLabel>
+          <FLabel label={t.mpPhone}>
+            <FInput type="tel" value={mpPhone} onChange={setMpPhone} placeholder={t.mpPhoneEx} maxLength={20} />
+          </FLabel>
+          <button onClick={saveProfile} className="btn btn-ok btn-full" disabled={mpBusy||!mpName.trim()}>
+            <span className="flex items-center justify-center gap-1">
+              {mpSavedFlag&&<Icon name="check" size={15} strokeWidth={2.6} />}
+              {mpBusy?t.mpSaving:mpSavedFlag?t.mpSaved:t.save}
+            </span>
+          </button>
+          {/* Naming the actual credential, every time Settings is opened, is
+              what stops "why is my data gone" six months from now: the phone
+              or email above is a contact detail, this line is the login. */}
+          <p style={{fontSize:fsr(12),color:'var(--muted)',margin:'14px 0 0',textAlign:'center'}}>
+            {t.mpSignedInWith}: {user.email||user.phoneNumber||user.displayName||'—'}
+          </p>
+        </div>
+      )}
+
       {/* Sign Out (cloud mode only) */}
       {!guestMode&&user&&(
         <div className="card mb-4" style={{textAlign:'center'}}>
-          <p style={{fontSize:fsr(13),color:'var(--ink2)',marginBottom:12}}>
-            {user.phoneNumber||user.email||user.displayName||'Signed in'}
-          </p>
           <button className="btn btn-danger btn-full" onClick={onSignOut}>
             <Icon name="signout" size={18} style={{display:'inline-block',verticalAlign:'-3px',marginRight:8}} />{t.signOut}
           </button>
@@ -5384,7 +5518,7 @@ function FeedbackTab({lang,guestMode,user}){
       type:type,
       message:msg.trim().slice(0,2000),
       authorId:user.uid,
-      authorName:displayNameOf(user),
+      authorName:profileNameOf(user),
       lang:lang,
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),
       createdAtMs:Date.now(),
@@ -6007,21 +6141,6 @@ function AuthScreen({lang,onGuest,onAuth}){
   }
   useEffect(function(){ return clearRecaptcha; },[]);
 
-  /* Firebase wants E.164 and nothing else. People do not type E.164: they
-     write the number off a visiting card with spaces, or with the 0 they
-     would dial from a landline, or with 91 already in front but no plus.
-     Pasting "91 98765 43210" straight through produced +9191..., which
-     Firebase rejects for reasons the user cannot possibly guess from the
-     screen, so each of those shapes is folded into the one correct form. */
-  function toE164(raw){
-    var s=String(raw||'').trim();
-    if(s.charAt(0)==='+') return '+'+s.slice(1).replace(/\D/g,'');
-    var d=s.replace(/\D/g,'').replace(/^0+/,'');       /* drop trunk prefix */
-    if(d.length===10) return '+91'+d;                  /* plain 10-digit mobile */
-    if(d.length===12&&d.indexOf('91')===0) return '+'+d; /* 91XXXXXXXXXX */
-    return '+91'+d;                                    /* let Firebase judge the rest */
-  }
-
   function sendOTP(){
     setError(''); setLoading(true);
     var num=toE164(phone);
@@ -6140,6 +6259,87 @@ function AuthScreen({lang,onGuest,onAuth}){
           </button>
           <Help text={t.guestWarning} label={t.guestMode} />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PROFILE SETUP SCREEN ───────────────────────────────────────
+   Shown once, to a brand-new signed-in user, before they create or join a
+   household. It exists because nothing in the app ever asked who the user
+   is: Google hands over a name, phone sign-in hands over nothing, so a
+   phone user appeared to their whole household as their own raw number.
+
+   Email and phone here are contact details on a profile - deliberately NOT
+   additional ways to sign in. Firebase issues one account per sign-in
+   method, so signing in with Google one day and a phone number the next
+   still produces two separate accounts with separate data. The callout on
+   the contact block says exactly that, because a form asking for both
+   otherwise implies a merge that does not happen. */
+function ProfileSetupScreen({lang,user,onSaved}){
+  var t=T[lang];
+  var providerEmail=(user&&user.email)||'';
+  var providerPhone=(user&&user.phoneNumber)||'';
+  var [name,setName]=useState((user&&user.displayName)||'');
+  var [email,setEmail]=useState(providerEmail);
+  var [phone,setPhone]=useState(providerPhone);
+  var [loading,setLoading]=useState(false);
+  var [error,setError]=useState('');
+
+  function save(){
+    if(!name.trim()){ setError(t.errProfileName); return; }
+    setLoading(true); setError('');
+    var prof={
+      displayName:name.trim().slice(0,60),
+      email:email.trim().slice(0,120),
+      /* stored in the one shape Firebase understands, so a number typed here
+         and a number used to sign in are directly comparable later */
+      phone:phone.trim()?toE164(phone).slice(0,20):'',
+      /* what the provider actually proved, kept apart from what was typed:
+         only these two are verified, and knowing which is which is what
+         makes linking the two sign-in methods possible later on */
+      providerEmail:providerEmail,
+      providerPhone:providerPhone,
+      profileVersion:1,
+      updatedAt:Date.now()
+    };
+    fbDb.collection('users').doc(user.uid).set(prof,{merge:true})
+      .then(function(){
+        _profile={name:prof.displayName,email:prof.email,phone:prof.phone};
+        onSaved();
+      })
+      .catch(function(e){
+        console.warn('saveProfile:',e&&e.code,e&&e.message);
+        setError(t.mpErr); setLoading(false);
+      });
+  }
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',padding:20,display:'flex',flexDirection:'column'}}>
+      <div style={{textAlign:'center',paddingTop:48,marginBottom:28}}>
+        <div style={{display:'flex',justifyContent:'center',marginBottom:12}}><Logo size={64} /></div>
+        <h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',margin:0}}>{t.mpTitle}</h2>
+        <p style={{fontSize:fsr(13),color:'var(--ink2)',margin:'8px 0 0',lineHeight:1.5}}>{t.mpIntro}</p>
+      </div>
+
+      <div className="card">
+        {error&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{error}</p>}
+        <FLabel label={t.mpName} req={true}>
+          <FInput value={name} onChange={setName} placeholder={t.mpNameEx} maxLength={60} />
+        </FLabel>
+        <div className="flex items-center gap-2 flex-wrap" style={{marginBottom:6}}>
+          <label style={{fontWeight:700,color:'var(--ink2)',fontSize:fsr(13),flex:1}}>{t.mpOptional}</label>
+          <Help text={t.mpContactHelp} label={t.mpTitle} />
+        </div>
+        <FLabel label={t.mpEmail}>
+          <FInput type="email" value={email} onChange={setEmail} placeholder={t.mpEmailEx} maxLength={120} />
+        </FLabel>
+        <FLabel label={t.mpPhone}>
+          <FInput type="tel" value={phone} onChange={setPhone} placeholder={t.mpPhoneEx} maxLength={20} />
+        </FLabel>
+        <PrimaryBtn onClick={save} full={true} disabled={loading||!name.trim()}>
+          {loading?t.mpSaving:t.mpSave}
+        </PrimaryBtn>
       </div>
     </div>
   );
@@ -6348,6 +6548,7 @@ function App(){
   var [guestMode,setGuestMode]=useState(false);
   var [syncKey,setSyncKey]=useState(0);
   var [needsHome,setNeedsHome]=useState(false);
+  var [needsProfile,setNeedsProfile]=useState(false);
   var [migrating,setMigrating]=useState(false);
   var [members,setMembers]=useState({});
 
@@ -6396,10 +6597,20 @@ function App(){
         setLang(settings.lang||'en');
         setWorkingDays(settings.workingDays||26);
         var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
-        if(!doc.exists||(doc.data().homeIds||[]).length===0){
+        var ud=doc.exists?doc.data():null;
+        /* Hydrate before anything below can ask for the name - in particular
+           before the self-heal, which decides whether a household's copy of
+           the name has fallen behind the profile. */
+        _profile=ud?{name:ud.displayName||'',email:ud.email||'',phone:ud.phone||''}:null;
+        if(!ud||(ud.homeIds||[]).length===0){
+          /* Asking who they are belongs to the same moment as "you have no
+             household yet", so it can never interrupt somebody already using
+             the app. profileVersion, not displayName, is the marker: a name
+             is written for every user by household create/join, so its
+             presence proves nothing about whether a human ever saw a form. */
+          setNeedsProfile(!(ud&&ud.profileVersion));
           setNeedsHome(true); setReady(true); return;
         }
-        var ud=doc.data();
         Promise.all((ud.homeIds||[]).map(function(id){ return fbDb.collection('homes').doc(id).get(); }))
           .then(function(docs){
             var live=docs.filter(function(d){return d.exists;});
@@ -6408,13 +6619,22 @@ function App(){
             var hid=(lid&&userHomes.find(function(x){return x.id===lid;}))?lid:(userHomes[0]?userHomes[0].id:'');
             setHomes(userHomes); setHomeId(hid); _activeHomeId=hid;
             /* Self-heal: households created before member names existed have no
-               members map, so register ours (and refresh it if the name changed). */
+               members map, so register ours. This used to also rewrite the entry
+               whenever it differed from the provider's name, which quietly undid
+               any name the user had chosen every single time they signed in - so
+               it now only writes in two cases: there is nothing there yet, or the
+               user's own stored profile name has moved on and this household has
+               not caught up (a rename made on another device). An entry that
+               simply differs from the provider name is left alone. */
             live.forEach(function(d){
               var data=d.data();
               var mem=data.members||{};
-              var mine=mem[u.uid], nm=displayNameOf(u);
-              if(!mine||mine.name!==nm){
-                var patch={}; patch['members.'+u.uid]={name:nm,color:memberColor(u.uid)};
+              var mine=mem[u.uid];
+              var chosen=_profile&&_profile.name;
+              var missing=!mine||!mine.color;
+              var stale=!!(chosen&&mine&&mine.name!==chosen);
+              if(missing||stale){
+                var patch={}; patch['members.'+u.uid]={name:profileNameOf(u),color:memberColor(u.uid)};
                 d.ref.update(patch).catch(function(){});
               }
               /* Households created before the invites lookup existed have no
@@ -6548,6 +6768,12 @@ function App(){
     return <AuthScreen lang={lang}
       onAuth={function(){ window.location.reload(); }}
       onGuest={enterGuestMode} />;
+  }
+  /* Who you are, then where you live: both only ever for someone who has no
+     household yet, so neither can interrupt an existing user. */
+  if(!guestMode&&needsProfile){
+    return <ProfileSetupScreen lang={lang} user={user}
+      onSaved={function(){ setNeedsProfile(false); }} />;
   }
   if(!guestMode&&needsHome){
     return <HomeSetupScreen lang={lang} user={user}
