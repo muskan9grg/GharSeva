@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GharSeva - Staff Manager</title>
+  <meta name="description" content="Track staff salaries, advances, loans and attendance for your household help - in Hindi or English." />
+  <!-- The mark itself already says (in its own code comment) it was drawn to
+       "hold together on a browser tab as well as a title bar" - it just was
+       never actually wired up as one. Same badge/roof/figure as the in-app
+       Logo component, inlined as a favicon so there is no second asset file
+       to keep in sync with it. -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1.5' y='1.5' width='61' height='61' rx='17' fill='%231A6E5E'/%3E%3Cpath d='M10 31.5 32 14l22 17.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 34.5V50h32V34.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='37.4' r='4.1' fill='%23fff'/%3E%3Cpath d='M24.6 50c0-4.4 3.3-7 7.4-7s7.4 2.6 7.4 7' fill='none' stroke='%23fff' stroke-width='4.4' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <!-- pinned versions on jsDelivr for reliability; no crossorigin attr for file:// compat -->
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
@@ -450,6 +457,7 @@ en:{
   delStaff:'Delete this staff member and all their data?',delEntry:'Delete this entry?',
   savedOk:'Entry saved!',paidOk:'Salary marked as paid!',
   errName:'Please enter the staff name',errAmount:'Please enter an amount',errStaff:'Please select a staff member',
+  errSalary:'Please enter a monthly salary',
   errLoanExceeds:'Amount is more than the remaining balance ({bal})',
   tPaidBadge:'Paid',tDueBadge:'Due this month',
   dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',
@@ -665,6 +673,7 @@ hi:{
   delStaff:'इस स्टाफ सदस्य का सारा डेटा हटाएं?',delEntry:'यह एंट्री हटाएं?',
   savedOk:'एंट्री सहेजी गई!',paidOk:'वेतन भुगतान दर्ज हो गया!',
   errName:'कृपया स्टाफ का नाम डालें',errAmount:'कृपया राशि डालें',errStaff:'कृपया स्टाफ चुनें',
+  errSalary:'कृपया मासिक वेतन डालें',
   errLoanExceeds:'राशि बकाया रकम ({bal}) से ज़्यादा है',
   tPaidBadge:'भुगतान',tDueBadge:'बाकी है',
   dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',
@@ -1731,12 +1740,16 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
           loanBal:getLoanBal(staff.id,ledger),
           fullRate:fullRate,partMonth:emp.partial,partDays:emp.days,monthDays:emp.monthDays,
           raw:raw,eff:eff,waived:waived,reduced:reduced,totalDeduct:totalDeduct,
-          /* The part of a deliberate reduction that has nowhere loan-native to
+          /* The part of a deliberate REDUCTION that has nowhere loan-native to
              live (loan's shortfall instead rides manualRepaid, handled where
              the loan itself is advanced) - this is what a payment record adds
              into `unrecovered` on top of whatever the net already falls short
-             by, so it still reaches next month's carry-in. */
-          nonLoanShortfall:REDUCIBLE_KEYS.filter(function(k){return k!=='loan';})
+             by, so it still reaches next month's carry-in. A waived key must
+             never contribute here even though it also drives eff[k] to 0:
+             waiving forgives the charge outright, and folding its full raw
+             amount into next month's debt would silently undo that forgiveness
+             the moment the payment was saved. */
+          nonLoanShortfall:REDUCIBLE_KEYS.filter(function(k){return k!=='loan'&&waived.indexOf(k)<0;})
             .reduce(function(s,k){return s+(raw[k]-eff[k]);},0),
           netPayable:Math.max(0,net),unrecovered:Math.max(0,-net)};
 }
@@ -2211,8 +2224,17 @@ function StaffModal({lang,onClose,onSave,existing}){
 
   function handleSave(){
     if(!form.name.trim()){setErrMsg(t.errName);return;}
-    var amount=Number(form.salary)||0;
-    var next=Object.assign({},form,{id:existing?existing.id:uid(),salary:amount,phone:normalizePhone(form.phone||'')});
+    /* A blank salary silently saved as 0 - name was the only thing that
+       actually blocked Save, so nothing stopped someone from being added
+       with no pay at all, and every calculation for them (salary due, the
+       dashboard countdown, Annual totals) would then be wrong with no error
+       anywhere to explain why. */
+    if(!form.salary||Number(form.salary)<=0){setErrMsg(t.errSalary);return;}
+    var amount=Number(form.salary);
+    /* 1-31 was only ever a hint on this field, never enforced - a typo like
+       "99" flowed straight into the dashboard's days-until-payday math. */
+    var payDay=Math.min(31,Math.max(1,Number(form.payDay)||1));
+    var next=Object.assign({},form,{id:existing?existing.id:uid(),salary:amount,payDay:String(payDay),phone:normalizePhone(form.phone||'')});
     if(salaryChanged) next.salaryHistory=withSalaryChange(existing,amount,raiseFrom);
     onSave(next);
   }
@@ -2251,7 +2273,7 @@ function StaffModal({lang,onClose,onSave,existing}){
           </div>
         )}
       </FLabel>
-      <FLabel label={t.fsalary}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder={t.salaryPh} /></FLabel>
+      <FLabel label={t.fsalary} req={true}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder={t.salaryPh} /></FLabel>
       <FLabel label={t.fHoursPerDay} hint={t.fHoursPerDayHint}><FInput type="number" value={form.hoursPerDay} onChange={function(v){set('hoursPerDay',v);}} placeholder="5" /></FLabel>
       {salaryChanged&&(
         <div className="rounded-2xl mb-4" style={{background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px'}}>
@@ -2502,12 +2524,19 @@ function UndoPayment({rec,homeId,ledger,payments,t,mc,onDone}){
 
 /* The part of this month's deductions the salary could not cover. */
 function UnrecoveredNotice({calc,t}){
-  if(!calc||!calc.unrecovered) return null;
+  /* calc.unrecovered alone only catches the shortfall from net going
+     negative - a deliberately reduced Advance can carry its own shortfall
+     forward (calc.nonLoanShortfall) while net stays comfortably positive, and
+     that case was invisible here even though it becomes next month's debt
+     exactly the same way. The row itself already notes it inline; this is
+     the one place that totals it up before the payment is confirmed. */
+  var total=(calc&&calc.unrecovered||0)+(calc&&calc.nonLoanShortfall||0);
+  if(!calc||!total) return null;
   return (
     <div className="rounded-2xl mb-4" style={{background:'#FCE8E8',border:'2px solid var(--danger)',padding:'12px 14px'}}>
       <div className="flex justify-between items-center">
         <span style={{fontSize:fsr(14),fontWeight:800,color:'var(--danger)'}}>{t.rUnrecovered}</span>
-        <span style={{fontSize:fsr(17),fontWeight:800,color:'var(--danger)'}}>{fmt(calc.unrecovered)}</span>
+        <span style={{fontSize:fsr(17),fontWeight:800,color:'var(--danger)'}}>{fmt(total)}</span>
       </div>
       <p style={{fontSize:fsr(12),color:'var(--danger)',margin:'6px 0 0'}}>{t.unrecoveredHint}</p>
     </div>
@@ -3026,10 +3055,18 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
     setAttTick(function(n){return n+1;});
   }
 
-  /* upcoming pay days sorted by closeness — nobody who has left is still due */
+  /* upcoming pay days sorted by closeness — nobody who has left is still due.
+     A flat 30 undercounted every 31-day month and overcounted February by up
+     to 3, so this now looks up each month's real length instead of assuming
+     one. A pay day past the end of a short month (31 chosen, landed in a
+     30-day or 28/29-day month) is clamped to that month's last day rather
+     than overshooting into the next one. */
+  var curMonthDays=new Date(curYear,curMonth,0).getDate();
+  var nextMonthDays=new Date(curMonth===12?curYear+1:curYear,curMonth===12?1:curMonth+1,0).getDate();
   var payList=staff.filter(function(s){return !hasLeft(s);}).map(function(s){
-    var pd=Number(s.payDay)||1;
-    var daysUntil=pd>=todayDate?pd-todayDate:(30-todayDate+pd);
+    var pd=Math.min(31,Math.max(1,Number(s.payDay)||1));
+    var pdThis=Math.min(pd,curMonthDays);
+    var daysUntil=pdThis>=todayDate?pdThis-todayDate:(curMonthDays-todayDate)+Math.min(pd,nextMonthDays);
     var isPaid=payments.some(function(p){return p.staffId===s.id&&Number(p.year)===curYear&&Number(p.month)===curMonth;});
     return {s:s,daysUntil:daysUntil,isPaid:isPaid,pd:pd};
   }).sort(function(a,b){return a.daysUntil-b.daysUntil;});
@@ -3123,7 +3160,12 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
         {payList.length===0
           ? <p className="p-4 text-center" style={{color:'var(--muted)',fontSize:fsr(13)}}>{t.dashNoStaff}</p>
           : payList.map(function(item,i){
-              var dueTxt=item.daysUntil===0?t.dashToday:item.daysUntil===1?t.dashTomorrow:item.pd+' '+t.tDays;
+              /* This read item.pd - the day-of-month payday is set to, e.g.
+                 "5" - not item.daysUntil, so anyone whose count wasn't
+                 exactly 0 or 1 saw their payday number relabelled as a
+                 countdown: payDay 5 always read "5 days" whether payday was
+                 5 days away or had passed three weeks ago. */
+              var dueTxt=item.daysUntil===0?t.dashToday:item.daysUntil===1?t.dashTomorrow:item.daysUntil+' '+t.tDays;
               return (
                 <div key={item.s.id} className="flex items-center gap-3 px-4 py-3"
                   style={{borderBottom:i<payList.length-1?'1px solid var(--border)':'none'}}>
@@ -3400,12 +3442,18 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
         </FLabel>
         <div className="flex gap-3">
           <FLabel label={t.selMonth}>
-            <FSelect value={selMonth} onChange={function(v){setSelMonth(Number(v));}}>
+            {/* Staff switching already cleared calc below; month/year did not,
+               so the heading would change to the newly picked month while the
+               breakdown underneath - and Save as paid - kept acting on
+               whichever month was last calculated. Recalculate is now
+               mandatory again the moment either changes, the same as it
+               already was for staff. */}
+            <FSelect value={selMonth} onChange={function(v){setSelMonth(Number(v));setCalc(null);setWAMsg('');}}>
               {t.mFull.map(function(m,i){return <option key={i} value={i+1}>{m}</option>;})}
             </FSelect>
           </FLabel>
           <FLabel label={t.selYear}>
-            <FSelect value={selYear} onChange={function(v){setSelYear(Number(v));}}>
+            <FSelect value={selYear} onChange={function(v){setSelYear(Number(v));setCalc(null);setWAMsg('');}}>
               {years.map(function(y){return <option key={y} value={y}>{y}</option>;})}
             </FSelect>
           </FLabel>
@@ -5207,7 +5255,12 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
             onChange={function(e){if(Number(e.target.value)<0)return;setWdInput(e.target.value);}}
             className="inp" style={{width:80}} />
           <button onClick={saveWD} className="btn btn-ok btn-sm">
-            {wdSaved?t.save:t.save}
+            {/* Both branches of this used to say the same word, so the 2-second
+               wdSaved window it was built for never actually showed - a tap
+               on Save looked like it did nothing. A checkmark for that window
+               is the same brief-confirmation pattern already used elsewhere
+               (e.g. the Present/Leave buttons on Home). */}
+            <span className="flex items-center justify-center gap-1">{wdSaved&&<Icon name="check" size={14} strokeWidth={2.6} />}{t.save}</span>
           </button>
         </div>
 
@@ -5217,7 +5270,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
             onChange={function(e){if(Number(e.target.value)<0)return;setRateInput(e.target.value);}}
             className="inp" style={{width:80}} />
           <button onClick={saveStdRate} className="btn btn-ok btn-sm">
-            {rateSaved?t.save:t.save}
+            <span className="flex items-center justify-center gap-1">{rateSaved&&<Icon name="check" size={14} strokeWidth={2.6} />}{t.save}</span>
           </button>
         </div>
 
@@ -6263,6 +6316,11 @@ class ErrorBoundary extends React.Component {
 function App(){
   var [ready,setReady]=useState(false);
   var [lang,setLang]=useState('en');
+  /* The <html lang> attribute was left at "en" for the life of the tab -
+     screen readers and the browser's own translate/spell-check machinery
+     read it once and take it as fact, so a household running the app in
+     Hindi was announced and spell-checked as English throughout. */
+  useEffect(function(){ document.documentElement.lang=lang==='hi'?'hi':'en'; },[lang]);
   var [homes,setHomes]=useState([]);
   var [homeId,setHomeId]=useState('');
   var [tab,setTab]=useState('home');
@@ -6572,7 +6630,6 @@ function App(){
       <div className="flex-1 flex flex-col overflow-hidden" style={{position:'relative'}}>
         {tab==='home'     && <DashboardTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onNavigate={goTab} />}
         {tab==='staff'    && <StaffTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} onStaffChange={function(){setStaffKey(function(k){return k+1;});}} />}
-        {tab==='salary'   && <SalaryTab key={homeId+'-'+staffKey+'-'+preselectSalaryStaff} lang={lang} homeId={homeId} homes={homes} refreshKey={staffKey} workingDays={workingDays} syncKey={syncKey} defaultStaffId={preselectSalaryStaff} />}
         {tab==='leaves'   && <LeavesTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='money'    && <MoneyTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} refreshKey={staffKey} defaultStaffId={preselectSalaryStaff} />}
         {tab==='reports'  && <ReportsTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
