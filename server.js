@@ -6,6 +6,11 @@ const root = __dirname;
 http.createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0].split('#')[0]);
   let filePath = path.join(root, urlPath === '/' ? 'index.html' : urlPath);
+  /* Serve index.html for a directory, the way Netlify does - otherwise the
+     marketing site under web/ can only be previewed at its full filename
+     locally while the deployed site answers on the bare path. */
+  try { if (fs.statSync(filePath).isDirectory()) filePath = path.join(filePath, 'index.html'); }
+  catch (e) { /* fall through to the 404 below */ }
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); res.end('Not found'); return; }
     const ext = path.extname(filePath);

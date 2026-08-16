@@ -1,0 +1,14 @@
+# Netlify config for the MARKETING SITE (gharseva.org).
+#
+# The app is a separate Netlify site built from the same repository with its
+# own netlify.toml at the repo root. Netlify reads this file from the site's
+# base directory, which is what lets one repo serve two sites with different
+# settings - so this site must have its base directory set to "web" in
+# Site configuration -> Build & deploy -> Build settings.
+#
+# No build command: this is one static HTML file with inlined CSS. In
+# particular it must NOT run generate-config.js - the marketing page has no
+# Firebase config and needs none.
+
+[build]
+  publish = "."
