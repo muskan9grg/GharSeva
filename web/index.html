@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>GharSeva — Salary day, without the guesswork</title>
+<title>GharSeva · Salary day, without the guesswork</title>
 <meta name="description" content="Track attendance, advances and loans for everyone who works at your home. GharSeva does the maths and tells you the exact salary to pay. Free, works offline, in Hindi and English." />
-<meta property="og:title" content="GharSeva — Salary day, without the guesswork" />
-<meta property="og:description" content="The household staff manager that remembers every leave, every advance, every loan — and works out the exact salary for you." />
+<meta property="og:title" content="GharSeva · Salary day, without the guesswork" />
+<meta property="og:description" content="The household staff manager that remembers every leave, every advance, every loan, and works out the exact salary for you." />
 <meta property="og:type" content="website" />
 <!-- This page is the one that should rank, not the app on the subdomain,
      which carries no content and is marked noindex. -->
@@ -17,7 +17,7 @@
 <!-- The same badge/roof/figure mark the app uses for its own tab icon, rather
      than the house emoji this page started with - one brand, one tab icon,
      whichever of the two domains you happen to be looking at. -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1.5' y='1.5' width='61' height='61' rx='17' fill='%231A6E5E'/%3E%3Cpath d='M10 31.5 32 14l22 17.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 34.5V50h32V34.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='37.4' r='4.1' fill='%23fff'/%3E%3Cpath d='M24.6 50c0-4.4 3.3-7 7.4-7s7.4 2.6 7.4 7' fill='none' stroke='%23fff' stroke-width='4.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1.5' y='1.5' width='61' height='61' rx='17' fill='%231A6E5E'/%3E%3Cpath d='M10 31.5 32 14l22 17.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 34.5V50h32V34.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='30.5' cy='37.4' r='4.1' fill='%23fff'/%3E%3Cpath d='M24.3 50c0-4.4 2.8-6.9 6.2-6.9s6.2 2.5 6.2 6.9' fill='none' stroke='%23fff' stroke-width='4.4' stroke-linecap='round'/%3E%3Cpath d='M42.5 35V50' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
 :root{
@@ -104,6 +104,22 @@ nav.scrolled{border-bottom-color:var(--border)}
   display:inline-flex;align-items:center;gap:8px;font-size:.87rem;font-weight:800;color:var(--ink2);
   background:var(--surface);border:1px solid var(--border);padding:9px 15px;border-radius:100px
 }
+/* The app's own icon set, inlined. Sized in em so every container that used to
+   set a font-size for an emoji keeps working untouched, and drawn with
+   currentColor so each one takes the colour of whatever it sits in. */
+.ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;flex:none}
+.trust .ic{color:var(--accent)}
+.tick .ic{width:.8em;height:.8em;vertical-align:0}
+.b .ico .ic{width:1.5rem;height:1.5rem;color:var(--accent)}
+.b.hero-card .ico .ic{color:#fff}
+.ind .big .ic{width:2.1rem;height:2.1rem;color:var(--accent)}
+.chip .ic{margin-right:2px}
+.btn .ic{width:1.05em;height:1.05em}
+.pbtn .ic{width:1.15rem;height:1.15rem}
+/* The Aa control is the app's own font-size button, so it is lettering rather
+   than an icon - the one place a glyph is the correct answer. */
+.aa{font-weight:900;letter-spacing:-.03em;color:var(--accent)}
+.b.hero-card .aa{color:#fff}
 .trust b{color:var(--accent)}
 @media(max-width:900px){
   .hero-grid{grid-template-columns:1fr;gap:52px}
@@ -138,7 +154,8 @@ nav.scrolled{border-bottom-color:var(--border)}
   display:flex;background:var(--surface);border-top:1px solid var(--border);padding:7px 0 9px
 }
 .ph-nav div{flex:1;text-align:center;font-size:.56rem;font-weight:900;color:var(--muted)}
-.ph-nav div span{display:block;font-size:1.1rem;margin-bottom:2px;filter:grayscale(1);opacity:.55}
+.ph-nav div span{display:block;margin-bottom:3px}
+.ph-nav div .ic{width:1.05rem;height:1.05rem;margin:0 auto}
 .ph-nav div.on{color:var(--accent)}
 .ph-nav div.on span{filter:none;opacity:1}
 .card-mini{
@@ -433,19 +450,19 @@ html.js-rv .rv.in{opacity:1;transform:none}
       <h1>Salary day,<br>without the <span class="hl">guesswork</span>.</h1>
       <p class="lead">
         GharSeva remembers every leave, every advance and every loan instalment for the people who
-        work at your home — then works out exactly what to pay. No diary. No arguments.
+        work at your home, then works out exactly what to pay. No diary. No arguments.
       </p>
       <div class="hero-cta">
-        <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva — free →</a>
-        <a href="#video" class="btn btn-ghost btn-lg">▶ See how it works</a>
+        <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva, free <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5"/></svg></a>
+        <a href="#video" class="btn btn-ghost btn-lg">See how it works</a>
       </div>
       <!-- Two claims, not three. Offline and हिंदी each have a proper home
            further down; repeating them here, in the middle and again in the
            footer taught the reader to stop reading them. What belongs at the
            top is the thing nothing else on the page says. -->
       <div class="trust-row">
-        <span class="trust">🇮🇳 Built for <b>Indian homes</b></span>
-        <span class="trust">✏️ Every number stays <b>yours to change</b></span>
+        <span class="trust"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 4l8.5 6.6V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg> Built for <b>Indian homes</b></span>
+        <span class="trust"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l.9-4.2L15.6 5.1a2 2 0 0 1 2.8 0l1.5 1.5a2 2 0 0 1 0 2.8L9.2 20.1z"/><path d="M14 6.7l3.3 3.3"/></svg> Every number stays <b>yours to change</b></span>
       </div>
     </div>
 
@@ -456,7 +473,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
             <div class="t1">GharSeva</div>
             <div class="t2">Synced with your family</div>
             <!-- a dropdown in the app, so it carries a chevron, not a house -->
-            <div class="ph-sel"><span>Nagpur — Main House</span><span style="opacity:.75">⌄</span></div>
+            <div class="ph-sel"><span>Nagpur, Main House</span><span style="opacity:.75">⌄</span></div>
           </div>
           <div class="ph-body" id="phBody">
             <!-- panel: home — the day's attendance, marked from the Home
@@ -517,7 +534,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
                 <div class="ln"><span>Base salary</span><span>₹8,000</span></div>
                 <div class="ln neg"><span>3 leave days</span><span>− ₹923</span></div>
                 <div class="ln neg"><span>Advance taken</span><span>− ₹1,000</span></div>
-                <div class="ln neg"><span>Loan — reduced</span><span>− ₹300</span></div>
+                <div class="ln neg"><span>Loan, reduced</span><span>− ₹300</span></div>
                 <div class="ln"><span>Diwali bonus</span><span>+ ₹500</span></div>
                 <div class="tot"><span>Pay now</span><span>₹6,277</span></div>
                 <div style="font-size:.6rem;color:var(--muted);font-weight:800;margin-top:7px">₹700 carried to next month</div>
@@ -536,7 +553,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
                   <i style="flex:1;height:70%;background:var(--accent);border-radius:4px 4px 0 0;opacity:.8"></i>
                   <i style="flex:1;height:100%;background:var(--accent);border-radius:4px 4px 0 0"></i>
                 </div>
-                <div style="font-size:.6rem;color:var(--muted);font-weight:800;margin-top:9px;text-align:center">Per person, per month — and out to a spreadsheet</div>
+                <div style="font-size:.6rem;color:var(--muted);font-weight:800;margin-top:9px;text-align:center">Per person, per month. And out to a spreadsheet</div>
               </div>
             </div>
           </div>
@@ -544,10 +561,10 @@ html.js-rv .rv.in{opacity:1;transform:none}
                read Staff / Attend / Pay / Records, which was the older layout
                and no longer exists anywhere in the app. -->
           <div class="ph-nav" id="phNav">
-            <div class="on"><span>🏠</span>Home</div>
-            <div><span>👥</span>Staff</div>
-            <div><span>💳</span>Money</div>
-            <div><span>📊</span>Reports</div>
+            <div class="on"><span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 4l8.5 6.6V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg></span>Home</div>
+            <div><span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><circle cx="17.5" cy="9.2" r="2.3"/><path d="M17 14.8c2.6.1 4.4 1.9 4.4 4.4"/></svg></span>Staff</div>
+            <div><span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg></span>Money</div>
+            <div><span><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20.5V11M10 20.5V4.5M16 20.5V14M22 20.5H2.5"/></svg></span>Reports</div>
           </div>
         </div>
       </div>
@@ -566,12 +583,12 @@ html.js-rv .rv.in{opacity:1;transform:none}
     <div class="q-grid">
       <div class="q rv"><span class="mark">“</span>She took leave last week… was that three days, or four?</div>
       <div class="q rv"><span class="mark">“</span>We gave an advance in March. Did we ever deduct it?</div>
-      <div class="q rv"><span class="mark">“</span>The loan — how many instalments are actually left?</div>
+      <div class="q rv"><span class="mark">“</span>The loan. How many instalments are actually left?</div>
       <div class="q rv"><span class="mark">“</span>Mummy paid him last month. Or was that me?</div>
     </div>
     <div class="after-q rv">
       So you round it off, pay a little extra, and hope nobody feels short-changed.<br>
-      <b>There is a better way — and it takes two minutes to set up.</b>
+      <b>There is a better way, and it takes two minutes to set up.</b>
     </div>
   </div>
 </section>
@@ -580,7 +597,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
 <section id="video">
   <div class="wrap">
     <div class="sec-head center rv">
-      <span class="eyebrow">▶ Watch — 30 seconds</span>
+      <span class="eyebrow">Watch · 30 seconds</span>
       <h2>From messy notes to an exact number.</h2>
       <p class="lead">Here is the whole idea, start to finish.</p>
     </div>
@@ -595,9 +612,9 @@ html.js-rv .rv.in{opacity:1;transform:none}
       <div class="stage" id="stage">
         <div class="scene on" data-s="0">
           <div class="note-scatter">
-            <div class="note">Kamala — 2 chutti? 3?</div>
+            <div class="note">Kamala, 2 chutti? 3?</div>
             <div class="note">Ramu advance ₹2000 (ya 1500?)</div>
-            <div class="note">loan — kitni kist baaki?</div>
+            <div class="note">loan, kitni kist baaki?</div>
           </div>
           <div class="cap">This is how most homes keep track.</div>
           <div class="sub">A diary, a phone note, and somebody's memory.</div>
@@ -606,7 +623,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
         <div class="scene" data-s="1">
           <div class="num">₹1,847</div>
           <div class="cap">The amount you quietly overpay.</div>
-          <div class="sub">Not because you are careless — because nobody can hold a month of half-days and advances in their head.</div>
+          <div class="sub">Not because you are careless. Nobody can hold a month of half-days and advances in their head.</div>
         </div>
 
         <div class="scene" data-s="2">
@@ -617,22 +634,22 @@ html.js-rv .rv.in{opacity:1;transform:none}
 
         <div class="scene" data-s="3">
           <div class="chip-row">
-            <span class="chip hot">👥 Add your staff</span>
+            <span class="chip hot"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><circle cx="17.5" cy="9.2" r="2.3"/><path d="M17 14.8c2.6.1 4.4 1.9 4.4 4.4"/></svg> Add your staff</span>
             <span class="chip">Name</span>
             <span class="chip">Work</span>
             <span class="chip">Monthly salary</span>
           </div>
-          <div class="cap">Step one — add them once.</div>
+          <div class="cap">Step one: add them once.</div>
           <div class="sub">Takes about thirty seconds per person. That is the only setup there is.</div>
         </div>
 
         <div class="scene" data-s="4">
           <div class="chip-row">
-            <span class="chip">✅ Present</span>
-            <span class="chip hot">🗓️ Leave</span>
-            <span class="chip">🏖 Holiday</span>
+            <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5L20 6.5"/></svg> Present</span>
+            <span class="chip hot"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3v4.5M16 3v4.5M3.5 10.5h17"/></svg> Leave</span>
+            <span class="chip"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4 7 7M17 17l1.6 1.6M5.4 18.6 7 17M17 7l1.6-1.6"/></svg> Holiday</span>
           </div>
-          <div class="cap">Step two — one tap a day.</div>
+          <div class="cap">Step two: one tap a day.</div>
           <div class="sub">Miss a day? Tap any date on the calendar and fix it later.</div>
         </div>
 
@@ -645,13 +662,13 @@ html.js-rv .rv.in{opacity:1;transform:none}
             <div class="ln"><span>Diwali bonus</span><span>+ ₹500</span></div>
             <div class="tot"><span>Pay now</span><span>₹5,577</span></div>
           </div>
-          <div class="cap">Step three — there is no step three.</div>
+          <div class="cap">Step three: there is no step three.</div>
         </div>
 
         <div class="scene" data-s="6">
           <div class="sync-pair">
             <div class="sync-ph"><i class="g"></i><i></i><i class="g"></i><i></i><i></i></div>
-            <div class="sync-arrows">⇄</div>
+            <div class="sync-arrows"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5A8.5 8.5 0 0 0 6 6.2M3.5 12.5A8.5 8.5 0 0 0 18 17.8"/><path d="M17.5 3v3.6h-3.6M6.5 21v-3.6h3.6"/></svg></div>
             <div class="sync-ph"><i class="g"></i><i></i><i class="g"></i><i></i><i></i></div>
           </div>
           <div class="cap">And the whole family sees it.</div>
@@ -661,12 +678,16 @@ html.js-rv .rv.in{opacity:1;transform:none}
         <div class="scene" data-s="7">
           <div class="cap">And when the month is hard, you bend it.</div>
           <div class="sub">Take part of a loan instalment instead of all of it, or skip it altogether. Whatever is left simply waits for next month.</div>
-          <div class="chip-row"><span class="chip hot">Open GharSeva →</span></div>
+          <div class="chip-row"><span class="chip hot">Open GharSeva <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5"/></svg></span></div>
         </div>
       </div>
 
       <div class="bar">
-        <button class="pbtn" id="pp" aria-label="Play or pause">❚❚</button>
+        <!-- Starts as Play, because the walkthrough does not begin until it
+             scrolls into view. It used to show a pause bar from the moment the
+             page loaded, with an aria-label of "Play or pause" that committed
+             to neither; play() swaps this the instant it actually starts. -->
+        <button class="pbtn" id="pp" aria-label="Play"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M7.5 4.8v14.4L19.5 12z"/></svg></button>
         <div class="track" id="track"><div class="fill" id="fill"></div></div>
         <span class="tstamp" id="ts">0:00</span>
       </div>
@@ -681,7 +702,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
     <div class="sec-head rv">
       <span class="eyebrow">Everything in one place</span>
       <h2>Small app. Surprisingly thorough.</h2>
-      <p class="lead">Built around how Indian households actually pay their help — where the rule is a starting point and real life keeps amending it.</p>
+      <p class="lead">Built around how Indian households actually pay their help, where the rule is a starting point and real life keeps amending it.</p>
     </div>
 
     <div class="bento">
@@ -690,9 +711,9 @@ html.js-rv .rv.in{opacity:1;transform:none}
            anything new, so this card carries the part the receipt cannot show:
            what happens when you disagree with the total. -->
       <div class="b hero-card rv">
-        <div class="ico">✏️</div>
+        <div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l.9-4.2L15.6 5.1a2 2 0 0 1 2.8 0l1.5 1.5a2 2 0 0 1 0 2.8L9.2 20.1z"/><path d="M14 6.7l3.3 3.3"/></svg></div>
         <h3>The maths is automatic. The decision is not.</h3>
-        <p>Every deduction it works out is a suggestion you can overrule — one month, one person, one line at a time.</p>
+        <p>Every deduction it works out is a suggestion you can overrule, one month, one person, one line at a time.</p>
         <div class="calc-demo">
           <div class="ln"><span>Loan instalment due</span><span>₹1,000</span></div>
           <div class="ln"><span>He asks for less this month</span><em>take ₹300</em></div>
@@ -701,16 +722,16 @@ html.js-rv .rv.in{opacity:1;transform:none}
         </div>
       </div>
 
-      <div class="b rv"><div class="ico">🗓️</div><h3>One tap a day</h3><p>Present, leave or holiday. Tap any past date to correct it — the salary updates itself.</p></div>
-      <div class="b rv"><div class="ico">🏦</div><h3>Advances &amp; loans</h3><p>Set how many months to repay over and the instalment works itself out — or type your own. A month they cannot manage it, take less, or none. The balance keeps count either way.</p></div>
-      <div class="b rv"><div class="ico">↩️</div><h3>Nothing is final</h3><p>Recorded a salary you should not have? Undo it and the loan instalment steps back with it. Marked the wrong day three weeks ago? Fix it and the maths catches up.</p></div>
-      <div class="b wide rv"><div class="ico">👨‍👩‍👧</div><h3>Your whole family, one shared list</h3><p>Share a six-character code. When your mother marks a leave in Nagpur, you see it in Mumbai a second later.</p></div>
-      <div class="b rv"><div class="ico">📶</div><h3>Works without internet</h3><p>Mark attendance in a lift or a basement. It syncs the moment you are back online.</p></div>
-      <div class="b rv"><div class="ico">🔤</div><h3>Large-text mode</h3><p>Two taps make everything bigger. Built so elders in the house can use it without help.</p></div>
-      <div class="b rv"><div class="ico">🎤</div><h3>Speak instead of typing</h3><p>Say what happened and let the app write the entry for you.</p></div>
-      <div class="b rv"><div class="ico">📊</div><h3>Year at a glance</h3><p>Every rupee paid, every day taken — per person, per year. Export to a spreadsheet whenever you like.</p></div>
-      <div class="b rv"><div class="ico">🔐</div><h3>Document drawer</h3><p>Aadhaar and bank details kept with the person they belong to, so you are not hunting for them at payment time.</p></div>
-      <div class="b rv"><div class="ico">🏘️</div><h3>More than one home</h3><p>Main house, in-laws' place, the farm. Keep each one separate and switch in a tap.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3v4.5M16 3v4.5M3.5 10.5h17"/></svg></div><h3>One tap a day</h3><p>Present, leave or holiday. Tap any past date to correct it, and the salary updates itself.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 4.5l9 5.5"/><path d="M5.5 10.5v8M9.5 10.5v8M14.5 10.5v8M18.5 10.5v8M3 20.5h18"/></svg></div><h3>Advances &amp; loans</h3><p>Set how many months to repay over and the instalment works itself out, or type your own. A month they cannot manage it, take less, or none. The balance keeps count either way.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h10a5.5 5.5 0 0 1 0 11h-6"/><path d="M7.5 5 4 8.5 7.5 12"/></svg></div><h3>Nothing is final</h3><p>Recorded a salary you should not have? Undo it and the loan instalment steps back with it. Marked the wrong day three weeks ago? Fix it and the maths catches up.</p></div>
+      <div class="b wide rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><circle cx="17.5" cy="9.2" r="2.3"/><path d="M17 14.8c2.6.1 4.4 1.9 4.4 4.4"/></svg></div><h3>Your whole family, one shared list</h3><p>Share a six-character code. When your mother marks a leave in Nagpur, you see it in Mumbai a second later.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5A8.5 8.5 0 0 0 6 6.2M3.5 12.5A8.5 8.5 0 0 0 18 17.8"/><path d="M17.5 3v3.6h-3.6M6.5 21v-3.6h3.6"/></svg></div><h3>Works without internet</h3><p>Mark attendance in a lift or a basement. It syncs the moment you are back online.</p></div>
+      <div class="b rv"><div class="ico"><span class="aa">Aa</span></div><h3>Large-text mode</h3><p>Two taps make everything bigger. Built so elders in the house can use it without help.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.6" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.4M8.5 21.4h7"/></svg></div><h3>Speak instead of typing</h3><p>Say what happened and let the app write the entry for you.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20.5V11M10 20.5V4.5M16 20.5V14M22 20.5H2.5"/></svg></div><h3>Year at a glance</h3><p>Every rupee paid, every day taken, per person, per year. Export to a spreadsheet whenever you like.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10" width="15" height="10.5" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg></div><h3>Document drawer</h3><p>Aadhaar and bank details kept with the person they belong to, so you are not hunting for them at payment time.</p></div>
+      <div class="b rv"><div class="ico"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6 12 4l8.5 6.6V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg></div><h3>More than one home</h3><p>Main house, in-laws' place, the farm. Keep each one separate and switch in a tap.</p></div>
     </div>
   </div>
 </section>
@@ -732,12 +753,12 @@ html.js-rv .rv.in{opacity:1;transform:none}
         <p>Present, leave or holiday. That single tap is the only habit the app ever asks of you.</p>
       </div>
       <div class="step rv">
-        <h3>Pay the number — or change it</h3>
+        <h3>Pay the number, or change it</h3>
         <p>On salary day the amount is already sitting there, deductions and all. Agree with it and pay. Disagree with any line and adjust it before you do.</p>
       </div>
     </div>
     <div style="text-align:center;margin-top:52px" class="rv">
-      <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Try it now — nothing to install →</a>
+      <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Try it now, nothing to install <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5"/></svg></a>
     </div>
   </div>
 </section>
@@ -749,14 +770,14 @@ html.js-rv .rv.in{opacity:1;transform:none}
       <span class="eyebrow">Made for joint families</span>
       <h2>Everyone writes. Nobody double-pays.</h2>
       <p class="lead" style="margin-top:18px">
-        In most homes, more than one person deals with the help — and that is exactly where the
+        In most homes, more than one person deals with the help, and that is exactly where the
         confusion starts. GharSeva gives the household one shared record instead of four private ones.
       </p>
       <ul class="tick-list">
-        <li><span class="tick">✓</span> Up to five family members on one household</li>
-        <li><span class="tick">✓</span> An entry made by anyone shows up for everyone, instantly</li>
-        <li><span class="tick">✓</span> Joining is a six-character code — no emails, no passwords to share</li>
-        <li><span class="tick">✓</span> Change your phone and nothing is lost</li>
+        <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5L20 6.5"/></svg></span> Up to five family members on one household</li>
+        <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5L20 6.5"/></svg></span> An entry made by anyone shows up for everyone, instantly</li>
+        <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5L20 6.5"/></svg></span> Joining is a six-character code. No emails, no passwords to share</li>
+        <li><span class="tick"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5L20 6.5"/></svg></span> Change your phone and nothing is lost</li>
       </ul>
     </div>
     <div class="rv">
@@ -780,14 +801,14 @@ html.js-rv .rv.in{opacity:1;transform:none}
 <section>
   <div class="wrap">
     <div class="sec-head center rv">
-      <span class="eyebrow">🇮🇳 Built here, for here</span>
+      <span class="eyebrow">Built here, for here</span>
       <h2>It already speaks your household's language.</h2>
     </div>
     <div class="india-grid">
-      <div class="ind rv"><span class="big">🗣️</span><h3>हिंदी and English</h3><p>Switch the entire app with one tap in the corner. Nothing is left half-translated.</p></div>
-      <div class="ind rv"><span class="big">👷</span><h3>The right job names</h3><p>Maid, cook, driver, watchman, gardener — and add your own if we missed one.</p></div>
-      <div class="ind rv"><span class="big">💬</span><h3>Shares on WhatsApp</h3><p>Send a salary slip or an invite the way your family already talks.</p></div>
-      <div class="ind rv"><span class="big">📅</span><h3>Your rules, not ours</h3><p>Some homes count 26 working days, some 30. Some pay a fixed rate an hour, some work it out from the salary. Set yours and every calculation follows it.</p></div>
+      <div class="ind rv"><span class="big"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12.5c0 4-3.8 7.2-8.5 7.2a10 10 0 0 1-2.6-.33L4.5 21l1.2-3.4A6.9 6.9 0 0 1 3.5 12.5C3.5 8.5 7.3 5.3 12 5.3s8.5 3.2 8.5 7.2z"/></svg></span><h3>हिंदी and English</h3><p>Switch the entire app with one tap in the corner. Nothing is left half-translated.</p></div>
+      <div class="ind rv"><span class="big"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><circle cx="17.5" cy="9.2" r="2.3"/><path d="M17 14.8c2.6.1 4.4 1.9 4.4 4.4"/></svg></span><h3>The right job names</h3><p>Maid, cook, driver, watchman, gardener. Add your own if we missed one.</p></div>
+      <div class="ind rv"><span class="big"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5.5" r="2.8"/><circle cx="6" cy="12" r="2.8"/><circle cx="18" cy="18.5" r="2.8"/><path d="M15.6 6.9 8.4 10.6M8.4 13.4l7.2 3.7"/></svg></span><h3>Shares on WhatsApp</h3><p>Send a salary slip or an invite the way your family already talks.</p></div>
+      <div class="ind rv"><span class="big"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7h9M18.5 7h2M3.5 12h4M11.5 12h9M3.5 17h9M18.5 17h2"/><circle cx="15" cy="7" r="2.2"/><circle cx="9.2" cy="12" r="2.2"/><circle cx="15" cy="17" r="2.2"/></svg></span><h3>Your rules, not ours</h3><p>Some homes count 26 working days, some 30. Some pay a fixed rate an hour, some work it out from the salary. Set yours and every calculation follows it.</p></div>
     </div>
   </div>
 </section>
@@ -806,15 +827,15 @@ html.js-rv .rv.in{opacity:1;transform:none}
       </details>
       <details class="rv">
         <summary>What does signing in involve?</summary>
-        <p>Your phone number and an OTP, or your Google account — whichever you prefer. That is the whole of it: no password to invent, no email to confirm. Signing in is what keeps the household on every family member's phone and safe if you lose yours.</p>
+        <p>Your phone number and an OTP, or your Google account, whichever you prefer. That is the whole of it: no password to invent, no email to confirm. Signing in is what keeps the household on every family member's phone and safe if you lose yours.</p>
       </details>
       <details class="rv">
         <summary>What happens to my data if I change my phone?</summary>
-        <p>Nothing to do. Your household lives in the cloud, so you sign in on the new phone and everything is already there — every person, every advance, every loan balance.</p>
+        <p>Nothing to do. Your household lives in the cloud, so you sign in on the new phone and everything is already there: every person, every advance, every loan balance.</p>
       </details>
       <details class="rv">
         <summary>Can I overrule what the app works out?</summary>
-        <p>Always. Take part of a loan instalment instead of the whole one and the rest waits for next month. Skip a deduction entirely for someone having a hard month. Type over any rate it suggests. Correct a day you marked wrong three weeks ago. Undo a salary you have already recorded. The app does the arithmetic — you decide the number.</p>
+        <p>Always. Take part of a loan instalment instead of the whole one and the rest waits for next month. Skip a deduction entirely for someone having a hard month. Type over any rate it suggests. Correct a day you marked wrong three weeks ago. Undo a salary you have already recorded. The app does the arithmetic. You decide the number.</p>
       </details>
       <details class="rv">
         <summary>Will it work when the internet is down?</summary>
@@ -822,7 +843,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
       </details>
       <details class="rv">
         <summary>Is my staff's Aadhaar and bank information safe?</summary>
-        <p>They sit in a separate section on the person's own profile, and only the family members you have invited into your household can read them. Nobody else — not another household, not a stranger with the code to somewhere else.</p>
+        <p>They sit in a separate section on the person's own profile, and only the family members you have invited into your household can read them. Nobody else: not another household, not a stranger holding a code to somewhere else.</p>
       </details>
       <details class="rv">
         <summary>My mother is not comfortable with apps. Can she use it?</summary>
@@ -841,8 +862,8 @@ html.js-rv .rv.in{opacity:1;transform:none}
   <div class="wrap">
     <div class="final rv">
       <h2>Next salary day can be the easy one.</h2>
-      <p>Add one person, tap a few days, and let the app do the arithmetic you have been doing in your head for years — while you keep every decision it is based on.</p>
-      <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva →</a>
+      <p>Add one person, tap a few days, and let the app do the arithmetic you have been doing in your head for years, while you keep every decision it is based on.</p>
+      <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13.5 6.5 20 12l-6.5 5.5"/></svg></a>
       <div class="fine">हिंदी &amp; English · Works on the phone you already have</div>
     </div>
   </div>
@@ -899,6 +920,10 @@ html.js-rv .rv.in{opacity:1;transform:none}
   showPanel(0);
   if(!reduce) setInterval(function(){ pi=(pi+1)%panels.length; showPanel(pi); },3200);
 
+  /* The player button is drawn from the same icon set as everything else,
+     so it is swapped as markup rather than as a character. */
+  var PAUSE_SVG='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 5.5v13M15 5.5v13"/></svg>';
+  var PLAY_SVG='<svg class="ic" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M7.5 4.8v14.4L19.5 12z"/></svg>';
   /* ---- the explainer "video" ---- */
   var scenes=[].slice.call(document.querySelectorAll('.scene'));
   var DUR=[3800,3800,3000,4200,4200,5000,4200,4600];      // ms per scene
@@ -947,11 +972,11 @@ html.js-rv .rv.in{opacity:1;transform:none}
   }
   function play(){
     if(playing) return;
-    playing=true; pp.textContent='❚❚'; pp.setAttribute('aria-label','Pause');
+    playing=true; pp.innerHTML=PAUSE_SVG; pp.setAttribute('aria-label','Pause');
     t0=performance.now(); raf=requestAnimationFrame(tick);
   }
   function pause(){
-    playing=false; pp.textContent='▶'; pp.setAttribute('aria-label','Play');
+    playing=false; pp.innerHTML=PLAY_SVG; pp.setAttribute('aria-label','Play');
     if(raf) cancelAnimationFrame(raf);
   }
   pp.onclick=function(){ playing?pause():play(); };
