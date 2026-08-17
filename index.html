@@ -14,7 +14,7 @@
        never actually wired up as one. Same badge/roof/figure as the in-app
        Logo component, inlined as a favicon so there is no second asset file
        to keep in sync with it. -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1.5' y='1.5' width='61' height='61' rx='17' fill='%231A6E5E'/%3E%3Cpath d='M10 31.5 32 14l22 17.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 34.5V50h32V34.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='37.4' r='4.1' fill='%23fff'/%3E%3Cpath d='M24.6 50c0-4.4 3.3-7 7.4-7s7.4 2.6 7.4 7' fill='none' stroke='%23fff' stroke-width='4.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='1.5' y='1.5' width='61' height='61' rx='17' fill='%231A6E5E'/%3E%3Cpath d='M10 31.5 32 14l22 17.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 34.5V50h32V34.5' fill='none' stroke='%23fff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='30.5' cy='37.4' r='4.1' fill='%23fff'/%3E%3Cpath d='M24.3 50c0-4.4 2.8-6.9 6.2-6.9s6.2 2.5 6.2 6.9' fill='none' stroke='%23fff' stroke-width='4.4' stroke-linecap='round'/%3E%3Cpath d='M42.5 35V50' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <!-- pinned versions on jsDelivr for reliability; no crossorigin attr for file:// compat -->
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
@@ -342,9 +342,21 @@ function Logo({size,tone}){
         strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M16 34.5V50h32V34.5" fill="none" stroke={mark} strokeWidth="5"
         strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="32" cy="37.4" r="4.1" fill={mark}/>
-      <path d="M24.6 50c0-4.4 3.3-7 7.4-7s7.4 2.6 7.4 7" fill="none" stroke={mark}
+      {/* The figure sits left of centre with slightly narrower shoulders than
+          it once had, purely to open up a clear column on the right. Wall to
+          wall there is only about 27 units of usable width, and the figure at
+          its old size left under 4 of them free on that side - not enough to
+          set anything beside it without the two reading as one blob. */}
+      <circle cx="30.5" cy="37.4" r="4.1" fill={mark}/>
+      <path d="M24.3 50c0-4.4 2.8-6.9 6.2-6.9s6.2 2.5 6.2 6.9" fill="none" stroke={mark}
         strokeWidth="4.4" strokeLinecap="round"/>
+      {/* A plain upright stick - a jhaadu handle, a watchman's lathi - which is
+          what turns "somebody at home" into "somebody who works here". Kept as
+          one straight stroke with no brush head or grip: at a 16px favicon any
+          detail on it collapses into a smudge, while a bare vertical still
+          reads as an object held beside a person. */}
+      <path d="M42.5 35V50" fill="none" stroke={mark}
+        strokeWidth="3" strokeLinecap="round"/>
     </svg>
   );
 }

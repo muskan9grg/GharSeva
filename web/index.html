@@ -411,7 +411,10 @@ html.js-rv .rv.in{opacity:1;transform:none}
 
 <nav id="nav">
   <div class="wrap nav-in">
-    <a href="#top" class="logo"><span class="logo-mark">🏠</span> GharSeva</a>
+    <!-- The real mark, not the house emoji this page used to borrow: same
+         badge, roof and figure the app draws, down to the stick that says the
+         person inside works there. -->
+    <a href="#top" class="logo"><span class="logo-mark"><svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><path d="M10 31.5 32 14l22 17.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 34.5V50h32V34.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30.5" cy="37.4" r="4.1" fill="#fff"/><path d="M24.3 50c0-4.4 2.8-6.9 6.2-6.9s6.2 2.5 6.2 6.9" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round"/><path d="M42.5 35V50" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span> GharSeva</a>
     <div class="nav-links">
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
@@ -426,7 +429,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <span class="eyebrow">🏠 Household staff manager</span>
+      <span class="eyebrow">Household staff manager</span>
       <h1>Salary day,<br>without the <span class="hl">guesswork</span>.</h1>
       <p class="lead">
         GharSeva remembers every leave, every advance and every loan instalment for the people who
@@ -436,10 +439,13 @@ html.js-rv .rv.in{opacity:1;transform:none}
         <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva — free →</a>
         <a href="#video" class="btn btn-ghost btn-lg">▶ See how it works</a>
       </div>
+      <!-- Two claims, not three. Offline and हिंदी each have a proper home
+           further down; repeating them here, in the middle and again in the
+           footer taught the reader to stop reading them. What belongs at the
+           top is the thing nothing else on the page says. -->
       <div class="trust-row">
-        <span class="trust">✅ <b>No account</b> needed to start</span>
-        <span class="trust">📶 Works <b>offline</b></span>
-        <span class="trust">🇮🇳 <b>हिंदी</b> &amp; English</span>
+        <span class="trust">🇮🇳 Built for <b>Indian homes</b></span>
+        <span class="trust">✏️ Every number stays <b>yours to change</b></span>
       </div>
     </div>
 
@@ -449,11 +455,37 @@ html.js-rv .rv.in{opacity:1;transform:none}
           <div class="ph-head">
             <div class="t1">GharSeva</div>
             <div class="t2">Synced with your family</div>
-            <div class="ph-sel"><span>Nagpur — Main House</span><span>🏠</span></div>
+            <!-- a dropdown in the app, so it carries a chevron, not a house -->
+            <div class="ph-sel"><span>Nagpur — Main House</span><span style="opacity:.75">⌄</span></div>
           </div>
           <div class="ph-body" id="phBody">
-            <!-- panel: staff -->
+            <!-- panel: home — the day's attendance, marked from the Home
+                 screen itself, which is how the app actually opens -->
             <div class="ph-panel" data-p="0">
+              <div class="card-mini" style="margin-bottom:10px">
+                <div style="font-size:.62rem;font-weight:900;color:var(--muted);letter-spacing:.07em;margin-bottom:10px">TODAY · FRI, 15 AUGUST</div>
+                <div class="staff-row" style="margin-bottom:9px">
+                  <div class="avatar" style="background:#1A6E5E">KB</div>
+                  <div><div class="nm">Kamala Bai</div></div>
+                  <div class="amt"><span class="pill ok">Present</span></div>
+                </div>
+                <div class="staff-row">
+                  <div class="avatar" style="background:#5B4A9B">RP</div>
+                  <div><div class="nm">Ramu Prasad</div></div>
+                  <div class="amt"><span class="pill warn">Leave</span></div>
+                </div>
+              </div>
+              <div class="card-mini">
+                <div style="font-size:.62rem;font-weight:900;color:var(--muted);letter-spacing:.07em;margin-bottom:8px">SALARY DUE</div>
+                <div class="staff-row">
+                  <div class="avatar" style="background:#B45309">SD</div>
+                  <div><div class="nm">Sunita Devi</div><div class="rl">Driver</div></div>
+                  <div class="amt"><span class="pill warn">Pay</span></div>
+                </div>
+              </div>
+            </div>
+            <!-- panel: staff -->
+            <div class="ph-panel" data-p="1">
               <div class="card-mini" style="margin-bottom:10px">
                 <div class="staff-row">
                   <div class="avatar" style="background:#1A6E5E">KB</div>
@@ -476,41 +508,46 @@ html.js-rv .rv.in{opacity:1;transform:none}
                 </div>
               </div>
             </div>
-            <!-- panel: attendance -->
-            <div class="ph-panel" data-p="1">
-              <div class="card-mini">
-                <div style="font-size:.72rem;font-weight:900;color:var(--muted);text-align:center;margin-bottom:9px;letter-spacing:.06em">JULY 2026</div>
-                <div class="mini-cal">
-                  <i>1</i><i class="P">2</i><i class="P">3</i><i class="L">4</i><i class="P">5</i><i class="P">6</i><i class="H">7</i>
-                  <i class="P">8</i><i class="P">9</i><i class="P">10</i><i class="P">11</i><i class="L">12</i><i class="P">13</i><i class="H">14</i>
-                  <i class="P">15</i><i class="P">16</i><i class="P">17</i><i class="P">18</i><i class="P">19</i><i class="P">20</i><i class="H">21</i>
-                  <i class="P">22</i><i class="P">23</i><i class="L">24</i><i class="P">25</i><i class="P">26</i><i class="P">27</i><i class="H">28</i>
-                </div>
-                <div style="display:flex;gap:9px;justify-content:center;margin-top:11px;font-size:.6rem;font-weight:800">
-                  <span style="color:var(--ok)">● Present</span>
-                  <span style="color:var(--danger)">● Leave</span>
-                  <span style="color:var(--warn)">● Holiday</span>
-                </div>
-              </div>
-            </div>
-            <!-- panel: salary -->
+            <!-- panel: money — note the loan line is reduced rather than
+                 taken in full, which is the thing the app can do that a
+                 calculator cannot -->
             <div class="ph-panel" data-p="2">
               <div class="card-mini rcpt">
-                <div style="font-weight:900;font-size:.8rem;margin-bottom:8px">Kamala Bai · July</div>
+                <div style="font-weight:900;font-size:.8rem;margin-bottom:8px">Kamala Bai · August</div>
                 <div class="ln"><span>Base salary</span><span>₹8,000</span></div>
                 <div class="ln neg"><span>3 leave days</span><span>− ₹923</span></div>
                 <div class="ln neg"><span>Advance taken</span><span>− ₹1,000</span></div>
-                <div class="ln neg"><span>Loan instalment</span><span>− ₹1,000</span></div>
+                <div class="ln neg"><span>Loan — reduced</span><span>− ₹300</span></div>
                 <div class="ln"><span>Diwali bonus</span><span>+ ₹500</span></div>
-                <div class="tot"><span>Pay now</span><span>₹5,577</span></div>
+                <div class="tot"><span>Pay now</span><span>₹6,277</span></div>
+                <div style="font-size:.6rem;color:var(--muted);font-weight:800;margin-top:7px">₹700 carried to next month</div>
+              </div>
+            </div>
+            <!-- panel: reports -->
+            <div class="ph-panel" data-p="3">
+              <div class="card-mini">
+                <div style="font-size:.62rem;font-weight:900;color:var(--muted);letter-spacing:.07em;margin-bottom:7px">THIS YEAR</div>
+                <div style="font-size:1.35rem;font-weight:900;letter-spacing:-.02em;margin-bottom:12px">₹1,54,200</div>
+                <div style="display:flex;align-items:flex-end;gap:5px;height:52px">
+                  <i style="flex:1;height:62%;background:var(--accent);border-radius:4px 4px 0 0;opacity:.35"></i>
+                  <i style="flex:1;height:78%;background:var(--accent);border-radius:4px 4px 0 0;opacity:.45"></i>
+                  <i style="flex:1;height:55%;background:var(--accent);border-radius:4px 4px 0 0;opacity:.55"></i>
+                  <i style="flex:1;height:88%;background:var(--accent);border-radius:4px 4px 0 0;opacity:.65"></i>
+                  <i style="flex:1;height:70%;background:var(--accent);border-radius:4px 4px 0 0;opacity:.8"></i>
+                  <i style="flex:1;height:100%;background:var(--accent);border-radius:4px 4px 0 0"></i>
+                </div>
+                <div style="font-size:.6rem;color:var(--muted);font-weight:800;margin-top:9px;text-align:center">Per person, per month — and out to a spreadsheet</div>
               </div>
             </div>
           </div>
+          <!-- The four destinations the app actually has. This bar used to
+               read Staff / Attend / Pay / Records, which was the older layout
+               and no longer exists anywhere in the app. -->
           <div class="ph-nav" id="phNav">
-            <div class="on"><span>👥</span>Staff</div>
-            <div><span>🗓️</span>Attend</div>
-            <div><span>💳</span>Pay</div>
-            <div><span>📋</span>Records</div>
+            <div class="on"><span>🏠</span>Home</div>
+            <div><span>👥</span>Staff</div>
+            <div><span>💳</span>Money</div>
+            <div><span>📊</span>Reports</div>
           </div>
         </div>
       </div>
@@ -573,7 +610,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
         </div>
 
         <div class="scene" data-s="2">
-          <div style="font-size:clamp(2.6rem,7vw,4.6rem)">🏠</div>
+          <svg viewBox="0 0 64 64" width="76" height="76" aria-hidden="true" style="display:block;margin:0 auto"><rect x="1.5" y="1.5" width="61" height="61" rx="17" fill="#1A6E5E"/><path d="M10 31.5 32 14l22 17.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 34.5V50h32V34.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30.5" cy="37.4" r="4.1" fill="#fff"/><path d="M24.3 50c0-4.4 2.8-6.9 6.2-6.9s6.2 2.5 6.2 6.9" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round"/><path d="M42.5 35V50" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
           <div class="cap">So we built GharSeva.</div>
           <div class="sub">One place for everyone who works at your home.</div>
         </div>
@@ -622,9 +659,8 @@ html.js-rv .rv.in{opacity:1;transform:none}
         </div>
 
         <div class="scene" data-s="7">
-          <div style="font-size:clamp(2.2rem,6vw,3.8rem)">🏠</div>
-          <div class="cap">Free. Offline. In हिंदी too.</div>
-          <div class="sub">No account needed to try it.</div>
+          <div class="cap">And when the month is hard, you bend it.</div>
+          <div class="sub">Take part of a loan instalment instead of all of it, or skip it altogether. Whatever is left simply waits for next month.</div>
           <div class="chip-row"><span class="chip hot">Open GharSeva →</span></div>
         </div>
       </div>
@@ -645,26 +681,29 @@ html.js-rv .rv.in{opacity:1;transform:none}
     <div class="sec-head rv">
       <span class="eyebrow">Everything in one place</span>
       <h2>Small app. Surprisingly thorough.</h2>
-      <p class="lead">Built around how Indian households actually pay their help — not a generic payroll tool with the words swapped out.</p>
+      <p class="lead">Built around how Indian households actually pay their help — where the rule is a starting point and real life keeps amending it.</p>
     </div>
 
     <div class="bento">
+      <!-- The receipt itself is shown twice already, in the phone above and in
+           the walkthrough. A third copy of the same six lines taught nobody
+           anything new, so this card carries the part the receipt cannot show:
+           what happens when you disagree with the total. -->
       <div class="b hero-card rv">
-        <div class="ico">🧮</div>
-        <h3>The salary works itself out</h3>
-        <p>Leave days, advances, loan instalments, bonuses, extra hours — all of it lands in one number. You just pay it.</p>
+        <div class="ico">✏️</div>
+        <h3>The maths is automatic. The decision is not.</h3>
+        <p>Every deduction it works out is a suggestion you can overrule — one month, one person, one line at a time.</p>
         <div class="calc-demo">
-          <div class="ln"><span>Base salary</span><span>₹8,000</span></div>
-          <div class="ln"><span>3 leave days</span><em>− ₹923</em></div>
-          <div class="ln"><span>Advance</span><em>− ₹1,000</em></div>
-          <div class="ln"><span>Loan instalment</span><em>− ₹1,000</em></div>
-          <div class="ln"><span>Bonus</span><span>+ ₹500</span></div>
-          <div class="tot"><span>Pay now</span><span>₹5,577</span></div>
+          <div class="ln"><span>Loan instalment due</span><span>₹1,000</span></div>
+          <div class="ln"><span>He asks for less this month</span><em>take ₹300</em></div>
+          <div class="ln"><span>Balance is not forgiven</span><em>₹700 waits</em></div>
+          <div class="tot"><span>Next month, unchanged</span><span>₹1,000</span></div>
         </div>
       </div>
 
       <div class="b rv"><div class="ico">🗓️</div><h3>One tap a day</h3><p>Present, leave or holiday. Tap any past date to correct it — the salary updates itself.</p></div>
-      <div class="b rv"><div class="ico">🏦</div><h3>Advances &amp; loans</h3><p>Give a loan, set the instalment, and watch the balance come down every month on its own.</p></div>
+      <div class="b rv"><div class="ico">🏦</div><h3>Advances &amp; loans</h3><p>Set how many months to repay over and the instalment works itself out — or type your own. A month they cannot manage it, take less, or none. The balance keeps count either way.</p></div>
+      <div class="b rv"><div class="ico">↩️</div><h3>Nothing is final</h3><p>Recorded a salary you should not have? Undo it and the loan instalment steps back with it. Marked the wrong day three weeks ago? Fix it and the maths catches up.</p></div>
       <div class="b wide rv"><div class="ico">👨‍👩‍👧</div><h3>Your whole family, one shared list</h3><p>Share a six-character code. When your mother marks a leave in Nagpur, you see it in Mumbai a second later.</p></div>
       <div class="b rv"><div class="ico">📶</div><h3>Works without internet</h3><p>Mark attendance in a lift or a basement. It syncs the moment you are back online.</p></div>
       <div class="b rv"><div class="ico">🔤</div><h3>Large-text mode</h3><p>Two taps make everything bigger. Built so elders in the house can use it without help.</p></div>
@@ -681,7 +720,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
   <div class="wrap">
     <div class="sec-head center rv">
       <span class="eyebrow">Two minutes to set up</span>
-      <h2>Three things, then it runs itself.</h2>
+      <h2>Three things, then it keeps up with you.</h2>
     </div>
     <div class="steps">
       <div class="step rv">
@@ -693,8 +732,8 @@ html.js-rv .rv.in{opacity:1;transform:none}
         <p>Present, leave or holiday. That single tap is the only habit the app ever asks of you.</p>
       </div>
       <div class="step rv">
-        <h3>Pay the number it gives you</h3>
-        <p>On salary day, open the Pay screen. The exact amount is already sitting there, deductions and all.</p>
+        <h3>Pay the number — or change it</h3>
+        <p>On salary day the amount is already sitting there, deductions and all. Agree with it and pay. Disagree with any line and adjust it before you do.</p>
       </div>
     </div>
     <div style="text-align:center;margin-top:52px" class="rv">
@@ -748,7 +787,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
       <div class="ind rv"><span class="big">🗣️</span><h3>हिंदी and English</h3><p>Switch the entire app with one tap in the corner. Nothing is left half-translated.</p></div>
       <div class="ind rv"><span class="big">👷</span><h3>The right job names</h3><p>Maid, cook, driver, watchman, gardener — and add your own if we missed one.</p></div>
       <div class="ind rv"><span class="big">💬</span><h3>Shares on WhatsApp</h3><p>Send a salary slip or an invite the way your family already talks.</p></div>
-      <div class="ind rv"><span class="big">📅</span><h3>Your working-days rule</h3><p>Some homes count 26 days, some 30. Set yours once and every calculation follows it.</p></div>
+      <div class="ind rv"><span class="big">📅</span><h3>Your rules, not ours</h3><p>Some homes count 26 working days, some 30. Some pay a fixed rate an hour, some work it out from the salary. Set yours and every calculation follows it.</p></div>
     </div>
   </div>
 </section>
@@ -766,12 +805,16 @@ html.js-rv .rv.in{opacity:1;transform:none}
         <p>Yes. There is no paid tier, no trial clock and nothing to unlock. The app is free to use.</p>
       </details>
       <details class="rv">
-        <summary>Do I have to create an account?</summary>
-        <p>No. Tap “Use on this device only” and start straight away — everything stays on your phone. You only need to sign in if you want the household shared with family or backed up to the cloud.</p>
+        <summary>What does signing in involve?</summary>
+        <p>Your phone number and an OTP, or your Google account — whichever you prefer. That is the whole of it: no password to invent, no email to confirm. Signing in is what keeps the household on every family member's phone and safe if you lose yours.</p>
       </details>
       <details class="rv">
         <summary>What happens to my data if I change my phone?</summary>
-        <p>If you signed in, your household is in the cloud — sign in on the new phone and it is all there. If you are using it without an account, take a backup file from Settings first and restore it on the new device.</p>
+        <p>Nothing to do. Your household lives in the cloud, so you sign in on the new phone and everything is already there — every person, every advance, every loan balance.</p>
+      </details>
+      <details class="rv">
+        <summary>Can I overrule what the app works out?</summary>
+        <p>Always. Take part of a loan instalment instead of the whole one and the rest waits for next month. Skip a deduction entirely for someone having a hard month. Type over any rate it suggests. Correct a day you marked wrong three weeks ago. Undo a salary you have already recorded. The app does the arithmetic — you decide the number.</p>
       </details>
       <details class="rv">
         <summary>Will it work when the internet is down?</summary>
@@ -779,7 +822,7 @@ html.js-rv .rv.in{opacity:1;transform:none}
       </details>
       <details class="rv">
         <summary>Is my staff's Aadhaar and bank information safe?</summary>
-        <p>Those details sit in a separate section on your own device, and in the cloud only if you have signed in. Nobody outside the people you invite to your household can read them.</p>
+        <p>They sit in a separate section on the person's own profile, and only the family members you have invited into your household can read them. Nobody else — not another household, not a stranger with the code to somewhere else.</p>
       </details>
       <details class="rv">
         <summary>My mother is not comfortable with apps. Can she use it?</summary>
@@ -798,16 +841,16 @@ html.js-rv .rv.in{opacity:1;transform:none}
   <div class="wrap">
     <div class="final rv">
       <h2>Next salary day can be the easy one.</h2>
-      <p>Add one person, tap a few days, and watch the app do the arithmetic you have been doing in your head for years.</p>
-      <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva — free →</a>
-      <div class="fine">No account needed · Works offline · हिंदी &amp; English</div>
+      <p>Add one person, tap a few days, and let the app do the arithmetic you have been doing in your head for years — while you keep every decision it is based on.</p>
+      <a href="https://app.gharseva.org/" class="btn btn-primary btn-lg">Open GharSeva →</a>
+      <div class="fine">हिंदी &amp; English · Works on the phone you already have</div>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap foot">
-    <a href="#top" class="logo" style="font-size:1.1rem"><span class="logo-mark" style="width:32px;height:32px;font-size:1rem">🏠</span> GharSeva</a>
+    <a href="#top" class="logo" style="font-size:1.1rem"><span class="logo-mark" style="width:32px;height:32px"><svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path d="M10 31.5 32 14l22 17.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 34.5V50h32V34.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30.5" cy="37.4" r="4.1" fill="#fff"/><path d="M24.3 50c0-4.4 2.8-6.9 6.2-6.9s6.2 2.5 6.2 6.9" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round"/><path d="M42.5 35V50" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span> GharSeva</a>
     <div class="foot-links">
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
