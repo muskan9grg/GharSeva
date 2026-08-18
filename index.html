@@ -3508,10 +3508,20 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
   var [waMsg,setWAMsg]=useState('');
   var [toast,setToast]=useState('');
 
+  /* Staff/ledger/payments refresh on every sync tick, so a change made from
+     another screen (or another device) is reflected here right away. What
+     they do NOT do any more is reset selStaff/calc - this component already
+     remounts fresh (via its key, in MoneyTab) whenever homeId, refreshKey or
+     defaultStaffId actually change, so the only thing syncKey alone used to
+     reset was the very selection and breakdown the person editing THIS
+     screen had just made: waiving a charge, editing a reduced amount, or
+     marking paid all write to Firestore, which echoes back as a syncKey
+     bump a moment later, which was bouncing them back to "choose a staff
+     member" immediately after their own edit. */
   useEffect(function(){
-    var s=getStaff(homeId);
-    setStaff(s); setLedger(getLedger(homeId)); setPayments(getPayments(homeId));
-    setSelStaff(defaultStaffId||''); setCalc(null); setWAMsg('');
+    setStaff(getStaff(homeId));
+    setLedger(getLedger(homeId));
+    setPayments(getPayments(homeId));
   },[homeId,refreshKey,syncKey]);
 
   function doCalc(){
@@ -4049,11 +4059,12 @@ function LeavesTab({lang,homeId,workingDays,syncKey}){
   },[homeId,syncKey]);
 
   function prevM(){if(month===1){setMonth(12);setYear(function(y){return y-1;});}else setMonth(function(m){return m-1;});}
-  function nextM(){
-    var nm=month===12?1:month+1, ny=month===12?year+1:year;
-    if(ny>now.getFullYear()||(ny===now.getFullYear()&&nm>now.getMonth()+1)) return;
-    setMonth(nm); if(month===12)setYear(function(y){return y+1;});
-  }
+  /* Future months are navigable, same as past ones - the calendar itself
+     already lets a future day be marked ("Future days are markable: telling
+     the app about leave already agreed for next week is the point", see
+     LeaveCalendar's toggle()), so blocking the arrow that gets you there
+     just hid a working feature. */
+  function nextM(){if(month===12){setMonth(1);setYear(function(y){return y+1;});}else setMonth(function(m){return m+1;});}
 
   var s=staff.find(function(x){return x.id===selStaff;});
 
