@@ -1427,6 +1427,38 @@ function fbSaveLeaves(homeId, staffId, ym, dates){
     .catch(function(e){console.warn('fbSaveLeaves:',e);});
 }
 
+/* Working days and the standard hourly rate used to live only in gs_settings,
+   a device-local key - meaning two family members could see two different
+   salary figures for the same staff member depending on which phone they
+   opened, since both numbers feed directly into calcSalary. They belong on
+   the household document itself, the one thing every member already reads
+   and writes in step (see the members map). No local list to diff here,
+   just a field to patch. */
+function fbSaveHomeSettings(homeId, patch){
+  if(!FIREBASE_ENABLED||!fbDb||!homeId) return;
+  fbDb.collection('homes').doc(homeId).update(patch)
+    .catch(function(e){console.warn('fbSaveHomeSettings:',e);});
+}
+
+/* Custom staff roles, likewise: a role someone adds while hiring a new staff
+   member should be there for every family member picking a role afterwards,
+   not just on the phone it was typed on. arrayUnion/arrayRemove rather than
+   read-modify-write-the-whole-array, so two people adding different roles at
+   nearly the same moment cannot silently overwrite one another - the same
+   technique already used for homeIds and memberIds above. */
+function fbAddRole(homeId, role){
+  if(!FIREBASE_ENABLED||!fbDb||!homeId) return;
+  fbDb.collection('homes').doc(homeId)
+    .update({roles:firebase.firestore.FieldValue.arrayUnion(role)})
+    .catch(function(e){console.warn('fbAddRole:',e);});
+}
+function fbRemoveRole(homeId, role){
+  if(!FIREBASE_ENABLED||!fbDb||!homeId) return;
+  fbDb.collection('homes').doc(homeId)
+    .update({roles:firebase.firestore.FieldValue.arrayRemove(role)})
+    .catch(function(e){console.warn('fbRemoveRole:',e);});
+}
+
 /* Migration: move existing localStorage data into the cloud household */
 /* Households on this device must stay separate in the cloud. The previous
    version looped over every local household and wrote all of them into the
@@ -2281,6 +2313,7 @@ function StaffModal({lang,onClose,onSave,existing}){
     set('role',key);
     setNewRoleName('');
     setAddingRole(false);
+    fbAddRole(_activeHomeId,nr);
   }
 
   function handlePhoto(e){
@@ -5158,6 +5191,9 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     saveCustomRoles([...getCustomRoles(),nr]);
     setAllRoles(getRoles());
     setNewRoleName('');
+    /* A role typed while adding staff should be there for every family
+       member picking a role afterwards, not just on this phone. */
+    if(!guestMode) fbAddRole(homeId,nr);
   }
 
   function tryDeleteRole(roleKey){
@@ -5171,9 +5207,13 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   }
 
   function doDeleteRole(roleKey){
+    /* arrayRemove needs the exact object it is removing, not just its key,
+       so it has to be found before the local list drops it. */
+    var going=getCustomRoles().find(function(r){return r.key===roleKey;});
     saveCustomRoles(getCustomRoles().filter(function(r){return r.key!==roleKey;}));
     setAllRoles(getRoles());
     setConfirmDelRole(null);
+    if(!guestMode&&going) fbRemoveRole(homeId,going);
   }
 
   function addHome(){
@@ -5231,6 +5271,11 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     var n=Math.min(31,Math.max(1,Number(wdInput)||30));
     saveSettings(Object.assign({},getSettings(),{workingDays:n}));
     onWorkingDaysChange(n);
+    /* Guest households have no Firestore document to patch, and the write
+       below is a harmless no-op there - fbSaveHomeSettings already checks
+       FIREBASE_ENABLED and homeId, so this stays local automatically rather
+       than needing a second guestMode check here. */
+    if(!guestMode) fbSaveHomeSettings(homeId,{workingDays:n});
     setWdInput(String(n));
     setWdSaved(true);
     setTimeout(function(){setWdSaved(false);},2000);
@@ -5239,6 +5284,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   function saveStdRate(){
     var n=Math.max(0,Number(rateInput)||0);
     saveSettings(Object.assign({},getSettings(),{standardHourlyRate:n}));
+    if(!guestMode) fbSaveHomeSettings(homeId,{standardHourlyRate:n});
     setRateInput(n?String(n):'');
     setRateSaved(true);
     setTimeout(function(){setRateSaved(false);},2000);
@@ -6672,11 +6718,24 @@ function App(){
     return function(){ unsubAuth(); };
   },[]);
 
-  /* ── household member registry (names for "paid by") ── */
+  /* ── household document: members, working days, standard rate, roles ──
+     One listener for everything that must read the same on every member's
+     phone, because it is all on the same document and a second subscription
+     would just be a second round trip to learn the same thing. Guest
+     households are local-only and never reach this branch, which is what
+     keeps a guest's own working-days figure exactly where they left it. */
   useEffect(function(){
     if(!FIREBASE_ENABLED||!fbDb||!homeId||guestMode){ setMembers({}); return; }
     var un=fbDb.collection('homes').doc(homeId).onSnapshot(function(d){
-      setMembers((d.exists&&d.data().members)||{});
+      var data=(d.exists&&d.data())||{};
+      setMembers(data.members||{});
+      setWorkingDays(Number(data.workingDays)||30);
+      /* Read via getSettings() at the point of use elsewhere (EntryModal,
+         Settings), unlike workingDays which is already threaded as state
+         everywhere - so the synced value is cached into the same local key
+         those reads already trust, rather than re-plumbing every call site. */
+      saveSettings(Object.assign({},getSettings(),{standardHourlyRate:Number(data.standardHourlyRate)||0}));
+      saveCustomRoles(data.roles||[]);
     },function(){});
     return function(){ un(); };
   },[homeId,guestMode]);
