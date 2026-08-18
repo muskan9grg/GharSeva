@@ -156,10 +156,10 @@ var fbAuth = null, fbDb = null, FIREBASE_ENABLED = false;
 var SyncCtx = React.createContext(0);
 
 /* Household members, for attributing who actually paid for something.
-   {uid, members:{uid:{name,color}}, guestMode}. Names live on the home doc
-   because Firestore rules keep /users/{uid} readable only by that user, so
-   one member can never look another's display name up directly. */
-var MembersCtx = React.createContext({uid:'',members:{},guestMode:true});
+   {uid, members:{uid:{name,color}}}. Names live on the home doc because
+   Firestore rules keep /users/{uid} readable only by that user, so one
+   member can never look another's display name up directly. */
+var MembersCtx = React.createContext({uid:'',members:{}});
 var MEMBER_COLORS=['#1A6E5E','#5B4A9B','#B45309','#1C7A48','#C0393B','#3EA08A'];
 function memberColor(uid){
   var h=0; for(var i=0;i<(uid||'').length;i++) h=(h*31+uid.charCodeAt(i))>>>0;
@@ -455,6 +455,7 @@ en:{
   addStaff:'Add staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly salary',
   fHoursPerDay:'Hours worked per day',fHoursPerDayHint:'Optional — used for the Overtime rate. Defaults to 5 if left blank.',
+  fSchedule:'Which days do they work?',fScheduleHint:'Optional — leave every day unselected to use the household\'s standard working-days setting instead.',
   fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
   fphoto:'Photo',fnotes:'Notes / Duties',fnotesPh:'e.g. Cleans all rooms, washes utensils',
   addPhoto:'Add Photo',changePhoto:'Change',
@@ -476,7 +477,7 @@ en:{
   calTitle:'Leave Calendar',calHint:'Tap a date to change it',
   days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
   tlLeave:'Leave Days',tlDed:'Deduction',
-  Ps:'P',Ls:'L',Hs:'H',
+  Ps:'P',Ls:'L',Hs:'H',Os:'O',
   addEntry:'Add entry',amountPh:'e.g. 500',salaryPh:'e.g. 9000',editEntry:'Edit Entry',
   loanLockedHint:'Repayment has started, so the amount and instalment are locked. Date and note can still be changed.',
   filterAll:'All',filterAllTypes:'All types',filterAllStaff:'All staff',
@@ -491,7 +492,7 @@ en:{
   useStdRateLabel:'Use standard rate (₹{rate}/hr)',
   rExtraWork:'Plus: extra work',rShortHours:'Less: half days',aTotExtra:'Overtime',aTotShort:'Half Days',
   voiceCompleteEntry:'Complete This Entry',voiceRerecord:'Re-record',voiceStaffIs:'Detected:',voiceStaffChange:'Change',voiceSaveEntry:'Save Entry',
-  tDays:'days',tType:'Type',tAction:'Action',loanDue:'due',perMonth:'/month',perDayCost:'1 day cost:',tLeave:'Leave',tPresent:'Present',tHoliday:'Holiday',
+  tDays:'days',tType:'Type',tAction:'Action',loanDue:'due',perMonth:'/month',perDayCost:'1 day cost:',tLeave:'Leave',tPresent:'Present',tHoliday:'Holiday',tOff:'Day off',
   loanActive:'Active',loanClosed:'Closed',loanBal:'Remaining Balance',rLoanBal:'Loan still to repay',
   annTitle:'Annual Report',annYear:'Year',annTotal:'Total Household Spend',annEstTotal:'Estimated Salary This Year',annPer:'By staff member',
   aTotSal:'Salary',aTotAdv:'Advances',aTotExp:'Expenses',aTotBon:'Bonuses',aTotLoan:'Loan Balance',
@@ -511,7 +512,7 @@ en:{
   errSalary:'Please enter a monthly salary',
   errLoanExceeds:'Amount is more than the remaining balance ({bal})',
   tPaidBadge:'Paid',tDueBadge:'Due this month',
-  dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',
+  dash:'Today',dashPresent:'Present',dashAbsent:'On Leave',dashHoliday:'Holiday',dashOffToday:'Day off today',
   dashFullCalendar:'Attendance calendar',
   profTxns:'Transactions',
   profNoTxns:'Nothing recorded for this period.',
@@ -631,7 +632,7 @@ en:{
   profRecLoan:'Loan Payment',profMarkLeave:'Mark Leave',profNoLoans:'No active loans',
   signIn:'Sign in to GharSeva',phoneNum:'Phone Number',sendOtp:'Send OTP',otpSent:'OTP sent! Enter the 6-digit code.',
   verifyOtp:'Verify Code',googleSignIn:'Continue with Google',
-  guestMode:'Guest Mode',guestWarning:'Data stays on this device only — nothing is shared with anyone. You can connect to the cloud later if you want to sync across devices.',
+  configMissingTitle:'App not configured',configMissingBody:'Copy config.example.js to config.js and fill in your Firebase project\'s keys, then reload.',
   createHome:'Create New Household',joinHome:'Join a Household',
   mpTitle:'About you',
   mpIntro:'So your family sees your name, not your number, next to what you record.',
@@ -682,6 +683,7 @@ hi:{
   addStaff:'स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन',
   fHoursPerDay:'रोज़ काम के घंटे',fHoursPerDayHint:'वैकल्पिक — ओवरटाइम की दर के लिए उपयोग होता है। खाली छोड़ने पर 5 माना जाएगा।',
+  fSchedule:'ये किन दिनों काम पर आते हैं?',fScheduleHint:'वैकल्पिक — कोई दिन न चुनें तो घर की सामान्य काम-के-दिन सेटिंग लागू होगी।',
   fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
   fphoto:'फोटो',fnotes:'नोट्स / काम',fnotesPh:'जैसे: सभी कमरे साफ, बर्तन',
   addPhoto:'फोटो जोड़ें',changePhoto:'बदलें',
@@ -703,7 +705,7 @@ hi:{
   calTitle:'छुट्टी कैलेंडर',calHint:'तारीख दबाकर बदलें',
   days:['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'],
   tlLeave:'छुट्टी के दिन',tlDed:'कटौती',
-  Ps:'उ',Ls:'छ',Hs:'अ',
+  Ps:'उ',Ls:'छ',Hs:'अ',Os:'बं',
   addEntry:'एंट्री जोड़ें',amountPh:'जैसे 500',salaryPh:'जैसे 9000',editEntry:'एंट्री बदलें',
   loanLockedHint:'चुकाना शुरू हो चुका है, इसलिए राशि और किस्त बदली नहीं जा सकतीं। तारीख और नोट अब भी बदल सकते हैं।',
   filterAll:'सभी',filterAllTypes:'सभी प्रकार',filterAllStaff:'सभी स्टाफ',
@@ -718,7 +720,7 @@ hi:{
   useStdRateLabel:'मानक दर लगाएं (₹{rate}/घंटा)',
   rExtraWork:'जोड़ा: ज़्यादा काम',rShortHours:'घटाया: आधे दिन',aTotExtra:'ओवरटाइम',aTotShort:'आधे दिन',
   voiceCompleteEntry:'एंट्री पूरी करें',voiceRerecord:'फिर से बोलें',voiceStaffIs:'मिला:',voiceStaffChange:'बदलें',voiceSaveEntry:'एंट्री सहेजें',
-  tDays:'दिन',tType:'प्रकार',tAction:'क्रिया',loanDue:'बकाया',perMonth:'/महीना',perDayCost:'1 दिन का वेतन:',tLeave:'छुट्टी',tPresent:'उपस्थित',tHoliday:'अवकाश',
+  tDays:'दिन',tType:'प्रकार',tAction:'क्रिया',loanDue:'बकाया',perMonth:'/महीना',perDayCost:'1 दिन का वेतन:',tLeave:'छुट्टी',tPresent:'उपस्थित',tHoliday:'अवकाश',tOff:'छुट्टी का दिन',
   loanActive:'सक्रिय',loanClosed:'बंद',loanBal:'बकाया',rLoanBal:'लोन अभी बाकी',
   annTitle:'वार्षिक रिपोर्ट',annYear:'साल',annTotal:'कुल वार्षिक खर्च',annEstTotal:'इस साल का अनुमानित वेतन',annPer:'स्टाफ के हिसाब से',
   aTotSal:'वेतन',aTotAdv:'अग्रिम',aTotExp:'खर्च',aTotBon:'बोनस',aTotLoan:'लोन बकाया',
@@ -738,7 +740,7 @@ hi:{
   errSalary:'कृपया मासिक वेतन डालें',
   errLoanExceeds:'राशि बकाया रकम ({bal}) से ज़्यादा है',
   tPaidBadge:'भुगतान',tDueBadge:'बाकी है',
-  dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',
+  dash:'आज',dashPresent:'उपस्थित',dashAbsent:'छुट्टी पर',dashHoliday:'अवकाश',dashOffToday:'आज काम पर नहीं आते',
   dashFullCalendar:'उपस्थिति कैलेंडर',
   profTxns:'लेन-देन',
   profNoTxns:'इस अवधि में कुछ दर्ज नहीं है।',
@@ -858,7 +860,7 @@ hi:{
   profRecLoan:'लोन भुगतान',profMarkLeave:'छुट्टी दर्ज',profNoLoans:'कोई सक्रिय लोन नहीं',
   signIn:'घरसेवा में साइन इन करें',phoneNum:'फोन नंबर',sendOtp:'OTP भेजें',otpSent:'OTP भेज दिया! 6 अंकों का कोड डालें।',
   verifyOtp:'कोड वेरीफाई करें',googleSignIn:'Google से जारी रखें',
-  guestMode:'गेस्ट मोड',guestWarning:'डेटा सिर्फ़ इस डिवाइस पर रहता है — किसी के साथ साझा नहीं होता। बाद में चाहें तो क्लाउड से जोड़ सकते हैं।',
+  configMissingTitle:'ऐप कॉन्फ़िगर नहीं है',configMissingBody:'config.example.js को config.js में कॉपी करें और अपने Firebase प्रोजेक्ट की keys भरें, फिर पेज को रीलोड करें।',
   createHome:'नया घर बनाएं',joinHome:'घर से जुड़ें',
   mpTitle:'आपके बारे में',
   mpIntro:'ताकि आपके परिवार को आपका नाम दिखे, नंबर नहीं।',
@@ -1562,45 +1564,6 @@ function buildDemoData(lang){
   return {homes:homes, staff:staff, ledger:ledger, leaves:{staffId:'st1', ym:ym, dates:lv}};
 }
 
-/* The sample records seeded above are demo content, so they should follow the
-   interface language. Older builds seeded them in Hindi regardless of the
-   chosen language, which left English users looking at Hindi names.
-   A field is rewritten only when it still exactly matches the other
-   language's seeded value — the moment the user edits anything, it stops
-   matching and is left alone. Local data only: a cloud household is shared,
-   and one member's language must not rewrite what the others see. */
-function localizeDemoData(lang){
-  var want=buildDemoData(lang), other=buildDemoData(lang==='hi'?'en':'hi');
-  function relocalize(list, otherList, wantList, fields){
-    var changed=false;
-    list.forEach(function(rec){
-      var o=otherList.find(function(x){return x.id===rec.id;});
-      var w=wantList.find(function(x){return x.id===rec.id;});
-      if(!o||!w) return;                       /* not a seeded record */
-      fields.forEach(function(f){
-        if(o[f]!==undefined && rec[f]===o[f] && rec[f]!==w[f]){ rec[f]=w[f]; changed=true; }
-      });
-    });
-    return changed;
-  }
-  var homes=getHomes(), staff=getStaff(SH1), ledger=getLedger(SH1);
-  var hDone=relocalize(homes, other.homes, want.homes, ['name']);
-  var sDone=relocalize(staff, other.staff, want.staff, ['name','nickname','notes']);
-  var lDone=relocalize(ledger, other.ledger, want.ledger, ['reason']);
-  if(hDone) saveHomes(homes);
-  if(sDone) saveStaff(SH1,staff);
-  if(lDone) saveLedger(SH1,ledger);
-  return hDone||sDone||lDone;
-}
-function seedIfNeeded(lang){
-  if(getHomes().length>0) return;
-  var demo=buildDemoData(lang);
-  saveHomes(demo.homes);
-  saveStaff(SH1,demo.staff);
-  saveLedger(SH1,demo.ledger);
-  saveLeaves(demo.leaves.staffId,demo.leaves.ym,demo.leaves.dates);
-  saveSettings(Object.assign({},getSettings(),{lang:lang||'en',lastHomeId:SH1}));
-}
 function seedDemoDataCloud(homeId, lang){
   var demo=buildDemoData(lang);
   fbSaveStaff(homeId,demo.staff);
@@ -1756,6 +1719,34 @@ function hasLeft(staff){
   return !!d&&d<=new Date();
 }
 
+/* A staff member's own weekly pattern, e.g. a gardener who only comes Tue+Fri.
+   Empty or absent schedule means "no custom pattern" - every day is fair game,
+   which is also the state of every staff record that existed before this
+   field did, so the feature is additive rather than a migration. */
+function hasCustomSchedule(staff){
+  return !!(staff&&staff.schedule&&staff.schedule.length);
+}
+function isScheduledDay(staff,dateObj){
+  if(!hasCustomSchedule(staff)) return true;
+  return staff.schedule.indexOf(dateObj.getDay())>=0;
+}
+/* What one day of THIS staff member's salary is worth, in days-per-month
+   terms. Falls back to the household-wide setting when no custom schedule is
+   set. Counts the real occurrences of each scheduled weekday in the specific
+   month asked about - a Tue+Fri pattern is 8 days in some months and 9 in
+   others - rather than a flat weekly average, the same precision the rest of
+   the app already insists on for real month lengths. This only answers "what
+   is a day worth", never "were they employed that day" - employedDays already
+   owns partial-month pro-ration and the two are not combined here. */
+function effectiveWorkingDays(staff,year,month,workingDays){
+  if(!hasCustomSchedule(staff)) return workingDays||30;
+  var monthDays=new Date(year,month,0).getDate(), n=0;
+  for(var d=1;d<=monthDays;d++){
+    if(staff.schedule.indexOf(new Date(year,month-1,d).getDay())>=0) n++;
+  }
+  return n||1;
+}
+
 /* Record a rate change. The rate in force until now has to be captured first,
    or the months before the change would inherit the new figure — the very bug
    this exists to stop. */
@@ -1799,7 +1790,10 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
   var lv=getLeaves(staff.id,ym);
   var leaveDays=0;
   Object.entries(lv).forEach(function(e){
-    if(e[1]==='leave') leaveDays++;
+    /* A mark left over from before this staff member had a schedule (or made
+       on a day they were never expected in) must not dock pay for a day that
+       was never theirs to begin with. */
+    if(e[1]==='leave'&&isScheduledDay(staff,parseISO(e[0]))) leaveDays++;
   });
   /* The rate in force in THIS month, not whatever the staff member earns now,
      scaled down if they joined or left partway through it. */
@@ -1808,7 +1802,7 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
   var monthlyRate=emp.partial?Math.round(fullRate*emp.days/emp.monthDays):fullRate;
   /* A day off costs a normal day's pay, so leave is always docked at the full
      rate — it is not scaled a second time by a part-month. */
-  var daily=fullRate/(workingDays||30);
+  var daily=fullRate/effectiveWorkingDays(staff,year,month,workingDays);
   var items=(ledger||[]).filter(function(e){return e.staffId===staff.id && e.date && e.date.startsWith(ym);});
   function sum(type){ return items.filter(function(e){return e.type===type;}).reduce(function(s,e){return s+(e.amount||0);},0); }
   var bonuses=sum('bonus'), extraWork=sum('extra_work');
@@ -2287,7 +2281,7 @@ function WACard({message,phone,t}){
 /* ── ADD / EDIT STAFF MODAL ─────────────────────────────────── */
 function StaffModal({lang,onClose,onSave,existing}){
   var t=T[lang];
-  var blank={name:'',nickname:'',role:'maid',salary:'',hoursPerDay:'',phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
+  var blank={name:'',nickname:'',role:'maid',salary:'',hoursPerDay:'',schedule:[],phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
              aadhaar:'',bankName:'',accountNo:'',ifsc:''};
   var [form,setForm]=useState(existing?Object.assign({nickname:''},existing):blank);
   var [showVault,setShowVault]=useState(false);
@@ -2297,6 +2291,14 @@ function StaffModal({lang,onClose,onSave,existing}){
   var fileRef=useRef(null);
 
   function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
+
+  function toggleScheduleDay(d){
+    setForm(function(f){
+      var cur=f.schedule||[];
+      var next=cur.indexOf(d)>=0?cur.filter(function(x){return x!==d;}):cur.concat([d]).sort();
+      return Object.assign({},f,{schedule:next});
+    });
+  }
 
   function handleRoleChange(v){
     if(v==='__add__'){setAddingRole(true);}
@@ -2381,6 +2383,24 @@ function StaffModal({lang,onClose,onSave,existing}){
       </FLabel>
       <FLabel label={t.fsalary} req={true}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder={t.salaryPh} /></FLabel>
       <FLabel label={t.fHoursPerDay} hint={t.fHoursPerDayHint}><FInput type="number" value={form.hoursPerDay} onChange={function(v){set('hoursPerDay',v);}} placeholder="5" /></FLabel>
+      <FLabel label={t.fSchedule} hint={t.fScheduleHint}>
+        <div className="grid grid-cols-7 gap-1">
+          {t.days.map(function(d,i){
+            var on=(form.schedule||[]).indexOf(i)>=0;
+            return (
+              <button key={i} type="button" onClick={function(){toggleScheduleDay(i);}}
+                aria-pressed={on}
+                style={{padding:'8px 2px',borderRadius:10,cursor:'pointer',textAlign:'center',
+                  fontSize:fsr(12),fontWeight:800,fontFamily:'Nunito,sans-serif',
+                  border:'2px solid '+(on?'var(--accent)':'var(--border)'),
+                  background:on?'var(--accent2)':'var(--surface)',
+                  color:on?'var(--accent)':'var(--muted)'}}>
+                {d}
+              </button>
+            );
+          })}
+        </div>
+      </FLabel>
       {salaryChanged&&(
         <div className="rounded-2xl mb-4" style={{background:'#FDF3DC',border:'2px solid var(--warn)',padding:'12px 14px'}}>
           <p style={{fontSize:fsr(13),fontWeight:800,color:'#8B5E08',margin:'0 0 4px'}}>
@@ -2614,7 +2634,7 @@ function UndoPayment({rec,homeId,ledger,payments,t,mc,onDone}){
         <button onClick={function(){
             /* On a single-device household there is nobody to attribute this
                to, so the log records no name rather than a placeholder. */
-            var named=mc&&!mc.guestMode&&mc.uid;
+            var named=mc&&mc.uid;
             var ok=undoSalaryPayment(homeId,rec,named?mc.uid:'',named?memberLabel(mc.uid,mc.members,t):'');
             setAsk(false);
             if(ok) onDone&&onDone();
@@ -2664,7 +2684,7 @@ function SalaryPayModal({staff,lang,homeId,homes,workingDays,onClose,onPaid}){
   var [waMsg,setWAMsg]=useState('');
   var mc=React.useContext(MembersCtx);
   var memberIds=Object.keys(mc.members||{});
-  var showPaidBy=!mc.guestMode&&memberIds.length>0;
+  var showPaidBy=memberIds.length>0;
   var [payer,setPayer]=useState(mc.uid||'');
   var [payerName,setPayerName]=useState('');
   var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(homeId):[]; },[showPaidBy,homeId]);
@@ -2800,7 +2820,10 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var calc=useMemo(function(){return calcSalary(staff,year,month,ledger,workingDays,homeId);},[ledger,workingDays,staff,homeId,payments]);
   var leaveMap=getLeaves(staff.id,ym);
   var leaveCount=0,holidayCount=0;
-  Object.values(leaveMap).forEach(function(v){if(v==='leave')leaveCount++;else if(v==='holiday')holidayCount++;});
+  Object.entries(leaveMap).forEach(function(e){
+    if(e[1]==='leave'){ if(isScheduledDay(staff,parseISO(e[0]))) leaveCount++; }
+    else if(e[1]==='holiday') holidayCount++;
+  });
   var thisMonthAdv=ledger.filter(function(e){return e.staffId===staff.id&&e.date&&e.date.startsWith(ym)&&e.type==='advance';});
   var thisMonthHalf=ledger.filter(function(e){return e.staffId===staff.id&&e.date&&e.date.startsWith(ym)&&e.type==='short_hours';});
   var activeLoans=ledger.filter(function(e){return e.staffId===staff.id&&e.type==='loan'&&e.status==='active';});
@@ -2848,7 +2871,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
       .sort(function(a,b){return (b.year*12+b.month)-(a.year*12+a.month);}).slice(0,4);
   },[homeId,staff.id,payments]);
   var halfDayCount=thisMonthHalf.length;
-  var presentDays=Math.max(0,workingDays-leaveCount-halfDayCount*0.5);
+  var presentDays=Math.max(0,effectiveWorkingDays(staff,year,month,workingDays)-leaveCount-halfDayCount*0.5);
   var initials=(staff.name||'?').split(' ').map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
   function refreshData(){setLedger(getLedger(homeId));setPayments(getPayments(homeId));onStaffChange&&onStaffChange();}
   function onSaveEntry(entry){
@@ -3148,6 +3171,10 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
   var onStaff=staff.filter(function(s){return !hasLeft(s);});
   var presentCount=0,absentCount=0,holidayCount=0;
   onStaff.forEach(function(s){
+    /* A day outside this staff member's own schedule is neither presence nor
+       absence — there was nothing for them to show up to, so it belongs in
+       none of the three counts. */
+    if(!isScheduledDay(s,now)) return;
     var st=getLeaves(s.id,curYM)[today];
     if(st==='leave') absentCount++;
     else if(st==='holiday') holidayCount++;
@@ -3215,6 +3242,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
         <div className="card mb-4" data-tut="home-attend">
           {onStaff.map(function(s,i){
             var cur=(getLeaves(s.id,curYM)||{})[today]||'present';
+            var scheduledToday=isScheduledDay(s,now);
             return (
               /* Name above, buttons below at full width. Squeezing all three
                  onto one row truncated the very thing being identified — on a
@@ -3229,27 +3257,34 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
                     <span className="pill" style={{background:'#F5EBC0',color:'var(--warn)',fontSize:fsr(11),padding:'3px 8px',flexShrink:0}} className="inline-flex items-center gap-1"><Icon name="holiday" size={12} />{t.tHoliday}</span>
                   )}
                 </div>
-                {/* Named and colour-coded rather than pictographic: a tick and a
-                    calendar glyph look alike at a glance. Green for here, red
-                    for away — nothing to learn. */}
-                <div className="flex gap-2">
-                  {[{v:'present',lbl:t.tPresent,c:'#1A5E35',bg:'#D8EEE2'},
-                    {v:'leave',  lbl:t.tLeave,  c:'#B3282B',bg:'#FCE8E8'}].map(function(o){
-                    var on=cur===o.v;
-                    return (
-                      <button key={o.v} onClick={function(){markTodayFor(s.id,o.v);}}
-                        aria-label={s.name+' - '+o.lbl} aria-pressed={on}
-                        style={{flex:1,minHeight:46,padding:'10px',borderRadius:12,cursor:'pointer',
-                          fontSize:fsr(15),fontWeight:800,fontFamily:'Nunito,sans-serif',lineHeight:1,
-                          border:'2px solid '+(on?o.c:'var(--border)'),
-                          background:on?o.bg:'var(--surface)',
-                          color:on?o.c:'var(--muted)',
-                          display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-                        {on&&<Icon name="check" size={17} strokeWidth={2.6} />}{o.lbl}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* A day outside this staff member's own schedule has no valid
+                    present/leave state — there is nothing to mark, so the
+                    buttons are replaced rather than left clickable with
+                    nothing meaningful for them to do. */}
+                {scheduledToday ? (
+                  <div className="flex gap-2">
+                    {[{v:'present',lbl:t.tPresent,c:'#1A5E35',bg:'#D8EEE2'},
+                      {v:'leave',  lbl:t.tLeave,  c:'#B3282B',bg:'#FCE8E8'}].map(function(o){
+                      var on=cur===o.v;
+                      return (
+                        <button key={o.v} onClick={function(){markTodayFor(s.id,o.v);}}
+                          aria-label={s.name+' - '+o.lbl} aria-pressed={on}
+                          style={{flex:1,minHeight:46,padding:'10px',borderRadius:12,cursor:'pointer',
+                            fontSize:fsr(15),fontWeight:800,fontFamily:'Nunito,sans-serif',lineHeight:1,
+                            border:'2px solid '+(on?o.c:'var(--border)'),
+                            background:on?o.bg:'var(--surface)',
+                            color:on?o.c:'var(--muted)',
+                            display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                          {on&&<Icon name="check" size={17} strokeWidth={2.6} />}{o.lbl}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{padding:'10px',borderRadius:12,textAlign:'center',fontSize:fsr(13),fontWeight:700,color:'var(--muted)',background:'var(--surface2)'}}>
+                    {t.dashOffToday}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -3424,7 +3459,7 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
   var now=new Date();
   var mc=React.useContext(MembersCtx);
   var memberIds=Object.keys(mc.members||{});
-  var showPaidBy=!mc.guestMode&&memberIds.length>0;
+  var showPaidBy=memberIds.length>0;
   var [payer,setPayer]=useState(mc.uid||'');
   var [payerName,setPayerName]=useState('');
   var [payerErr,setPayerErr]=useState('');
@@ -3747,23 +3782,30 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
    fortnight away used to be a fortnight of separate taps. The span may cross a
    month boundary, and leaves are stored a month at a time, so the days are
    grouped into their months and each month written once. */
-function applyLeaveRange(homeId,staffId,fromISO,toISO,status){
+function applyLeaveRange(homeId,staffId,fromISO,toISO,status,staff){
   var a=parseISO(fromISO), b=parseISO(toISO);
   if(!a||!b) return 0;
   if(b<a){ var swap=a; a=b; b=swap; }
-  var buckets={}, n=0, cur=new Date(a);
-  while(cur<=b&&n<400){
-    var ym=padYM(cur.getFullYear(),cur.getMonth()+1);
-    var key=ym+'-'+String(cur.getDate()).padStart(2,'0');
-    if(!buckets[ym]) buckets[ym]=Object.assign({},getLeaves(staffId,ym));
-    if(status) buckets[ym][key]=status; else delete buckets[ym][key];
-    n++; cur.setDate(cur.getDate()+1);
+  var buckets={}, n=0, steps=0, cur=new Date(a);
+  while(cur<=b&&steps<400){
+    /* A day outside this staff member's own schedule has nothing to mark -
+       skip it rather than write a status that will never be shown or
+       deducted, so the "N days marked" count stays honest about what
+       actually took effect. */
+    if(isScheduledDay(staff,cur)){
+      var ym=padYM(cur.getFullYear(),cur.getMonth()+1);
+      var key=ym+'-'+String(cur.getDate()).padStart(2,'0');
+      if(!buckets[ym]) buckets[ym]=Object.assign({},getLeaves(staffId,ym));
+      if(status) buckets[ym][key]=status; else delete buckets[ym][key];
+      n++;
+    }
+    steps++; cur.setDate(cur.getDate()+1);
   }
   Object.keys(buckets).forEach(function(k){ fbSaveLeaves(homeId,staffId,k,buckets[k]); });
   return n;
 }
 
-function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,syncKey}){
+function LeaveCalendar({staff,staffId,staffSalary,lang,year,month,workingDays,homeId,syncKey}){
   var t=T[lang];
   var ym=padYM(year,month);
   var [lv,setLv]=useState({});
@@ -3777,7 +3819,7 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
   useEffect(function(){setLv(getLeaves(staffId,ym));},[staffId,ym,syncKey]);
 
   function doRange(status){
-    var n=applyLeaveRange(homeId||_activeHomeId,staffId,rFrom,rTo,status);
+    var n=applyLeaveRange(homeId||_activeHomeId,staffId,rFrom,rTo,status,staff);
     setLv(getLeaves(staffId,ym));
     setRMsg(t.markManyDone.replace('{n}',n));
     setTimeout(function(){setRMsg('');},2500);
@@ -3786,7 +3828,10 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
   function toggle(day){
     /* Future days are markable: telling the app about leave already agreed for
        next week is the point. They are drawn differently so a plan is never
-       mistaken for something that has already happened. */
+       mistaken for something that has already happened. A day outside this
+       staff member's own schedule has no valid present/leave state to cycle
+       through, so it simply doesn't respond. */
+    if(!isScheduledDay(staff,new Date(year,month-1,day))) return;
     var key=ym+'-'+String(day).padStart(2,'0');
     var cur=lv[key];
     var next=cur==='leave'?'holiday':cur==='holiday'?null:'leave';
@@ -3807,11 +3852,14 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
   }
 
   var isCurrentMonth=year===today.getFullYear()&&month===today.getMonth()+1;
+  var todayScheduled=isScheduledDay(staff,today);
 
   var firstDay=new Date(year,month-1,1).getDay();
   var daysInMonth=new Date(year,month,0).getDate();
-  var leaveDays=Object.values(lv).filter(function(v){return v==='leave';}).length;
-  var deduction=Math.round((staffSalary/(workingDays||30))*leaveDays);
+  var leaveDays=Object.entries(lv).filter(function(e){
+    return e[1]==='leave'&&isScheduledDay(staff,parseISO(e[0]));
+  }).length;
+  var deduction=Math.round((staffSalary/effectiveWorkingDays(staff,year,month,workingDays))*leaveDays);
 
   var cells=[];
   for(var i=0;i<firstDay;i++) cells.push(null);
@@ -3819,6 +3867,7 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
 
   function dayStatus(day){
     if(!day) return null;
+    if(!isScheduledDay(staff,new Date(year,month-1,day))) return 'off';
     var k=ym+'-'+String(day).padStart(2,'0');
     return lv[k]||'present';
   }
@@ -3826,17 +3875,19 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
   function dayCls(st){
     if(st==='leave')   return {background:'#FCE8E8',color:'var(--danger)',fontWeight:700};
     if(st==='holiday') return {background:'#F5EBC0',color:'var(--warn)',fontWeight:700};
+    if(st==='off')      return {background:'var(--surface2)',color:'var(--muted)',opacity:0.5};
     return {background:'var(--surface2)',color:'var(--ink2)'};
   }
   function dayLbl(st){
     if(st==='leave')   return t.Ls;
     if(st==='holiday') return t.Hs;
+    if(st==='off')      return t.Os;
     return t.Ps;
   }
 
   return (
     <div>
-      {isCurrentMonth && (
+      {isCurrentMonth && (todayScheduled ? (
         <div className="mb-4" data-tut="mark-today">
           <p style={{fontSize:fsr(11),fontWeight:800,color:'var(--muted)',textAlign:'center',marginBottom:8,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t.markToday}</p>
           <div className="flex gap-2">
@@ -3860,7 +3911,11 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
             })}
           </div>
         </div>
-      )}
+      ) : (
+        <div className="mb-4 rounded-2xl text-center" style={{padding:'12px',background:'var(--surface2)',color:'var(--muted)',fontSize:fsr(13),fontWeight:700}}>
+          {t.dashOffToday}
+        </div>
+      ))}
       <button onClick={function(){setRangeOpen(function(v){return !v;});}}
         className="btn btn-ghost btn-full" style={{marginBottom:12}}>
         <Icon name="calendar" size={18} /><span style={{margin:'0 8px'}}>{t.markMany}</span><Icon name={rangeOpen?'chevronUp':'chevronDown'} size={16} />
@@ -3906,18 +3961,22 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
           var td=new Date(year,month-1,day);
           var isToday=td.toDateString()===today.toDateString();
           var isFuture=td>today&&!isToday;
+          var isOff=st==='off';
           var stStyle=dayCls(st);
           return (
-            <button key={day} onClick={function(){toggle(day);}}
+            <button key={day} onClick={isOff?undefined:function(){toggle(day);}}
+              disabled={isOff}
               className="cal-btn flex flex-col items-center justify-center rounded-lg text-xs transition-all"
-              title={isFuture?t.plannedDay:undefined}
+              title={isOff?t.dashOffToday:isFuture?t.plannedDay:undefined}
               /* A future day that has been marked is a plan, not a record, so it
                  is outlined rather than filled. An unmarked future day stays
-                 faint: nothing has been said about it either way. */
-              style={Object.assign({},stStyle,{outline:'none',cursor:'pointer',
+                 faint: nothing has been said about it either way. A day outside
+                 the staff member's own schedule is neither - there is nothing
+                 to plan or record, so it just sits out, unclickable. */
+              style={Object.assign({},stStyle,{outline:'none',cursor:isOff?'default':'pointer',
                 border:isToday?'2px solid var(--accent)':isFuture&&st!=='present'?'2px dashed '+stStyle.color:'none',
                 background:isFuture&&st!=='present'?'transparent':stStyle.background,
-                opacity:isFuture&&st==='present'?0.45:1})}>
+                opacity:isOff?stStyle.opacity:isFuture&&st==='present'?0.45:1})}>
               <span style={{fontSize:fsr(13),fontWeight:600,lineHeight:1}}>{day}</span>
               <span style={{fontSize:fsr(11),lineHeight:1,marginTop:2,opacity:.8}}>{dayLbl(st)}</span>
             </button>
@@ -3935,7 +3994,9 @@ function LeaveCalendar({staffId,staffSalary,lang,year,month,workingDays,homeId,s
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 justify-center">
-        {[[{background:'var(--surface2)',color:'var(--ink2)'},t.Ps,t.tPresent],[{background:'#FCE8E8',color:'var(--danger)'},t.Ls,t.tLeave],[{background:'#F5EBC0',color:'var(--warn)'},t.Hs,t.tHoliday]].map(function(item){
+        {[[{background:'var(--surface2)',color:'var(--ink2)'},t.Ps,t.tPresent],[{background:'#FCE8E8',color:'var(--danger)'},t.Ls,t.tLeave],[{background:'#F5EBC0',color:'var(--warn)'},t.Hs,t.tHoliday]]
+          .concat(hasCustomSchedule(staff)?[[{background:'var(--surface2)',color:'var(--muted)',opacity:0.5},t.Os,t.tOff]]:[])
+          .map(function(item){
           return <span key={item[2]} className="rounded-lg px-2 py-1 text-xs font-bold" style={item[0]}>{item[1]} = {item[2]}</span>;
         })}
       </div>
@@ -3982,7 +4043,7 @@ function LeavesTab({lang,homeId,workingDays,syncKey}){
             <span style={{fontWeight:800,color:'var(--ink)',fontSize:fsr(15)}}>{t.mFull[month-1]} {year}</span>
             <button onClick={nextM} className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{background:'var(--surface)',border:'1px solid var(--border)',cursor:'pointer'}}>›</button>
           </div>
-          <LeaveCalendar staffId={s.id} staffSalary={salaryFor(s,year,month)} lang={lang} year={year} month={month} workingDays={workingDays} homeId={homeId} syncKey={syncKey} />
+          <LeaveCalendar staff={s} staffId={s.id} staffSalary={salaryFor(s,year,month)} lang={lang} year={year} month={month} workingDays={workingDays} homeId={homeId} syncKey={syncKey} />
         </div>
       ) : <p className="text-center mt-16" style={{color:'var(--muted)'}}>{t.noStaff}</p>}
     </div>
@@ -4029,13 +4090,14 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
      Date and reason stay editable. */
   var loanLocked=!!(existing&&existing.type==='loan'
     &&((existing.paidInstallments||0)>0||(existing.manualRepaid||0)>0));
-  var showPaidBy=!mc.guestMode&&memberIds.length>0&&CASH_OUT.indexOf(form.type)>-1;
+  var showPaidBy=memberIds.length>0&&CASH_OUT.indexOf(form.type)>-1;
   var payerSuggestions=useMemo(function(){ return showPaidBy?getExternalPayerNames(_activeHomeId):[]; },[showPaidBy]);
 
   var isTimeBased=form.type==='extra_work';
   var isHalfDay=form.type==='short_hours';
   var selStaff=staffList.find(function(x){return x.id===form.staffId;});
-  var dailyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)):0;
+  var entryYM=parseISO(form.date)||new Date();
+  var dailyRate=selStaff?Math.round(selStaff.salary/effectiveWorkingDays(selStaff,entryYM.getFullYear(),entryYM.getMonth()+1,workingDays)):0;
   /* A staff member's own hours-per-day, when they've set one, otherwise a
      flat assumption - was hardcoded to 8, which suited a full-time helper
      but overstated the hourly rate for anyone working shorter days. */
@@ -4370,7 +4432,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
   var [filterMember,setFilterMember]=useState('all');
   var mc=React.useContext(MembersCtx);
   var memberIds=Object.keys(mc.members||{});
-  var showMembers=!mc.guestMode&&memberIds.length>0;
+  var showMembers=memberIds.length>0;
   var [toast,setToast]=useState('');
   var [activeWA,setActiveWA]=useState(null);
   var [editing,setEditing]=useState(null);
@@ -4642,7 +4704,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
      coming back, so they are left out. */
   var mc=React.useContext(MembersCtx);
   var memberIds=Object.keys(mc.members||{});
-  var showMembers=!mc.guestMode&&memberIds.length>0;
+  var showMembers=memberIds.length>0;
   var spendSummary=useMemo(function(){
     if(!showMembers) return null;
     var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
@@ -4834,9 +4896,11 @@ function VoicePartialEntry({parsed,staffList,lang,workingDays,onSave,onRerecord}
   var [showStaffPicker,setShowStaffPicker]=useState(!parsed.foundStaff);
 
   var selStaff=staffList.find(function(x){return x.id===staffId;});
-  var dailyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)):0;
+  var voiceYM=parseISO(date)||new Date();
+  var voiceEffWD=selStaff?effectiveWorkingDays(selStaff,voiceYM.getFullYear(),voiceYM.getMonth()+1,workingDays):(workingDays||30);
+  var dailyRate=selStaff?Math.round(selStaff.salary/voiceEffWD):0;
   var hoursPerDay=selStaff&&Number(selStaff.hoursPerDay)>0?Number(selStaff.hoursPerDay):5;
-  var hourlyRate=selStaff?Math.round(selStaff.salary/(workingDays||30)/hoursPerDay):0;
+  var hourlyRate=selStaff?Math.round(selStaff.salary/voiceEffWD/hoursPerDay):0;
   var halfDayAmt=Math.round(dailyRate/2);
 
   useEffect(function(){
@@ -5098,16 +5162,14 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey,compact,onSaved}){
 }
 
 /* ── SETTINGS TAB ───────────────────────────────────────────── */
-function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,guestMode,user,onSignOut,onReplayTutorial,onCloudHomeAdded}){
+function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDaysChange,homeId,user,onSignOut,onReplayTutorial,onCloudHomeAdded}){
   var t=T[lang];
   var [allRoles,setAllRoles]=useState(function(){return getRoles();});
   var [newRoleName,setNewRoleName]=useState('');
   var [confirmDelRole,setConfirmDelRole]=useState(null);
   var [newHomeName,setNewHomeName]=useState('');
   var [confirmDelHome,setConfirmDelHome]=useState(null);
-  /* Joining an existing household by code needs the cloud — there is
-     nothing to join in guest mode, where households are local only. */
-  var cloudHomes=!guestMode&&!!user&&FIREBASE_ENABLED&&!!fbDb;
+  var cloudHomes=!!user&&FIREBASE_ENABLED&&!!fbDb;
   var [homeMode,setHomeMode]=useState('create');   /* 'create' | 'join' */
   var [joinCode,setJoinCode]=useState('');
   var [homeBusy,setHomeBusy]=useState(false);
@@ -5193,7 +5255,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     setNewRoleName('');
     /* A role typed while adding staff should be there for every family
        member picking a role afterwards, not just on this phone. */
-    if(!guestMode) fbAddRole(homeId,nr);
+    fbAddRole(homeId,nr);
   }
 
   function tryDeleteRole(roleKey){
@@ -5213,7 +5275,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     saveCustomRoles(getCustomRoles().filter(function(r){return r.key!==roleKey;}));
     setAllRoles(getRoles());
     setConfirmDelRole(null);
-    if(!guestMode&&going) fbRemoveRole(homeId,going);
+    if(going) fbRemoveRole(homeId,going);
   }
 
   function addHome(){
@@ -5271,11 +5333,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     var n=Math.min(31,Math.max(1,Number(wdInput)||30));
     saveSettings(Object.assign({},getSettings(),{workingDays:n}));
     onWorkingDaysChange(n);
-    /* Guest households have no Firestore document to patch, and the write
-       below is a harmless no-op there - fbSaveHomeSettings already checks
-       FIREBASE_ENABLED and homeId, so this stays local automatically rather
-       than needing a second guestMode check here. */
-    if(!guestMode) fbSaveHomeSettings(homeId,{workingDays:n});
+    fbSaveHomeSettings(homeId,{workingDays:n});
     setWdInput(String(n));
     setWdSaved(true);
     setTimeout(function(){setWdSaved(false);},2000);
@@ -5284,7 +5342,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   function saveStdRate(){
     var n=Math.max(0,Number(rateInput)||0);
     saveSettings(Object.assign({},getSettings(),{standardHourlyRate:n}));
-    if(!guestMode) fbSaveHomeSettings(homeId,{standardHourlyRate:n});
+    fbSaveHomeSettings(homeId,{standardHourlyRate:n});
     setRateInput(n?String(n):'');
     setRateSaved(true);
     setTimeout(function(){setRateSaved(false);},2000);
@@ -5300,8 +5358,8 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     <div className="p-4 scroll-area flex-1">
       <h2 style={{fontSize:fsr(20),fontWeight:800,color:'var(--ink)',marginBottom:16}}>{t.navSettingsTitle}</h2>
 
-      {/* Household invite code (cloud mode only) */}
-      {!guestMode&&<InviteCard lang={lang} homeId={homeId} homes={homes} />}
+      {/* Household invite code */}
+      <InviteCard lang={lang} homeId={homeId} homes={homes} />
 
       {/* Section A: Roles */}
       <div className="card mb-4">
@@ -5492,8 +5550,8 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
         <input type="file" accept=".json" onChange={handleRestoreFile} className="hidden" ref={restoreRef} />
       </div>
 
-      {/* Your profile (cloud mode only) */}
-      {!guestMode&&user&&(
+      {/* Your profile */}
+      {user&&(
         <div className="card mb-4">
           <p style={{fontSize:fsr(15),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.mpSettingsTitle}</p>
           {mpError&&<p style={{color:'var(--danger)',fontSize:fsr(13),marginBottom:10}}>{mpError}</p>}
@@ -5525,8 +5583,8 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
         </div>
       )}
 
-      {/* Sign Out (cloud mode only) */}
-      {!guestMode&&user&&(
+      {/* Sign Out */}
+      {user&&(
         <div className="card mb-4" style={{textAlign:'center'}}>
           <button className="btn btn-danger btn-full" onClick={onSignOut}>
             <Icon name="signout" size={18} style={{display:'inline-block',verticalAlign:'-3px',marginRight:8}} />{t.signOut}
@@ -5543,10 +5601,9 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
    in the app that crosses the household boundary.
 
    Sending needs a signed-in account. An open write path on a global
-   collection would be a spam target with no way to reply, so guests are
-   shown an explanation instead. You can read back only your own messages;
-   the rules keep everyone else's private. */
-function FeedbackTab({lang,guestMode,user}){
+   collection would be a spam target with no way to reply. You can read back
+   only your own messages; the rules keep everyone else's private. */
+function FeedbackTab({lang,user}){
   var t=T[lang];
   var TYPES=[
     {key:'idea',    icon:'bulb',    label:t.fbIdea},
@@ -5561,7 +5618,7 @@ function FeedbackTab({lang,guestMode,user}){
   var [mine,setMine]=useState(null);        /* null while loading */
   var [confirmDel,setConfirmDel]=useState(null);
 
-  var canSend=!!(FIREBASE_ENABLED&&fbDb&&!guestMode&&user);
+  var canSend=!!(FIREBASE_ENABLED&&fbDb&&user);
 
   function loadMine(){
     if(!canSend){ setMine([]); return; }
@@ -6147,8 +6204,26 @@ function BottomNav({tab,setTab,lang,fab}){
   );
 }
 
+/* ── CONFIG MISSING SCREEN ─────────────────────────────────────
+   The only path left when FIREBASE_ENABLED is false - there is no guest
+   fallback to quietly drop into instead. This is a developer-facing setup
+   message (a genuinely misdeployed production site should surface loudly
+   too), not something an end user should ever see. */
+function ConfigMissingScreen({lang}){
+  var t=T[lang];
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+      <div className="card" style={{maxWidth:380,width:'100%',textAlign:'center'}}>
+        <div style={{display:'flex',justifyContent:'center',marginBottom:14}}><Logo size={56} /></div>
+        <h2 style={{fontSize:fsr(18),fontWeight:800,color:'var(--ink)',marginBottom:8}}>{t.configMissingTitle}</h2>
+        <p style={{fontSize:fsr(14),color:'var(--ink2)'}}>{t.configMissingBody}</p>
+      </div>
+    </div>
+  );
+}
+
 /* ── AUTH SCREEN ────────────────────────────────────────────── */
-function AuthScreen({lang,onGuest,onAuth}){
+function AuthScreen({lang,onAuth}){
   var t=T[lang];
   var [mode,setMode]=useState('phone'); /* 'phone'|'otp' */
   var [phone,setPhone]=useState('');
@@ -6310,19 +6385,6 @@ function AuthScreen({lang,onGuest,onAuth}){
         <button className="btn btn-ghost btn-full mb-5" onClick={signInGoogle} disabled={loading}>
           {t.googleSignIn}
         </button>
-
-        {/* One name for this choice, not a button label plus a paragraph
-            repeating the same idea in different words - the explanation is
-            a tap away instead of sitting on the screen for everyone whether
-            they need it or not, the same "?" pattern used for every other
-            field-level explanation in the app. */}
-        <div className="flex items-center justify-center flex-wrap" style={{gap:2}}>
-          <button onClick={onGuest}
-            style={{background:'none',border:'none',color:'var(--ink2)',cursor:'pointer',fontSize:fsr(14),fontWeight:700,fontFamily:'Nunito,sans-serif',padding:'8px 4px 8px 16px'}}>
-            {t.guestMode}
-          </button>
-          <Help text={t.guestWarning} label={t.guestMode} />
-        </div>
       </div>
     </div>
   );
@@ -6609,7 +6671,6 @@ function App(){
   var [showTutorial,setShowTutorial]=useState(false);
   /* cloud state */
   var [user,setUser]=useState(undefined);   /* undefined=checking, null=no user */
-  var [guestMode,setGuestMode]=useState(false);
   var [syncKey,setSyncKey]=useState(0);
   var [needsHome,setNeedsHome]=useState(false);
   var [needsProfile,setNeedsProfile]=useState(false);
@@ -6618,36 +6679,9 @@ function App(){
 
   useEffect(function(){ applyFontSz(fontSz); },[fontSz]);
 
-  /* Keep the untouched sample records in step with the interface language.
-     Catches both language toggles and installs seeded by an older build.
-     Guest only — a cloud household is shared, so one member switching
-     language must not rewrite the names everyone else sees. */
-  useEffect(function(){
-    if(!guestMode) return;
-    if(localizeDemoData(lang)){
-      setHomes(getHomes());
-      setSyncKey(function(k){return k+1;});
-    }
-  },[lang,guestMode]);
-
   /* ── primary init ── */
   useEffect(function(){
-    if(!FIREBASE_ENABLED){
-      setGuestMode(true); setUser(null);
-      var settings=getSettings();
-      seedIfNeeded(settings.lang||'en');
-      localizeDemoData(settings.lang||'en');   /* heal samples seeded in the wrong language */
-      if(!settings.tutorialDone){ setShowTutorial(true); setTab('staff'); setPreselectSalaryStaff(''); }
-      setLang(settings.lang||'en');
-      setWorkingDays(settings.workingDays||30);
-      var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
-      var h=getHomes(); setHomes(h);
-      var lid=settings.lastHomeId;
-      var hid=(lid&&h.find(function(x){return x.id===lid;}))?lid:(h[0]?h[0].id:'');
-      setHomeId(hid); _activeHomeId=hid;
-      setReady(true);
-      return;
-    }
+    if(!FIREBASE_ENABLED) return;
     var unsubAuth=fbAuth.onAuthStateChanged(function(u){
       setUser(u);
       if(!u){
@@ -6721,11 +6755,9 @@ function App(){
   /* ── household document: members, working days, standard rate, roles ──
      One listener for everything that must read the same on every member's
      phone, because it is all on the same document and a second subscription
-     would just be a second round trip to learn the same thing. Guest
-     households are local-only and never reach this branch, which is what
-     keeps a guest's own working-days figure exactly where they left it. */
+     would just be a second round trip to learn the same thing. */
   useEffect(function(){
-    if(!FIREBASE_ENABLED||!fbDb||!homeId||guestMode){ setMembers({}); return; }
+    if(!FIREBASE_ENABLED||!fbDb||!homeId){ setMembers({}); return; }
     var un=fbDb.collection('homes').doc(homeId).onSnapshot(function(d){
       var data=(d.exists&&d.data())||{};
       setMembers(data.members||{});
@@ -6738,16 +6770,16 @@ function App(){
       saveCustomRoles(data.roles||[]);
     },function(){});
     return function(){ un(); };
-  },[homeId,guestMode]);
+  },[homeId]);
 
   /* declared with the other hooks — the auth gating below returns early */
   var memberCtx=useMemo(function(){
-    return {uid:(user&&user.uid)||'',members:members,guestMode:guestMode};
-  },[user,members,guestMode]);
+    return {uid:(user&&user.uid)||'',members:members};
+  },[user,members]);
 
   /* ── Firestore real-time listeners ── */
   useEffect(function(){
-    if(!FIREBASE_ENABLED||!fbDb||!homeId||guestMode) return;
+    if(!FIREBASE_ENABLED||!fbDb||!homeId) return;
     var db=fbDb, timer=null;
     function bump(){
       clearTimeout(timer);
@@ -6778,7 +6810,7 @@ function App(){
       }),
     ];
     return function(){ clearTimeout(timer); unsubs.forEach(function(u){u();}); };
-  },[homeId,guestMode]);
+  },[homeId]);
 
   function toggleLang(){
     var nl=lang==='en'?'hi':'en'; setLang(nl);
@@ -6792,7 +6824,7 @@ function App(){
     setHomeId(id); _activeHomeId=id;
     saveSettings(Object.assign({},getSettings(),{lastHomeId:id}));
     setTab('home');
-    if(FIREBASE_ENABLED&&fbDb&&user&&!guestMode)
+    if(FIREBASE_ENABLED&&fbDb&&user)
       fbDb.collection('users').doc(user.uid).update({currentHomeId:id}).catch(function(){});
   }
   function updateHomes(h){
@@ -6826,33 +6858,20 @@ function App(){
   function skipMigrate(){
     saveHomes([]); setMigrating(false);
   }
-  function enterGuestMode(){
-    setGuestMode(true);
-    var settings=getSettings();
-    seedIfNeeded(settings.lang||'en');
-    localizeDemoData(settings.lang||'en');
-    if(!settings.tutorialDone){ setShowTutorial(true); setTab('staff'); setPreselectSalaryStaff(''); }
-    setLang(settings.lang||'en');
-    setWorkingDays(settings.workingDays||30);
-    var sz=settings.fontSz||'normal'; setFontSz(sz); applyFontSz(sz);
-    var h=getHomes(); setHomes(h);
-    var hid=h.length?h[0].id:''; setHomeId(hid); _activeHomeId=hid;
-  }
-
   /* ── auth gating ── */
+  if(!FIREBASE_ENABLED) return <ConfigMissingScreen lang={lang} />;
   if(!ready||user===undefined) return null;
-  if(!guestMode&&user===null){
+  if(user===null){
     return <AuthScreen lang={lang}
-      onAuth={function(){ window.location.reload(); }}
-      onGuest={enterGuestMode} />;
+      onAuth={function(){ window.location.reload(); }} />;
   }
   /* Who you are, then where you live: both only ever for someone who has no
      household yet, so neither can interrupt an existing user. */
-  if(!guestMode&&needsProfile){
+  if(needsProfile){
     return <ProfileSetupScreen lang={lang} user={user}
       onSaved={function(){ setNeedsProfile(false); }} />;
   }
-  if(!guestMode&&needsHome){
+  if(needsHome){
     return <HomeSetupScreen lang={lang} user={user}
       onHomeReady={function(homesList,hid,isNew){
         setHomes(homesList); setHomeId(hid); _activeHomeId=hid; setNeedsHome(false);
@@ -6899,7 +6918,7 @@ function App(){
             <span>
               <h1 style={{fontSize:fsr(20),fontWeight:800,lineHeight:1,margin:0,color:'#fff'}}>{t.app}</h1>
               <p style={{fontSize:fsr(11),opacity:.6,margin:'2px 0 0',color:'#fff'}}>
-                {FIREBASE_ENABLED&&!guestMode?t.syncLive:t.tag}
+                {t.syncLive}
               </p>
             </span>
           </button>
@@ -6937,8 +6956,8 @@ function App(){
         {tab==='money'    && <MoneyTab key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} refreshKey={staffKey} defaultStaffId={preselectSalaryStaff} />}
         {tab==='reports'  && <ReportsTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />}
         {tab==='voice'    && <VoiceTab  key={homeId} lang={lang} homeId={homeId} homes={homes} workingDays={workingDays} syncKey={syncKey} />}
-        {tab==='feedback' && <FeedbackTab lang={lang} guestMode={guestMode} user={user} />}
-        {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} guestMode={guestMode} user={user} onSignOut={signOut}
+        {tab==='feedback' && <FeedbackTab lang={lang} user={user} />}
+        {tab==='settings' && <SettingsTab lang={lang} setLang={setLang} homes={homes} onHomesChange={updateHomes} workingDays={workingDays} onWorkingDaysChange={function(n){setWorkingDays(n);}} homeId={homeId} user={user} onSignOut={signOut}
           onCloudHomeAdded={cloudHomeAdded}
           onReplayTutorial={function(){
             saveSettings(Object.assign({},getSettings(),{tutorialDone:false}));
