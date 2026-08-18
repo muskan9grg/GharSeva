@@ -984,13 +984,24 @@ function buildReportData(homeId,period,lang,members,workingDays){
     if(real>0) return real;
     return new Date(year,m-1,1)>now ? 0 : calcSalary(s,year,m,ledger,workingDays,homeId).netPayable;
   }
-  function monthAttendance(staffId,m){
-    var lv=getLeaves(staffId,padYM(year,m));
-    var vals=Object.keys(lv).map(function(k){return lv[k];});
-    var leaveD=vals.filter(function(v){return v==='leave';}).length;
-    var holidayD=vals.filter(function(v){return v==='holiday';}).length;
+  function monthAttendance(s,m){
+    var lv=getLeaves(s.id,padYM(year,m));
+    var leaveD=0,holidayD=0;
+    /* Marks on a day outside this staff member's own schedule (stale, or made
+       before the schedule existed) count toward nothing here either - same
+       rule calcSalary already applies, so this report's numbers never disagree
+       with what was actually deducted. */
+    Object.entries(lv).forEach(function(e){
+      if(!isScheduledDay(s,parseISO(e[0]))) return;
+      if(e[1]==='leave') leaveD++; else if(e[1]==='holiday') holidayD++;
+    });
     var daysInMonth=new Date(year,m,0).getDate();
-    var considered = year===now.getFullYear()&&m===now.getMonth()+1 ? now.getDate() : daysInMonth;
+    var upTo = year===now.getFullYear()&&m===now.getMonth()+1 ? now.getDate() : daysInMonth;
+    /* "Present out of how many" is the staff member's own scheduled days up to
+       that point, not the calendar's - otherwise someone who works twice a
+       week would show as present nearly every day of the month. */
+    var considered=0;
+    for(var d=1;d<=upTo;d++){ if(isScheduledDay(s,new Date(year,m-1,d))) considered++; }
     return {present:Math.max(0,considered-leaveD-holidayD),leave:leaveD,holiday:holidayD};
   }
 
@@ -998,7 +1009,7 @@ function buildReportData(homeId,period,lang,members,workingDays){
     var paidSum=0,present=0,leave=0,holiday=0;
     monthsInPeriod.forEach(function(m){
       paidSum+=monthSalary(s,m);
-      var att=monthAttendance(s.id,m);
+      var att=monthAttendance(s,m);
       present+=att.present; leave+=att.leave; holiday+=att.holiday;
     });
     var sLed=ledger.filter(function(e){return e.staffId===s.id&&inPeriod(e.date);});
@@ -1030,7 +1041,7 @@ function buildReportData(homeId,period,lang,members,workingDays){
   var attRows=[];
   staff.forEach(function(s){
     monthsInPeriod.forEach(function(m){
-      var att=monthAttendance(s.id,m);
+      var att=monthAttendance(s,m);
       attRows.push({name:s.name,month:t.months[m-1]+' '+year,present:att.present,leave:att.leave,holiday:att.holiday});
     });
   });
@@ -2821,8 +2832,8 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
   var leaveMap=getLeaves(staff.id,ym);
   var leaveCount=0,holidayCount=0;
   Object.entries(leaveMap).forEach(function(e){
-    if(e[1]==='leave'){ if(isScheduledDay(staff,parseISO(e[0]))) leaveCount++; }
-    else if(e[1]==='holiday') holidayCount++;
+    if(!isScheduledDay(staff,parseISO(e[0]))) return;
+    if(e[1]==='leave') leaveCount++; else if(e[1]==='holiday') holidayCount++;
   });
   var thisMonthAdv=ledger.filter(function(e){return e.staffId===staff.id&&e.date&&e.date.startsWith(ym)&&e.type==='advance';});
   var thisMonthHalf=ledger.filter(function(e){return e.staffId===staff.id&&e.date&&e.date.startsWith(ym)&&e.type==='short_hours';});
@@ -3252,8 +3263,12 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
                   <Avatar staff={s} size={42} />
                   <p className="flex-1 truncate" style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',margin:0}}>{s.name}</p>
                   {/* Holiday is set in the calendar, so neither button below
-                      would be lit — say so rather than showing a blank pair. */}
-                  {cur==='holiday'&&(
+                      would be lit — say so rather than showing a blank pair.
+                      Only on a scheduled day: an off day already says so below,
+                      and a stale holiday mark left over from before the
+                      schedule existed shouldn't show as a second, redundant
+                      signal on top of it. */}
+                  {scheduledToday&&cur==='holiday'&&(
                     <span className="pill" style={{background:'#F5EBC0',color:'var(--warn)',fontSize:fsr(11),padding:'3px 8px',flexShrink:0}} className="inline-flex items-center gap-1"><Icon name="holiday" size={12} />{t.tHoliday}</span>
                   )}
                 </div>
@@ -4191,6 +4206,12 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
     if(form.type==='loan_repay'&&form.targetLoanId){
       var targetLoan=activeLoans.find(function(ln){return ln.id===form.targetLoanId;});
       var bal=targetLoan?loanRemaining(targetLoan):0;
+      /* Editing an existing repayment against this same loan: its old amount is
+         already baked into the loan's manualRepaid, so the true headroom for the
+         new amount is the remaining balance PLUS what this entry already paid -
+         otherwise a legitimate increase (e.g. 300 -> 900 against a 1000 loan with
+         nothing else repaid) is rejected as if only 700 were ever available. */
+      if(existing&&existing.type==='loan_repay'&&existing.targetLoanId===form.targetLoanId) bal+=Number(existing.amount)||0;
       if(Number(form.amount)>bal){setErrMsg(t.errLoanExceeds.replace('{bal}',fmt(bal)));return;}
     }
     if(showPaidBy&&form.paidBy==='other'&&!form.paidByName.trim()){setErrMsg(t.errPayerName);return;}
