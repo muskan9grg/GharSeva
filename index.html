@@ -497,6 +497,7 @@ en:{
   famount:'Amount',fdate:'Date',freason:'Why? (optional)',freasonPh:'e.g. Medical emergency',
   finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
   loanInstNoteOver:'The last installment will be smaller — {amount} — to settle the loan exactly.',
+  loanInstNoteEarly:'At this rate the loan finishes in {months} months, not {n} — the last installment will be {final}.',
   loanInstNoteUnder:'This won’t fully repay the loan in {n} months; {amount} will still remain.',
   noEntries:'No entries. Tap "+ Add Entry".',
   tLoanRepay:'Loan Repayment',fApplyLoan:'Apply Against Loan',noActiveLoans:'No active loans for this staff',
@@ -725,6 +726,7 @@ hi:{
   famount:'राशि',fdate:'तारीख',freason:'किसलिए? (ज़रूरी नहीं)',freasonPh:'जैसे: चिकित्सा आपात',
   finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
   loanInstNoteOver:'आखिरी किस्त छोटी होगी — {amount} — ताकि लोन ठीक-ठीक चुक जाए।',
+  loanInstNoteEarly:'इस रकम पर लोन {n} की जगह {months} महीनों में चुक जाएगा — आखिरी किस्त {final} की होगी।',
   loanInstNoteUnder:'{n} महीनों में लोन पूरा नहीं चुकेगा; {amount} बाकी रहेगा।',
   noEntries:'कोई एंट्री नहीं।',
   tLoanRepay:'लोन चुकाना',fApplyLoan:'लोन में लगाएं',noActiveLoans:'इस स्टाफ का कोई सक्रिय लोन नहीं',
@@ -4170,8 +4172,29 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
     var n=Number(form.totalInstallments);
     if(n>0&&form.amount) set('installment',String(Math.round(Number(form.amount)/n)));
   },[form.amount,form.totalInstallments,form.type]);
-  var loanInstMismatch=form.type==='loan'&&Number(form.installment)>0&&Number(form.totalInstallments)>0&&Number(form.amount)>0
-    ?Math.round(Number(form.installment)*Number(form.totalInstallments)-Number(form.amount)):0;
+  /* What this installment/count combination actually does, worked out the
+     same way the real payoff does it - one installment at a time until the
+     balance is gone - rather than assuming the mismatch is always small
+     enough to fit inside a single "last installment". A rounded installment
+     (say ₹3 suggested for ₹4000 over 1500 months) can overshoot by far more
+     than one installment's worth once repeated hundreds of times, and the
+     old single-installment assumption went negative in that case instead of
+     saying what actually happens: the loan finishes early. */
+  var loanInstNote=(function(){
+    var installmentNum=Number(form.installment), totalNum=Number(form.totalInstallments), amountNum=Number(form.amount);
+    if(form.type!=='loan'||!(installmentNum>0)||!(totalNum>0)||!(amountNum>0)) return '';
+    var fullCount=Math.floor(amountNum/installmentNum);
+    var remainder=Math.round(amountNum-fullCount*installmentNum);
+    var actualMonths=remainder>0?fullCount+1:fullCount;
+    if(remainder===0&&actualMonths===totalNum) return '';     /* divides evenly, nothing to explain */
+    if(actualMonths===totalNum) return t.loanInstNoteOver.replace('{amount}',fmt(remainder));   /* only the true last installment is smaller */
+    if(actualMonths<totalNum){
+      var finalInstallment=remainder>0?remainder:installmentNum;
+      return t.loanInstNoteEarly.replace('{months}',actualMonths).replace('{n}',totalNum).replace('{final}',fmt(finalInstallment));
+    }
+    var shortfall=Math.round(amountNum-installmentNum*totalNum);
+    return t.loanInstNoteUnder.replace('{n}',totalNum).replace('{amount}',fmt(shortfall));
+  })();
 
   var activeLoans=(ledger||[]).filter(function(e){return e.staffId===form.staffId&&e.type==='loan'&&e.status==='active';});
 
@@ -4382,12 +4405,10 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         <div>
           <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" disabled={loanLocked} /></FLabel>
           <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){installmentTouched.current=true;set('installment',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
-          {loanInstMismatch!==0 && (
+          {loanInstNote && (
             <div className="mb-4 px-3 py-2 rounded-xl" style={{background:'#FDF3DC',marginTop:-8}}>
               <p style={{fontSize:fsr(12.5),color:'#8B5E08',fontWeight:600,lineHeight:1.4}}>
-                {loanInstMismatch>0
-                  ?t.loanInstNoteOver.replace('{amount}',fmt(Number(form.installment)-loanInstMismatch))
-                  :t.loanInstNoteUnder.replace('{n}',form.totalInstallments).replace('{amount}',fmt(-loanInstMismatch))}
+                {loanInstNote}
               </p>
             </div>
           )}
