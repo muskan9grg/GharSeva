@@ -151,7 +151,7 @@ window.onerror = function(msg,_,line){
 };
 </script>
 
-<script type="text/babel">
+<script type="text/plain" id="app-src">
 const {useState,useEffect,useRef,useMemo} = React;
 
 /* ── FIREBASE INIT ──────────────────────────────────────────── */
@@ -7063,6 +7063,26 @@ function App(){
 ReactDOM.createRoot(document.getElementById('root')).render(
   React.createElement(ErrorBoundary, null, React.createElement(App))
 );
+</script>
+
+<script>
+/* type="text/plain" above keeps Babel's auto-scan from grabbing the app
+   script immediately, so it can't block the main thread before the boot
+   video has even had a chance to start loading - a ~7000-line synchronous
+   Babel.transform starves the video of any progress at all (verified:
+   readyState stays 0 the whole time) if it runs first. A short setTimeout
+   yields the main thread so the browser can dispatch the video's initial
+   fetch first. requestAnimationFrame would be more precise but is not
+   guaranteed to fire in every context (e.g. a backgrounded tab) - and
+   gating the entire app's boot on it risks the app never loading at all,
+   which is worse than the video sometimes missing its head start. */
+setTimeout(function(){
+  var code = document.getElementById('app-src').textContent;
+  var out = Babel.transform(code, {presets:['react']}).code;
+  var s = document.createElement('script');
+  s.textContent = out;
+  document.body.appendChild(s);
+}, 50);
 </script>
 </body>
 </html>
