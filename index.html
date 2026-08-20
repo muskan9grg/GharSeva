@@ -628,7 +628,7 @@ en:{
   aTotSal:'Salary',aTotAdv:'Advances',aTotExp:'Expenses',aTotBon:'Bonuses',aTotLoan:'Loan Balance',
   months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
   mFull:['January','February','March','April','May','June','July','August','September','October','November','December'],
-  micSpeak:'Speak',micStop:'Stop',micListening:'Listening…',micFillDone:'Form filled from voice. Please review',
+  micSpeak:'Speak',micStop:'Stop',micListening:'Listening…',micFillDone:'Form filled from voice. Please review',micBlocked:'Microphone access is blocked. Allow it in your browser settings for this site.',micNoDevice:'No microphone found on this device.',micError:'Voice input failed. Please try again.',
   voiceTitle:'Voice Input',voiceHint:'Tap the mic and speak. Hindi & English both work!',
   voiceEx:'Examples:',startListen:'Tap to Speak',stopListen:'■ Stop',
   voiceListening:'Listening…',voiceHeard:'You said:',voiceUnderstood:'Saving this:',voiceShowEx:'Show examples',voiceHideEx:'Hide examples',
@@ -864,7 +864,7 @@ hi:{
   aTotSal:'वेतन',aTotAdv:'अग्रिम',aTotExp:'खर्च',aTotBon:'बोनस',aTotLoan:'लोन बकाया',
   months:['जन','फर','मार','अप्र','मई','जून','जुल','अग','सित','अक्त','नव','दिस'],
   mFull:['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्तूबर','नवंबर','दिसंबर'],
-  micSpeak:'बोलें',micStop:'रोकें',micListening:'सुन रहे हैं…',micFillDone:'आवाज़ से फॉर्म भरा। कृपया जांचें',
+  micSpeak:'बोलें',micStop:'रोकें',micListening:'सुन रहे हैं…',micFillDone:'आवाज़ से फॉर्म भरा। कृपया जांचें',micBlocked:'माइक्रोफ़ोन एक्सेस ब्लॉक है। इस साइट के लिए ब्राउज़र सेटिंग्स में इसे अनुमति दें।',micNoDevice:'इस डिवाइस पर कोई माइक्रोफ़ोन नहीं मिला।',micError:'वॉइस इनपुट विफल रहा। कृपया फिर से प्रयास करें।',
   voiceTitle:'आवाज़ से एंट्री',voiceHint:'माइक्रोफोन दबाएं और बोलें!',
   voiceEx:'उदाहरण:',startListen:'बोलने के लिए दबाएं',stopListen:'■ रोकें',
   voiceListening:'सुन रहे हैं…',voiceHeard:'आपने कहा:',voiceUnderstood:'यह सहेजा जाएगा:',voiceShowEx:'उदाहरण दिखाएं',voiceHideEx:'छुपाएं',
@@ -2197,6 +2197,7 @@ function parseVoice(transcript,staffList){
 function MicButton({lang,onResult,style}){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   var [listening,setListening]=useState(false);
+  var [errMsg,setErrMsg]=useState('');
   var recRef=useRef(null);
   var t=T[lang];
   if(!SR) return null;
@@ -2213,19 +2214,27 @@ function MicButton({lang,onResult,style}){
         setListening(false);
         onResult(tr);
       };
-      rec.onerror=function(){setListening(false);};
+      rec.onerror=function(e){
+        setListening(false);
+        if(e.error==='not-allowed'||e.error==='service-not-allowed') setErrMsg(t.micBlocked);
+        else if(e.error==='audio-capture') setErrMsg(t.micNoDevice);
+        else if(e.error!=='no-speech'&&e.error!=='aborted') setErrMsg(t.micError);
+      };
       rec.onend=function(){setListening(false);};
       rec.start(); recRef.current=rec; setListening(true);
     }
   }
   return (
-    <button onClick={toggle} title={t.micSpeak}
-      style={Object.assign({},{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:12,border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif',fontWeight:800,fontSize:fsr(13),
-        background:listening?'var(--danger)':'var(--accent)',color:'#fff',transition:'all .15s',whiteSpace:'nowrap'},style||{})}>
-      {listening?<span style={{fontSize:fsr(15),lineHeight:1}}>■</span>:<Icon name="mic" size={18} />}
-      <span>{listening?t.micStop:t.micSpeak}</span>
-      {listening&&<span style={{fontSize:fsr(11),opacity:.85}}>{t.micListening}</span>}
-    </button>
+    <React.Fragment>
+      <button onClick={toggle} title={t.micSpeak}
+        style={Object.assign({},{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:12,border:'none',cursor:'pointer',fontFamily:'Nunito,sans-serif',fontWeight:800,fontSize:fsr(13),
+          background:listening?'var(--danger)':'var(--accent)',color:'#fff',transition:'all .15s',whiteSpace:'nowrap'},style||{})}>
+        {listening?<span style={{fontSize:fsr(15),lineHeight:1}}>■</span>:<Icon name="mic" size={18} />}
+        <span>{listening?t.micStop:t.micSpeak}</span>
+        {listening&&<span style={{fontSize:fsr(11),opacity:.85}}>{t.micListening}</span>}
+      </button>
+      {errMsg&&<Toast msg={errMsg} onDone={function(){setErrMsg('');}} />}
+    </React.Fragment>
   );
 }
 
@@ -5210,7 +5219,12 @@ function VoiceTab({lang,homeId,homes,workingDays,syncKey,compact,onSaved}){
       setTranscript(tr); setParsed(parseVoice(tr,staff));
       setConfirmed(false); setWAMsg(''); setSavedStaff(null);
     };
-    rec.onerror=function(){setListening(false);};
+    rec.onerror=function(e){
+      setListening(false);
+      if(e.error==='not-allowed'||e.error==='service-not-allowed') setToast(t.micBlocked);
+      else if(e.error==='audio-capture') setToast(t.micNoDevice);
+      else if(e.error!=='no-speech'&&e.error!=='aborted') setToast(t.micError);
+    };
     rec.onend=function(){setListening(false);};
     rec.start(); recRef.current=rec; setListening(true);
     setTranscript(''); setParsed(null); setConfirmed(false);
