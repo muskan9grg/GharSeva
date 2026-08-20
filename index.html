@@ -110,20 +110,21 @@
 
 <!-- Shown while Babel/React initialise; React replaces it -->
 <div id="root">
-  <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#D6B78C;display:flex;align-items:center;justify-content:center;">
+  <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#D3B589;display:flex;align-items:center;justify-content:center;">
     <!-- Sized to its own 16:9 frame rather than cropped to fill the
          viewport (object-fit:cover on a landscape source looked absurdly
-         zoomed-in and cropped the mark on a tall phone screen) - as large
-         as it can get without cropping, so what little margin is left (now
-         color-synced below) reads as an edge, not a border around a small
-         video sitting on an unrelated page background. -->
+         zoomed-in and cropped the mark on a tall phone screen). Kept
+         moderate on purpose - the background behind it (below) now
+         genuinely animates through the same color arc as the video itself,
+         so looking like "one frame" no longer depends on the video being
+         huge, just on the two colors actually matching at every instant. -->
     <!-- No autoplay attribute: it fires its own internal play() call that
          nothing here can attach a .catch() to, so any rejection of THAT
          specific call surfaces as an uncaught promise rejection in the
          console even though the explicit v.play() below is fully handled.
          The script below is solely responsible for starting playback. -->
     <video id="bootVideo" muted playsinline
-      style="width:min(97vw,900px);max-height:92vh;height:auto;object-fit:contain;display:block;"
+      style="width:min(78vw,480px);max-height:62vh;height:auto;object-fit:contain;display:block;position:relative;z-index:1;"
       onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
       <source src="icons/logo-loading.mp4" type="video/mp4">
     </video>
@@ -154,7 +155,28 @@
       </div>
       <div style="font-size:.8rem;color:#fff;font-family:'Nunito',sans-serif;letter-spacing:.02em;">Loading…</div>
     </div>
-    <style>@keyframes lb{from{transform:translateX(0)}to{transform:translateX(150%)}}</style>
+    <style>
+      @keyframes lb{from{transform:translateX(0)}to{transform:translateX(150%)}}
+      /* Pre-baked to match the video's own color arc, sampled directly from
+         its actual frames at close intervals (not read from the video in
+         real time - a canvas-sampling loop on a timer turned out to depend
+         on the tab actively compositing to fire at all, which isn't
+         guaranteed in every context). The real transition is a fast ~0.5s
+         window from 5.5s to 6.0s, not a slow drift - confirmed by sampling
+         every tenth of a second through it live, then checked against an
+         actual screenshot during that exact window, which is what caught
+         the first version's stops being too spread out and visibly
+         mismatched against the real video for part of the transition. */
+      @keyframes gsBootBg{
+        0%,61.34%{background-color:#D3B589;}
+        62.45%{background-color:#C1AC83;}
+        63.57%{background-color:#8C927A;}
+        64.68%{background-color:#67816F;}
+        65.80%{background-color:#336B62;}
+        66.91%,100%{background-color:#0C5F5C;}
+      }
+      .gs-bg-sync{animation:gsBootBg 8.966667s linear 1 forwards;}
+    </style>
   </div>
 </div>
 
@@ -206,35 +228,24 @@ window.__bootAutoplayBlocked = false;
       }
       /* The video was sitting in a fixed-teal box, visibly a separate video
          rather than the screen itself - since the animation's own background
-         drifts warm cream to teal, and the surrounding page was static. This
-         samples a corner of the actual video frame on a timer (top-left is
-         never covered by the roof, the figure, or any prop across the whole
-         clip) and paints the same color onto the full-screen container behind
-         it, so the video's edges disappear into a background that's always
-         moving with it instead of a fixed color it sits on top of.
-         setInterval, not requestAnimationFrame - confirmed by instrumentation
-         that rAF straight up never fires in some contexts this runs in, which
-         left the background frozen on its initial color forever. A plain
-         100ms timer has no such dependency and a color drift this slow loses
-         nothing next to a full 60fps loop. */
+         drifts warm cream to teal, and the surrounding page was static.
+         Tried sampling the video's own pixels on a timer and painting that
+         onto the background live, but that turned out to depend on the tab
+         actively compositing frames to work at all - confirmed broken (frozen
+         on the initial color, forever) in a context that wasn't. The CSS
+         animation defined above has no such dependency.
+         Started on 'playing', not right after calling play(): confirmed via
+         screenshot during the actual transition that starting it immediately
+         ran the CSS clock slightly ahead of the video - play() returning
+         doesn't mean a frame is on screen yet, there's a real decode/buffer
+         gap between requesting playback and it actually starting, and that
+         gap was enough to visibly desync the two through the ~0.5s color
+         shift specifically. 'playing' fires right as a frame is actually
+         rendered, which is what playback time zero actually means here. */
       var bootScreen = document.getElementById('bootScreen');
-      var sampleCanvas = document.createElement('canvas');
-      sampleCanvas.width = 1; sampleCanvas.height = 1;
-      var sampleCtx = sampleCanvas.getContext('2d', {willReadFrequently:true});
-      var syncTimer = setInterval(function(){
-        if(v.style.display==='none'){ clearInterval(syncTimer); return; }
-        if(v.readyState>=2){
-          try{
-            var vw=v.videoWidth, vh=v.videoHeight;
-            if(vw&&vh){
-              sampleCtx.drawImage(v, Math.round(vw*0.03), Math.round(vh*0.03), 4, 4, 0, 0, 1, 1);
-              var d=sampleCtx.getImageData(0,0,1,1).data;
-              bootScreen.style.background='rgb('+d[0]+','+d[1]+','+d[2]+')';
-            }
-          }catch(e){}
-        }
-        if(v.ended) clearInterval(syncTimer);
-      }, 100);
+      v.addEventListener('playing', function(){
+        bootScreen.classList.add('gs-bg-sync');
+      }, {once:true});
     }
   }
 })();
