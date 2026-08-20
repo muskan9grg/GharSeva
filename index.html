@@ -113,12 +113,17 @@
   <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#D6B78C;display:flex;align-items:center;justify-content:center;">
     <!-- Sized to its own 16:9 frame rather than cropped to fill the
          viewport (object-fit:cover on a landscape source looked absurdly
-         zoomed-in and cropped the mark on a tall phone screen) - this
-         keeps the whole composition visible, at a size that still reads
-         as "the app opening" against the full-bleed brand-teal backdrop,
-         not a small card floating on an unrelated page background. -->
-    <video id="bootVideo" autoplay muted playsinline
-      style="width:min(90vw,640px);max-height:78vh;height:auto;object-fit:contain;display:block;"
+         zoomed-in and cropped the mark on a tall phone screen) - as large
+         as it can get without cropping, so what little margin is left (now
+         color-synced below) reads as an edge, not a border around a small
+         video sitting on an unrelated page background. -->
+    <!-- No autoplay attribute: it fires its own internal play() call that
+         nothing here can attach a .catch() to, so any rejection of THAT
+         specific call surfaces as an uncaught promise rejection in the
+         console even though the explicit v.play() below is fully handled.
+         The script below is solely responsible for starting playback. -->
+    <video id="bootVideo" muted playsinline
+      style="width:min(97vw,900px);max-height:92vh;height:auto;object-fit:contain;display:block;"
       onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
       <source src="icons/logo-loading.mp4" type="video/mp4">
     </video>
@@ -202,17 +207,22 @@ window.__bootAutoplayBlocked = false;
       /* The video was sitting in a fixed-teal box, visibly a separate video
          rather than the screen itself - since the animation's own background
          drifts warm cream to teal, and the surrounding page was static. This
-         samples a corner of the actual video frame every tick (top-left is
+         samples a corner of the actual video frame on a timer (top-left is
          never covered by the roof, the figure, or any prop across the whole
          clip) and paints the same color onto the full-screen container behind
          it, so the video's edges disappear into a background that's always
-         moving with it instead of a fixed color it sits on top of. */
+         moving with it instead of a fixed color it sits on top of.
+         setInterval, not requestAnimationFrame - confirmed by instrumentation
+         that rAF straight up never fires in some contexts this runs in, which
+         left the background frozen on its initial color forever. A plain
+         100ms timer has no such dependency and a color drift this slow loses
+         nothing next to a full 60fps loop. */
       var bootScreen = document.getElementById('bootScreen');
       var sampleCanvas = document.createElement('canvas');
       sampleCanvas.width = 1; sampleCanvas.height = 1;
       var sampleCtx = sampleCanvas.getContext('2d', {willReadFrequently:true});
-      function syncBackground(){
-        if(v.style.display==='none') return;
+      var syncTimer = setInterval(function(){
+        if(v.style.display==='none'){ clearInterval(syncTimer); return; }
         if(v.readyState>=2){
           try{
             var vw=v.videoWidth, vh=v.videoHeight;
@@ -223,9 +233,8 @@ window.__bootAutoplayBlocked = false;
             }
           }catch(e){}
         }
-        if(!v.ended) requestAnimationFrame(syncBackground);
-      }
-      requestAnimationFrame(syncBackground);
+        if(v.ended) clearInterval(syncTimer);
+      }, 100);
     }
   }
 })();
