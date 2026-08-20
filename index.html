@@ -111,18 +111,10 @@
 <!-- Shown while Babel/React initialise; React replaces it -->
 <div id="root">
   <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#D3B589;display:flex;align-items:center;justify-content:center;">
-    <!-- The video itself isn't a flat color - it's a soft radial vignette
-         (brighter center, darker corners), confirmed by direct pixel
-         sampling in both color phases. A flat page background behind it
-         was always going to show a seam right at the video's edge no
-         matter how well the flat color was tuned, since the video's OWN
-         edge is darker than its own center. These two layers reproduce
-         that same vignette shape across the full screen and crossfade
-         between the cream and teal versions on the same schedule as the
-         color-shift keyframes below, so the vignette itself continues
-         past the video's edge instead of stopping there. -->
-    <div style="position:absolute;inset:0;background:radial-gradient(circle at center, #F0E3CB 0%, #D8B98F 55%, #C6A57C 100%);"></div>
-    <div id="gsVignetteTeal" style="position:absolute;inset:0;background:radial-gradient(circle at center, #4C7874 0%, #235F55 55%, #124F45 100%);opacity:0;"></div>
+    <!-- The video's own background is now genuinely flat (its original
+         radial vignette was stripped per-pixel, keeping only the actual
+         line-art), so a flat page background matches it exactly - no need
+         for the gradient-matching layers this used before. -->
     <!-- Sized to its own 16:9 frame rather than cropped to fill the
          viewport (object-fit:cover on a landscape source looked absurdly
          zoomed-in and cropped the mark on a tall phone screen). Kept
@@ -180,12 +172,12 @@
          the first version's stops being too spread out and visibly
          mismatched against the real video for part of the transition. */
       @keyframes gsBootBg{
-        0%,61.34%{opacity:0;}
-        62.45%{opacity:.17;}
-        63.57%{opacity:.40;}
-        64.68%{opacity:.63;}
-        65.80%{opacity:.86;}
-        66.91%,100%{opacity:1;}
+        0%,61.34%{background-color:#D3B589;}
+        62.45%{background-color:#C1AC83;}
+        63.57%{background-color:#8C927A;}
+        64.68%{background-color:#67816F;}
+        65.80%{background-color:#336B62;}
+        66.91%,100%{background-color:#0C5F5C;}
       }
       .gs-bg-sync{animation:gsBootBg 8.966667s linear 1 forwards;}
     </style>
@@ -240,14 +232,16 @@ window.__bootAutoplayBlocked = false;
       }
       /* The video was sitting in a fixed-color box, visibly a separate
          video rather than the screen itself - since the animation's own
-         background drifts warm cream to teal (and is a soft vignette, not
-         flat, in both phases), while the surrounding page was one static
-         flat color. Tried sampling the video's own pixels on a timer and
-         painting that onto the background live, but that turned out to
-         depend on the tab actively compositing to fire at all - confirmed
-         broken (frozen forever) in a context that wasn't. The CSS animation
-         defined above, crossfading the two vignette layers, has no such
-         dependency.
+         background drifts warm cream to teal, while the surrounding page
+         was one static flat color the whole time. The video's own
+         background is now flat too (its vignette was stripped per-pixel,
+         see icons/logo-loading.mp4's processing history), so this only
+         needs to track the same two flat colors, not a gradient shape.
+         Tried sampling the video's own pixels on a timer and painting that
+         onto the background live, but that turned out to depend on the tab
+         actively compositing to fire at all - confirmed broken (frozen
+         forever) in a context that wasn't. The CSS animation defined above
+         has no such dependency.
          Started on 'playing', not right after calling play(): confirmed via
          screenshot during the actual transition that starting it immediately
          ran the CSS clock slightly ahead of the video - play() returning
@@ -256,9 +250,9 @@ window.__bootAutoplayBlocked = false;
          gap was enough to visibly desync the two through the ~0.5s color
          shift specifically. 'playing' fires right as a frame is actually
          rendered, which is what playback time zero actually means here. */
-      var vignetteTeal = document.getElementById('gsVignetteTeal');
+      var bootScreen = document.getElementById('bootScreen');
       v.addEventListener('playing', function(){
-        vignetteTeal.classList.add('gs-bg-sync');
+        bootScreen.classList.add('gs-bg-sync');
       }, {once:true});
     }
   }
