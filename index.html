@@ -110,9 +110,15 @@
 
 <!-- Shown while Babel/React initialise; React replaces it -->
 <div id="root">
-  <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#D6B78C;">
+  <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#1A6E5E;display:flex;align-items:center;justify-content:center;">
+    <!-- Sized to its own 16:9 frame rather than cropped to fill the
+         viewport (object-fit:cover on a landscape source looked absurdly
+         zoomed-in and cropped the mark on a tall phone screen) - this
+         keeps the whole composition visible, at a size that still reads
+         as "the app opening" against the full-bleed brand-teal backdrop,
+         not a small card floating on an unrelated page background. -->
     <video id="bootVideo" autoplay muted playsinline
-      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
+      style="width:min(90vw,640px);max-height:78vh;height:auto;object-fit:contain;display:block;"
       onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
       <source src="icons/logo-loading.mp4" type="video/mp4">
     </video>
@@ -164,19 +170,36 @@ window.onerror = function(msg,_,line){
    blocked - so the video can only ever be shown once, uninterrupted,
    before that transform is allowed to start; see the deferred-transform
    script near the end of the file. */
+window.__bootAutoplayBlocked = false;
 (function(){
   var today = new Date().toDateString();
   var seenKey = 'gs_bootSeen';
   var seen = false;
   try{ seen = (localStorage.getItem(seenKey) === today); }catch(e){}
   window.__bootVideoSkip = seen;
+  var v = document.getElementById('bootVideo');
+  var fb = document.getElementById('bootFallback');
   if(seen){
-    var v = document.getElementById('bootVideo');
     if(v) v.style.display = 'none';
-    var fb = document.getElementById('bootFallback');
     if(fb) fb.style.display = 'flex';
   } else {
     try{ localStorage.setItem(seenKey, today); }catch(e){}
+    /* Relying on the autoplay attribute alone isn't enough in every
+       context (mobile data-saver modes in particular silently block it
+       and show a native play prompt instead) - an explicit play() call,
+       with its promise rejection caught, lets a blocked case fall
+       straight through to the plain mark rather than sitting on a
+       play button nobody asked for. */
+    if(v){
+      var p = v.play();
+      if(p && p.catch){
+        p.catch(function(){
+          window.__bootAutoplayBlocked = true;
+          v.style.display = 'none';
+          if(fb) fb.style.display = 'flex';
+        });
+      }
+    }
   }
 })();
 </script>
@@ -7113,13 +7136,21 @@ function runAppTransform(){
   s.textContent = out;
   document.body.appendChild(s);
 }
-if(window.__bootVideoSkip){
+if(window.__bootVideoSkip || window.__bootAutoplayBlocked){
   setTimeout(runAppTransform, 20);
 } else {
   var __bv = document.getElementById('bootVideo');
   var __started = false;
   var __go = function(){ if(__started) return; __started = true; runAppTransform(); };
-  if(__bv){
+  /* A slow-to-reject play() promise wouldn't have flipped the flag above
+     yet by this point - paused here means autoplay never actually took,
+     so there's nothing to wait on. */
+  if(__bv && __bv.paused){
+    __bv.style.display = 'none';
+    var __fb = document.getElementById('bootFallback');
+    if(__fb) __fb.style.display = 'flex';
+    setTimeout(__go, 20);
+  } else if(__bv){
     __bv.addEventListener('ended', __go);
     __bv.addEventListener('error', __go);
     setTimeout(__go, 10000); /* safety net if autoplay never starts/completes */
