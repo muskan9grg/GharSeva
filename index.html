@@ -111,7 +111,7 @@
 <!-- Shown while Babel/React initialise; React replaces it -->
 <div id="root">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;">
-    <video autoplay muted playsinline
+    <video id="bootVideo" autoplay muted playsinline
       poster="icons/icon-512.png"
       style="width:min(80vw,360px);border-radius:20px;box-shadow:0 12px 32px rgba(26,46,42,.18);display:block;"
       onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
@@ -149,6 +149,30 @@ window.onerror = function(msg,_,line){
   var el=document.getElementById('err');
   if(el){el.style.display='block';el.textContent='JS Error at line '+line+': '+msg;}
 };
+
+/* Full boot animation once per day; every other load that day skips
+   straight to the plain fallback mark, so daily use isn't held up by a
+   ~9s splash every single time. A blocking script later (the app's own
+   Babel transpile) freezes video playback completely for its duration -
+   proven by instrumentation, currentTime does not advance at all while
+   blocked - so the video can only ever be shown once, uninterrupted,
+   before that transform is allowed to start; see the deferred-transform
+   script near the end of the file. */
+(function(){
+  var today = new Date().toDateString();
+  var seenKey = 'gs_bootSeen';
+  var seen = false;
+  try{ seen = (localStorage.getItem(seenKey) === today); }catch(e){}
+  window.__bootVideoSkip = seen;
+  if(seen){
+    var v = document.getElementById('bootVideo');
+    if(v) v.style.display = 'none';
+    var fb = document.getElementById('bootFallback');
+    if(fb) fb.style.display = 'flex';
+  } else {
+    try{ localStorage.setItem(seenKey, today); }catch(e){}
+  }
+})();
 </script>
 
 <script type="text/plain" id="app-src">
@@ -7068,21 +7092,35 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 <script>
 /* type="text/plain" above keeps Babel's auto-scan from grabbing the app
    script immediately, so it can't block the main thread before the boot
-   video has even had a chance to start loading - a ~7000-line synchronous
-   Babel.transform starves the video of any progress at all (verified:
-   readyState stays 0 the whole time) if it runs first. A short setTimeout
-   yields the main thread so the browser can dispatch the video's initial
-   fetch first. requestAnimationFrame would be more precise but is not
-   guaranteed to fire in every context (e.g. a backgrounded tab) - and
-   gating the entire app's boot on it risks the app never loading at all,
-   which is worse than the video sometimes missing its head start. */
-setTimeout(function(){
+   video has had a real chance to play. This transform is a genuine ~1.3s
+   synchronous block, and it doesn't just skip a paint or two - it halts
+   video playback completely (verified: currentTime does not advance a
+   single millisecond for the whole duration of the block). So the video
+   can only ever be shown once per cycle, fully undisturbed, and this
+   transform must not start until it's done (or has safely timed out) -
+   a short head-start is not enough, the freeze mid-animation is exactly
+   what read as "a plain static logo" before this fix. */
+function runAppTransform(){
   var code = document.getElementById('app-src').textContent;
   var out = Babel.transform(code, {presets:['react']}).code;
   var s = document.createElement('script');
   s.textContent = out;
   document.body.appendChild(s);
-}, 50);
+}
+if(window.__bootVideoSkip){
+  setTimeout(runAppTransform, 20);
+} else {
+  var __bv = document.getElementById('bootVideo');
+  var __started = false;
+  var __go = function(){ if(__started) return; __started = true; runAppTransform(); };
+  if(__bv){
+    __bv.addEventListener('ended', __go);
+    __bv.addEventListener('error', __go);
+    setTimeout(__go, 10000); /* safety net if autoplay never starts/completes */
+  } else {
+    setTimeout(__go, 50);
+  }
+}
 </script>
 </body>
 </html>
