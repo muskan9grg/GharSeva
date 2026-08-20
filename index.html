@@ -55,7 +55,7 @@
     }
     html{font-size:16px;}
     /* Body sits at 500, headings and figures at 700-800. Everything used to be
-       600 against 800, which is close enough that nothing looked emphasised —
+       600 against 800, which is close enough that nothing looked emphasised -
        when it is all bold, none of it is. 500 rather than the usual 400
        because this is read by older eyes and thin strokes vanish first;
        Nunito already sets its digits on a fixed width, so money lines up in a
@@ -77,7 +77,7 @@
     .cal-btn{min-height:44px;min-width:44px;}
     ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
     /* Chip rows scroll sideways. The bar under them was being read as part of
-       the interface — a grey slab between two filters — so it is hidden while
+       the interface - a grey slab between two filters - so it is hidden while
        the row still scrolls. */
     .chip-row{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
     .chip-row::-webkit-scrollbar{display:none;height:0;}
@@ -225,7 +225,7 @@ var fbAuth = null, fbDb = null, FIREBASE_ENABLED = false;
   } catch(e){ console.warn('Firebase init skipped:', e.message); }
 })();
 
-/* Shared sync counter — tabs subscribe via React.useContext(SyncCtx)
+/* Shared sync counter - tabs subscribe via React.useContext(SyncCtx)
    and add it to their useEffect deps so remote writes trigger re-fetch. */
 var SyncCtx = React.createContext(0);
 
@@ -333,12 +333,12 @@ function avatarBg(role){ return ROLE_AVATAR[role]||'#3E6060'; }
 
 /* ── ICONS ──────────────────────────────────────────────────────
    Emoji were standing in for an icon set. They render differently on every
-   phone — the calendar is blue on one and grey on another — sit at different
+   phone - the calendar is blue on one and grey on another - sit at different
    optical weights beside each other, and cannot take the colour of the thing
    they belong to, so a row of them never lines up.
 
    These are one set: a 24-unit grid, a single 2px stroke, round ends. The
-   stroke is deliberately heavy rather than the hairline that is fashionable —
+   stroke is deliberately heavy rather than the hairline that is fashionable -
    this app is read by people with older eyes, and a thin line is the first
    thing to disappear. Everything inherits currentColor, so an icon is always
    exactly as dark as the text beside it. */
@@ -357,7 +357,7 @@ const ICONS={
   overtime:'<circle cx="12" cy="12.5" r="7.8"/><path d="M12 8v4.8l3.2 2M12 2.2v1.6"/>',
   halfday:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>',
   extrahelp:'<circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.4 6.2-5.4s6.2 2 6.2 5.4"/><path d="M18.5 7.5v6M15.5 10.5h6"/>',
-  /* A wallet, not another banknote — salary sits beside the money tab and the
+  /* A wallet, not another banknote - salary sits beside the money tab and the
      card icon, and three rectangles with a circle in them are one idea. */
   salary:'<path d="M3 8V7a2 2 0 0 1 2-2h11.5a1.5 1.5 0 0 1 1.5 1.5V8"/><rect x="3" y="8" width="18" height="11.5" rx="2"/><path d="M21.2 12.2h-3.4a1.9 1.9 0 0 0 0 3.8h3.4"/>',
   /* Holiday is a day off, so the sun says it more plainly than a parasol. */
@@ -396,8 +396,8 @@ const ICONS={
   sync:'<path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6"/><path d="M17.5 2.5v4h-4M6.5 21.5v-4h4"/>',
 };
 
-/* The mark. A house whose roof reaches wider than its walls — the shelter a
-   household extends to the people who work in it — with two figures standing
+/* The mark. A house whose roof reaches wider than its walls - the shelter a
+   household extends to the people who work in it - with two figures standing
    inside it. Ghar is the house, seva the people; the logo is both or it is
    just another house icon. Drawn rather than lettered so it survives being
    16px on a browser tab and 72px on the sign-in screen.
@@ -449,12 +449,12 @@ function CardTitle({icon,children,size}){
   );
 }
 
-/* Size defaults to 22 — bigger than the 16-18 most interfaces use, because
+/* Size defaults to 22 - bigger than the 16-18 most interfaces use, because
    the people this is for should not have to look twice. */
 function Icon({name,size,style,strokeWidth}){
   /* Sized in rem, not pixels, so icons grow with the Aa control alongside the
      text they label. Fixed pixels meant that at the largest setting the words
-     doubled while the icon beside them stayed put, which is backwards — the
+     doubled while the icon beside them stayed put, which is backwards - the
      reader who enlarged the text is the one who needs the bigger icon. */
   var rem=fsr(size||22);
   return (
@@ -468,7 +468,7 @@ function Icon({name,size,style,strokeWidth}){
 
 /* A staff member's face wherever they are named. Photos were only ever drawn
    on the edit form, the staff card and the profile header; every other list
-   fell back to an initial, which is the hardest thing to scan quickly — a
+   fell back to an initial, which is the hardest thing to scan quickly - a
    household with a Kamala and a Kaki gets two identical Ks. One component now
    shows the photo when there is one and the initial when there is not, so
    adding a photo makes the person recognisable everywhere at once. */
@@ -528,14 +528,13 @@ en:{
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'Restored. Reloading…',hmRestoreErr:'Invalid backup file.',
   addStaff:'Add staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
   fname:'Full Name',fnamePh:'e.g. Kamla Bai',frole:'Role',fsalary:'Monthly salary',
-  fHoursPerDay:'Hours worked per day',fHoursPerDayHint:'Optional — used for the Overtime rate. Defaults to 5 if left blank.',
-  fSchedule:'Which days do they work?',fScheduleHint:'Optional — leave every day unselected to use the household\'s standard working-days setting instead.',
+  fHoursPerDay:'Hours worked per day',fHoursPerDayHint:'Used for the Overtime rate. Defaults to 5 if left blank.',
+  fSchedule:'Which days do they work?',
+  schedEveryday:'Everyday',schedEveryExcept:'Everyday except {day}',schedWeekdays:'Weekdays',schedWeekends:'Weekends',schedAnd:'and',schedNone:'No days selected',
   fphone:'Phone',fphonePh:'10-digit mobile',fjoining:'Joining Date',fpay:'Salary Payment Day (1–31)',
   fphoto:'Photo',fnotes:'Notes / Duties',fnotesPh:'e.g. Cleans all rooms, washes utensils',
   addPhoto:'Add Photo',changePhoto:'Change',
   nickname:'Nickname',nicknamePh:'e.g. Kamla, Ramu',
-  hintPayDay:'Day of month (1 = 1st, 15 = 15th)',hintIFSC:'11-character bank code (e.g. SBIN0001234)',
-  hintEMI:'Amount deducted from salary each month',hintTotInst:'How many months to repay',
   typeDeductions:'Deductions',typeAdditions:'Additions',
   confYes:'Yes, Save',confCancel:'Cancel',
   vault:'Documents',vaadhaar:'Aadhaar No.',vaadhaarH:'Only last 4 digits are shown',
@@ -558,8 +557,8 @@ en:{
   tAdv:'Advance',tLoan:'Loan',tExp:'Expense',tBonus:'Bonus',
   famount:'Amount',fdate:'Date',freason:'Why? (optional)',freasonPh:'e.g. Medical emergency',
   finst:'Monthly Installment (₹)',ftotinst:'Total No. of Installments',
-  loanInstNoteOver:'The last installment will be smaller — {amount} — to settle the loan exactly.',
-  loanInstNoteEarly:'At this rate the loan finishes in {months} months, not {n} — the last installment will be {final}.',
+  loanInstNoteOver:'The last installment will be smaller - {amount} - to settle the loan exactly.',
+  loanInstNoteEarly:'At this rate the loan finishes in {months} months, not {n} - the last installment will be {final}.',
   loanInstNoteUnder:'This won’t fully repay the loan in {n} months; {amount} will still remain.',
   noEntries:'No entries. Tap "+ Add Entry".',
   tLoanRepay:'Loan Repayment',fApplyLoan:'Apply Against Loan',noActiveLoans:'No active loans for this staff',
@@ -628,20 +627,20 @@ en:{
   fbWithdraw:'Withdraw',
   fbNeedAccount:'Sign in to send feedback',
   fbNeedAccountWhy:'Only feedback needs an account. Everything else works without one.',
-  paidBy:'Paid by',paidByHint:'Change it if someone else paid',
+  paidBy:'Paid by',
   paidByYou:'you',allMembers:'Everyone',notRecorded:'Not recorded',memberUnknown:'Member',
   paidBySomeoneElse:'Someone else…',
-  paidByNameLabel:'Their name',paidByNameHint:'So you can tell them apart later',paidByNamePh:'e.g. Rita (neighbour)',
+  paidByNameLabel:'Their name',paidByNamePh:'e.g. Rita (neighbour)',
   errPayerName:'Please enter their name',
   whoPaid:'Who paid what',whoPaidHint:'Money paid out this year, split by household member',
   tExtraHelp:'Extra Help',
-  fHelperName:'Helper’s Name',fHelperNameHint:'Optional: who provided the help',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
+  fHelperName:'Helper’s Name',fHelperNamePh:'e.g. Sunita (neighbour’s help)',
   generalNoStaff:'General help',
   extraHelpDivider:'── Not on staff ──',
-  extraHelpLockedHint:'These options don’t apply to Extra Help — pick a staff member above to use them.',
+  extraHelpLockedHint:'These options don’t apply to Extra Help, pick a staff member above to use them.',
   aTotExtraHelp:'Extra Help Cost',
   extraHelpCardTitle:'Extra Help',extraHelpCardSubtitle:'times used this year',extraHelpEntryCount:'Number of Entries',
-  fphoneHint:'Paste from contacts is fine',fphoneHelp:'Spaces, dashes and +91 are removed for you. Only the 10 digits are kept.',
+  fphoneHelp:'Spaces, dashes and +91 are removed for you. Only the 10 digits are kept.',
   tutActionHint:'Press the highlighted button to continue',
   tutStepWord:'STEP',tutOfWord:'OF',
   tutNext:'Next',tutBack:'Back',tutSkip:'Skip the guide',tutDone:'Finish',tutReplayBtn:'Replay tutorial',
@@ -694,7 +693,7 @@ en:{
   markManyDone:'{n} day(s) marked',
   plannedDay:'Planned, has not happened yet',
   fleaving:'Last Working Day',
-  fleavingHint:'Only when someone leaves',fleavingHelp:'All their old records stay safe. They simply stop showing up in attendance and in pay reminders.',
+  fleavingHelp:'All their old records stay safe. They simply stop showing up in attendance and in pay reminders.',
   leftBadge:'Left',
   langLabel:'Language',
   profBack:'Back',profViewProfile:'View Profile',
@@ -757,14 +756,13 @@ hi:{
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'रिस्टोर हो गया। लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
   addStaff:'स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
   fname:'पूरा नाम',fnamePh:'जैसे: कमला बाई',frole:'काम',fsalary:'मासिक वेतन',
-  fHoursPerDay:'रोज़ काम के घंटे',fHoursPerDayHint:'वैकल्पिक — ओवरटाइम की दर के लिए उपयोग होता है। खाली छोड़ने पर 5 माना जाएगा।',
-  fSchedule:'ये किन दिनों काम पर आते हैं?',fScheduleHint:'वैकल्पिक — कोई दिन न चुनें तो घर की सामान्य काम-के-दिन सेटिंग लागू होगी।',
+  fHoursPerDay:'रोज़ काम के घंटे',fHoursPerDayHint:'ओवरटाइम की दर के लिए उपयोग होता है। खाली छोड़ने पर 5 माना जाएगा।',
+  fSchedule:'ये किन दिनों काम पर आते हैं?',
+  schedEveryday:'रोज़',schedEveryExcept:'{day} को छोड़कर रोज़',schedWeekdays:'सोम से शुक्र',schedWeekends:'सप्ताहांत',schedAnd:'और',schedNone:'कोई दिन नहीं चुना',
   fphone:'फोन',fphonePh:'10 अंकों का नंबर',fjoining:'जॉइनिंग तारीख',fpay:'वेतन दिन (1–31)',
   fphoto:'फोटो',fnotes:'नोट्स / काम',fnotesPh:'जैसे: सभी कमरे साफ, बर्तन',
   addPhoto:'फोटो जोड़ें',changePhoto:'बदलें',
   nickname:'उपनाम',nicknamePh:'जैसे: कमला, रामू',
-  hintPayDay:'महीने की तारीख (1 = पहली, 15 = पंद्रहवीं)',hintIFSC:'11 अक्षर का बैंक कोड (जैसे SBIN0001234)',
-  hintEMI:'हर महीने वेतन से कटने वाली राशि',hintTotInst:'कितने महीनों में चुकाना है',
   typeDeductions:'कटौतियाँ',typeAdditions:'जोड़',
   confYes:'हाँ, सहेजें',confCancel:'रद्द करें',
   vault:'दस्तावेज़',vaadhaar:'आधार नंबर',vaadhaarH:'केवल अंतिम 4 अंक दिखेंगे',
@@ -787,8 +785,8 @@ hi:{
   tAdv:'अग्रिम',tLoan:'लोन',tExp:'खर्च',tBonus:'बोनस',
   famount:'राशि',fdate:'तारीख',freason:'किसलिए? (ज़रूरी नहीं)',freasonPh:'जैसे: चिकित्सा आपात',
   finst:'मासिक किस्त (₹)',ftotinst:'कुल किस्तें',
-  loanInstNoteOver:'आखिरी किस्त छोटी होगी — {amount} — ताकि लोन ठीक-ठीक चुक जाए।',
-  loanInstNoteEarly:'इस रकम पर लोन {n} की जगह {months} महीनों में चुक जाएगा — आखिरी किस्त {final} की होगी।',
+  loanInstNoteOver:'आखिरी किस्त छोटी होगी - {amount} - ताकि लोन ठीक-ठीक चुक जाए।',
+  loanInstNoteEarly:'इस रकम पर लोन {n} की जगह {months} महीनों में चुक जाएगा - आखिरी किस्त {final} की होगी।',
   loanInstNoteUnder:'{n} महीनों में लोन पूरा नहीं चुकेगा; {amount} बाकी रहेगा।',
   noEntries:'कोई एंट्री नहीं।',
   tLoanRepay:'लोन चुकाना',fApplyLoan:'लोन में लगाएं',noActiveLoans:'इस स्टाफ का कोई सक्रिय लोन नहीं',
@@ -857,20 +855,20 @@ hi:{
   fbWithdraw:'वापस लें',
   fbNeedAccount:'भेजने के लिए साइन इन करें',
   fbNeedAccountWhy:'सिर्फ़ सुझाव के लिए खाता चाहिए। बाकी सब बिना खाते के चलता है।',
-  paidBy:'किसने दिया',paidByHint:'अगर किसी और ने दिया तो बदलें',
+  paidBy:'किसने दिया',
   paidByYou:'आप',allMembers:'सभी',notRecorded:'दर्ज नहीं',memberUnknown:'सदस्य',
   paidBySomeoneElse:'कोई और…',
-  paidByNameLabel:'उनका नाम',paidByNameHint:'ताकि बाद में पहचान सकें',paidByNamePh:'जैसे: रीता (पड़ोसी)',
+  paidByNameLabel:'उनका नाम',paidByNamePh:'जैसे: रीता (पड़ोसी)',
   errPayerName:'कृपया नाम लिखें',
   whoPaid:'किसने कितना दिया',whoPaidHint:'इस साल दिए गए पैसे, हर सदस्य के हिसाब से',
   tExtraHelp:'अतिरिक्त मदद',
-  fHelperName:'मददगार का नाम',fHelperNameHint:'वैकल्पिक: मदद किसने की',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
+  fHelperName:'मददगार का नाम',fHelperNamePh:'जैसे: सुनीता (पड़ोसी की मदद)',
   generalNoStaff:'सामान्य मदद',
   extraHelpDivider:'── स्टाफ में नहीं ──',
-  extraHelpLockedHint:'ये विकल्प अतिरिक्त मदद पर लागू नहीं होते — इस्तेमाल के लिए ऊपर एक स्टाफ सदस्य चुनें।',
+  extraHelpLockedHint:'ये विकल्प अतिरिक्त मदद पर लागू नहीं होते, इस्तेमाल के लिए ऊपर एक स्टाफ सदस्य चुनें।',
   aTotExtraHelp:'अतिरिक्त मदद खर्च',
   extraHelpCardTitle:'अतिरिक्त मदद',extraHelpCardSubtitle:'बार इस साल इस्तेमाल हुई',extraHelpEntryCount:'कितनी बार',
-  fphoneHint:'कॉन्टैक्ट्स से पेस्ट कर सकते हैं',fphoneHelp:'स्पेस, डैश और +91 अपने आप हट जाते हैं। सिर्फ़ 10 अंक रहते हैं।',
+  fphoneHelp:'स्पेस, डैश और +91 अपने आप हट जाते हैं। सिर्फ़ 10 अंक रहते हैं।',
   tutActionHint:'आगे बढ़ने के लिए चमकता हुआ बटन दबाएं',
   tutStepWord:'चरण',tutOfWord:'/',
   tutNext:'आगे',tutBack:'पीछे',tutSkip:'गाइड छोड़ें',tutDone:'समाप्त',tutReplayBtn:'ट्यूटोरियल दोबारा',
@@ -923,7 +921,7 @@ hi:{
   markManyDone:'{n} दिन दर्ज हुए',
   plannedDay:'योजना, अभी हुआ नहीं है',
   fleaving:'काम का आखिरी दिन',
-  fleavingHint:'सिर्फ़ तब जब कोई काम छोड़े',fleavingHelp:'उनके पुराने रिकॉर्ड सुरक्षित रहते हैं। वे बस उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
+  fleavingHelp:'उनके पुराने रिकॉर्ड सुरक्षित रहते हैं। वे बस उपस्थिति और वेतन याद-दिलावे में नहीं दिखेंगे।',
   leftBadge:'छोड़ दिया',
   langLabel:'भाषा',
   profBack:'वापस',profViewProfile:'प्रोफाइल देखें',
@@ -987,7 +985,7 @@ function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 function lsKeys(){try{return Object.keys(localStorage);}catch(e){return [];}}
 
 /* ExcelJS is only needed when someone actually exports, and it is far bigger
-   than anything else here — so it is fetched on first use rather than on
+   than anything else here - so it is fetched on first use rather than on
    every app load. Resolves to window.ExcelJS. */
 var _exceljsPromise=null;
 function loadExcelJS(){
@@ -1010,7 +1008,7 @@ function downloadBlob(content,mime,filename){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
   document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(url);},200);
 }
-/* Quotes on comma, quote, OR newline — the old inline version only checked
+/* Quotes on comma, quote, OR newline - the old inline version only checked
    for comma/quote, so a reason containing a line break silently corrupted
    the row structure. */
 function csvCell(v){
@@ -1019,7 +1017,7 @@ function csvCell(v){
 }
 /* A single CSV, five sections separated by a blank line, covering
    everything the old flat ledger dump left out: staff details, actual
-   salary payments, attendance, and who paid for what — not just raw
+   salary payments, attendance, and who paid for what - not just raw
    ledger rows. Headers and type labels run through T[lang] so the export
    matches whatever language the app is currently in. */
 /* Everything the report needs, gathered once so the spreadsheet and the
@@ -1037,7 +1035,7 @@ function buildReportData(homeId,period,lang,members,workingDays){
     return period==='month' ? dateStr.startsWith(year+'-'+String(month).padStart(2,'0'))
                             : dateStr.startsWith(String(year));
   }
-  /* months that have actually happened — padding the rest with zeroes just
+  /* months that have actually happened - padding the rest with zeroes just
      filled the old report with meaningless rows */
   var allMonths = period==='month' ? [month] : Array.from({length:12},function(_,i){return i+1;});
   var monthsInPeriod=allMonths.filter(function(m){ return new Date(year,m-1,1)<=now; });
@@ -1145,7 +1143,7 @@ function exportExcel(homeId,period,lang,members,workingDays){
     var GREEN='FF1A6E5E', ACCENT='FF2F8F7A', MINT='FFE5EDE6', LINE='FFC4D4C6', INK='FF1A2E2A';
     var MONEY='"₹"#,##0';
 
-    /* In-cell proportional bars. cfvo (the min/max bounds) is required —
+    /* In-cell proportional bars. cfvo (the min/max bounds) is required -
        without it ExcelJS throws while writing the rule, and because the export
        falls back to plain text on any error, that failure is silent. */
     function dataBar(ws,ref,argb,priority){
@@ -1154,7 +1152,7 @@ function exportExcel(homeId,period,lang,members,workingDays){
       }]});
     }
     /* One sheet. Five sheets meant the answer to any question sat on a tab you
-       were not looking at, and the summary — the part anybody actually opens —
+       were not looking at, and the summary - the part anybody actually opens -
        was the one you had to navigate away from. Everything now reads top to
        bottom on a single page: the totals first, then per person, then the two
        ledgers that produced them. */
@@ -1406,7 +1404,7 @@ const getUndos=h=>lsGet(SK.undos(h),[]);
 const saveUndos=(h,u)=>lsSet(SK.undos(h),u);
 
 /* ── WAIVED CHARGES ───────────────────────────────────────────
-   A charge the employer has cancelled for one staff member for one month —
+   A charge the employer has cancelled for one staff member for one month -
    "don't cut the loan this month". Keyed by staff+month, holding the names of
    the deduction lines to skip. Waiving is a decision about the household, not
    about one phone, so it syncs like everything else.
@@ -1447,7 +1445,7 @@ function setReduced(homeId,staffId,year,month,map){
 /* ── FIRESTORE WRITE WRAPPERS ─────────────────────────────────
    Each wrapper writes to localStorage first (instant UI update),
    then syncs to Firestore. Guest mode (FIREBASE_ENABLED=false)
-   just does the localStorage write — no Firestore calls.         */
+   just does the localStorage write - no Firestore calls.         */
 function fbSaveStaff(homeId, newStaff){
   var old=getStaff(homeId);
   saveStaff(homeId,newStaff);
@@ -1551,7 +1549,7 @@ function fbRemoveRole(homeId, role){
 /* Migration: move existing localStorage data into the cloud household */
 /* Households on this device must stay separate in the cloud. The previous
    version looped over every local household and wrote all of them into the
-   single target household, so unrelated staff ended up merged together —
+   single target household, so unrelated staff ended up merged together -
    and because leaves are keyed by staff member rather than by household,
    they were dumped in the same way.
 
@@ -1614,7 +1612,7 @@ function migrateFromLocalStorage(targetHomeId, user, lang){
 }
 
 /* ── CLOUD HOUSEHOLD CREATE / JOIN ─────────────────────────────
-   The Firestore half only — resolving to the new {id,name,workingDays}.
+   The Firestore half only - resolving to the new {id,name,workingDays}.
    Saving to localStorage and switching the active household is left to
    the caller, because first-time setup replaces the whole list while
    adding a second household from Settings appends to it.
@@ -1646,8 +1644,8 @@ function cloudCreateHome(user, name, lang){
 
 /* Joining cannot search /homes: the rules only permit reading a household
    you already belong to, which is the very thing you are trying to become.
-   So resolve the code through /invites/{CODE} — a single known document that
-   reveals nothing but a household id — then append yourself. Reading the
+   So resolve the code through /invites/{CODE} - a single known document that
+   reveals nothing but a household id - then append yourself. Reading the
    household itself is deferred until after that, when it is permitted. */
 function cloudJoinHome(user, code){
   var CODE=(code||'').toUpperCase(), homeId='';
@@ -1678,7 +1676,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function fmt(n){return '₹'+Number(n||0).toLocaleString('en-IN');}
 function fmtD(s){if(!s)return '';var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 /* Local calendar date, not UTC. toISOString() converts to UTC first, so in
-   India (UTC+5:30) every moment before 5:30am reported yesterday's date —
+   India (UTC+5:30) every moment before 5:30am reported yesterday's date -
    a payment or an entry recorded early in the morning was filed a day back,
    and an exported ledger showed every row one day early. */
 function toISODate(d){
@@ -1762,11 +1760,13 @@ function hasLeft(staff){
 }
 
 /* A staff member's own weekly pattern, e.g. a gardener who only comes Tue+Fri.
-   Empty or absent schedule means "no custom pattern" - every day is fair game,
-   which is also the state of every staff record that existed before this
-   field did, so the feature is additive rather than a migration. */
+   Empty/absent schedule (every record before this field existed) and a full
+   7-day schedule (the form's own default - every day starts checked, so
+   nothing has to be unchecked to mean "every day") both mean the same thing:
+   no real restriction, fall back to the household's working-days setting. A
+   real custom pattern only exists once at least one day has been unchecked. */
 function hasCustomSchedule(staff){
-  return !!(staff&&staff.schedule&&staff.schedule.length);
+  return !!(staff&&staff.schedule&&staff.schedule.length&&staff.schedule.length<7);
 }
 function isScheduledDay(staff,dateObj){
   if(!hasCustomSchedule(staff)) return true;
@@ -1788,9 +1788,28 @@ function effectiveWorkingDays(staff,year,month,workingDays){
   }
   return n||1;
 }
+/* One short phrase naming what's checked, instead of a static paragraph
+   explaining the feature - recognises the common shapes (every day, one
+   day off, Mon-Fri) rather than just listing raw day names whenever
+   possible. */
+function scheduleSummary(schedule,t){
+  var sel=(schedule||[]).slice().sort(function(a,b){return a-b;});
+  var n=sel.length, days=t.days;
+  if(n===0) return t.schedNone;
+  if(n===7) return t.schedEveryday;
+  if(n===6){
+    var missing=[0,1,2,3,4,5,6].filter(function(d){return sel.indexOf(d)<0;})[0];
+    return t.schedEveryExcept.replace('{day}',days[missing]);
+  }
+  if(n===5&&sel.join(',')==='1,2,3,4,5') return t.schedWeekdays;
+  if(n===2&&sel.join(',')==='0,6') return t.schedWeekends;
+  var names=sel.map(function(d){return days[d];});
+  if(names.length===1) return names[0];
+  return names.slice(0,-1).join(', ')+' '+t.schedAnd+' '+names[names.length-1];
+}
 
 /* Record a rate change. The rate in force until now has to be captured first,
-   or the months before the change would inherit the new figure — the very bug
+   or the months before the change would inherit the new figure - the very bug
    this exists to stop. */
 function withSalaryChange(staff,newAmount,fromYm){
   var h=(staff.salaryHistory||[]).slice();
@@ -1843,13 +1862,13 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
   var emp=employedDays(staff,year,month);
   var monthlyRate=emp.partial?Math.round(fullRate*emp.days/emp.monthDays):fullRate;
   /* A day off costs a normal day's pay, so leave is always docked at the full
-     rate — it is not scaled a second time by a part-month. */
+     rate - it is not scaled a second time by a part-month. */
   var daily=fullRate/effectiveWorkingDays(staff,year,month,workingDays);
   var items=(ledger||[]).filter(function(e){return e.staffId===staff.id && e.date && e.date.startsWith(ym);});
   function sum(type){ return items.filter(function(e){return e.type===type;}).reduce(function(s,e){return s+(e.amount||0);},0); }
   var bonuses=sum('bonus'), extraWork=sum('extra_work');
 
-  /* Raw amounts — what each charge would be if nothing were waived. Shown in
+  /* Raw amounts - what each charge would be if nothing were waived. Shown in
      the breakdown (struck through when waived) so the employer can always see
      what was cancelled rather than the line silently disappearing. */
   var raw={
@@ -1870,7 +1889,7 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
   });
 
   var net=monthlyRate-totalDeduct+bonuses+extraWork;
-  /* Deductions can still exceed the salary — a ₹10,000 advance against ₹8,000
+  /* Deductions can still exceed the salary - a ₹10,000 advance against ₹8,000
      of pay. You cannot hand over a negative amount, so netPayable stays
      clamped at zero and the remainder is reported as unrecovered, which the
      next month picks up as its carry-in. */
@@ -1898,7 +1917,7 @@ function calcSalary(staff,year,month,ledger,workingDays,homeId){
 /* What the staff member still owes the household.
    This is the latest settled month's shortfall, NOT a sum across months. Each
    month charges the previous month's shortfall as its carry-in, so that figure
-   already contains everything still outstanding — adding the months together
+   already contains everything still outstanding - adding the months together
    would count the same debt once per month it survived. */
 function getOutstandingDues(staffId,payments){
   var latest=null;
@@ -1916,12 +1935,12 @@ function getOutstandingDues(staffId,payments){
    settles the loan instead of leaving a stray active balance. */
 function applyLoanInstalments(ledger,staffId,waived,reducedAmount){
   /* If the instalment was waived for this month, no money changed hands, so
-     the loan must not move at all — advancing it here would pay the loan down
+     the loan must not move at all - advancing it here would pay the loan down
      out of nothing and quietly rob the staff member of an instalment. */
   if((waived||[]).indexOf('loan')>=0) return {ledger:ledger||[],advanced:[]};
   /* Which loans this payment actually moved, and how, is recorded on the
      payment (`kind`: a full instalment, or a partial amount), so an undo can
-     put back exactly those and nothing else — loans taken out later, or
+     put back exactly those and nothing else - loans taken out later, or
      closed by a cash repayment in the meantime, must not be disturbed. */
   var advanced=[];
   /* A reduced total is spent oldest-loan-first, one loan's own due paid in
@@ -1956,7 +1975,7 @@ function applyLoanInstalments(ledger,staffId,waived,reducedAmount){
 
 /* The exact inverse: step back the instalment each named loan was advanced by,
    then let the outstanding balance decide whether it is open again, rather
-   than assuming — a loan may since have been closed by a cash repayment, and
+   than assuming - a loan may since have been closed by a cash repayment, and
    that closure is not this payment's to undo. */
 function revertLoanInstalments(ledger,staffId,loanAdvances){
   var list=loanAdvances||[];
@@ -2005,7 +2024,7 @@ function undoSalaryPayment(homeId,rec,actorUid,actorName){
 
 /* An older payment predates loanAdvances being recorded, so there is no way to
    know which loans it moved. The undo still works, but the loans must be put
-   right by hand — better to say so than to guess and quietly corrupt one. */
+   right by hand - better to say so than to guess and quietly corrupt one. */
 function undoLoansUnknown(rec,ledger){
   return !!rec&&!rec.loanAdvances&&(ledger||[]).some(function(e){
     return e.staffId===rec.staffId&&e.type==='loan'&&(e.paidInstallments||0)>0;
@@ -2013,12 +2032,12 @@ function undoLoansUnknown(rec,ledger){
 }
 
 /* True when a recorded payment no longer matches what the month now works out
-   to — an entry was added, edited or deleted after the salary was paid. */
+   to - an entry was added, edited or deleted after the salary was paid. */
 function paymentIsStale(paidRec,calc){
   return !!(paidRec&&calc&&Number(paidRec.amount)!==Number(calc.netPayable));
 }
 
-/* The message goes to the staff member, so its language is about THEM — not
+/* The message goes to the staff member, so its language is about THEM - not
    about which language the employer happens to run the app in. It used to
    follow the app's UI setting, which meant an English-speaking employer's
    Hindi-speaking staff received English. Default is now both languages,
@@ -2190,7 +2209,7 @@ function FSelect({value,onChange,children,tut}){
 
 /* A question mark that opens the long explanation, so the label itself can
    stay short. The alternative was a paragraph under every field, which is
-   read once, skipped forever, and pushes the actual control off the screen —
+   read once, skipped forever, and pushes the actual control off the screen -
    and shrinking that paragraph to fit only makes it unreadable to the people
    most likely to need it. Kept at a full 28px target and reads as a button. */
 function Help({text,label}){
@@ -2235,7 +2254,7 @@ function FLabel({label,hint,help,children,req}){
    spelled three different ways across records. */
 function PaidBySelector({t,mc,memberIds,value,nameValue,onChange,onNameChange,suggestions,idSuffix}){
   var listId='ext-payer-names-'+(idSuffix||'x');
-  /* Native <datalist> barely works on the phones this app targets — iOS
+  /* Native <datalist> barely works on the phones this app targets - iOS
      Safari doesn't show it at all, mobile Chrome shows at most one inline
      hint above the keyboard. Tappable pills are the real suggestion UI;
      the datalist stays too, harmless for anyone typing on a desktop. */
@@ -2246,7 +2265,7 @@ function PaidBySelector({t,mc,memberIds,value,nameValue,onChange,onNameChange,su
   },[suggestions,nameValue]);
   return (
     <div>
-      <FLabel label={t.paidBy} hint={t.paidByHint}>
+      <FLabel label={t.paidBy}>
         <FSelect value={value} onChange={onChange}>
           {memberIds.map(function(id){
             return <option key={id} value={id}>{mc.members[id].name}{id===mc.uid?' ('+t.paidByYou+')':''}</option>;
@@ -2255,7 +2274,7 @@ function PaidBySelector({t,mc,memberIds,value,nameValue,onChange,onNameChange,su
         </FSelect>
       </FLabel>
       {value==='other' && (
-        <FLabel label={t.paidByNameLabel} hint={t.paidByNameHint} req={true}>
+        <FLabel label={t.paidByNameLabel} req={true}>
           <input list={listId} value={nameValue||''} onChange={function(e){onNameChange(e.target.value);}}
             placeholder={t.paidByNamePh} className="inp" maxLength={60} />
           <datalist id={listId}>
@@ -2299,7 +2318,7 @@ function WACard({message,phone,t}){
   function doWA(){
     /* phone is stored normalized to a bare 10-digit number where possible
        (see normalizePhone), but older records or a foreign number may still
-       be longer — don't blindly prepend 91 on top of an existing code. */
+       be longer - don't blindly prepend 91 on top of an existing code. */
     var digits=(phone||'').replace(/\D/g,'');
     var ph=digits.length===10?'91'+digits:digits.length>10?digits:'';
     window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(message),'_blank');
@@ -2323,9 +2342,20 @@ function WACard({message,phone,t}){
 /* ── ADD / EDIT STAFF MODAL ─────────────────────────────────── */
 function StaffModal({lang,onClose,onSave,existing}){
   var t=T[lang];
-  var blank={name:'',nickname:'',role:'maid',salary:'',hoursPerDay:'',schedule:[],phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
+  /* Every day starts checked - unchecking is the exception, not the norm,
+     since most staff work most days. Same for editing an existing record
+     with no custom schedule saved: showing all seven checked is the
+     accurate picture of what "no restriction" already means, rather than
+     an empty grid that looks unset. */
+  var ALL_DAYS=[0,1,2,3,4,5,6];
+  var blank={name:'',nickname:'',role:'maid',salary:'',hoursPerDay:'',schedule:ALL_DAYS,phone:'',joiningDate:todayStr(),leavingDate:'',payDay:'1',photo:'',notes:'',
              aadhaar:'',bankName:'',accountNo:'',ifsc:''};
-  var [form,setForm]=useState(existing?Object.assign({nickname:''},existing):blank);
+  var [form,setForm]=useState(function(){
+    if(!existing) return blank;
+    var f=Object.assign({nickname:''},existing);
+    if(!f.schedule||!f.schedule.length) f.schedule=ALL_DAYS;
+    return f;
+  });
   var [showVault,setShowVault]=useState(false);
   var [allRoles,setAllRoles]=useState(function(){return getRoles();});
   var [addingRole,setAddingRole]=useState(false);
@@ -2425,7 +2455,7 @@ function StaffModal({lang,onClose,onSave,existing}){
       </FLabel>
       <FLabel label={t.fsalary} req={true}><FInput tut="staff-salary" type="number" value={form.salary} onChange={function(v){set('salary',v);}} placeholder={t.salaryPh} /></FLabel>
       <FLabel label={t.fHoursPerDay} hint={t.fHoursPerDayHint}><FInput type="number" value={form.hoursPerDay} onChange={function(v){set('hoursPerDay',v);}} placeholder="5" /></FLabel>
-      <FLabel label={t.fSchedule} hint={t.fScheduleHint}>
+      <FLabel label={t.fSchedule} hint={scheduleSummary(form.schedule,t)}>
         <div className="grid grid-cols-7 gap-1">
           {t.days.map(function(d,i){
             var on=(form.schedule||[]).indexOf(i)>=0;
@@ -2453,14 +2483,14 @@ function StaffModal({lang,onClose,onSave,existing}){
             className="inp" style={{width:'100%'}} />
         </div>
       )}
-      <FLabel label={t.fphone} hint={t.fphoneHint} help={t.fphoneHelp}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
+      <FLabel label={t.fphone} help={t.fphoneHelp}><FInput type="tel" value={form.phone} onChange={function(v){set('phone',cleanPhoneDigits(v));}} placeholder={t.fphonePh} maxLength={20} /></FLabel>
       <FLabel label={t.fjoining}><FInput type="date" value={form.joiningDate} onChange={function(v){set('joiningDate',v);}} /></FLabel>
       {existing&&(
-        <FLabel label={t.fleaving} hint={t.fleavingHint} help={t.fleavingHelp}>
+        <FLabel label={t.fleaving} help={t.fleavingHelp}>
           <FInput type="date" value={form.leavingDate||''} onChange={function(v){set('leavingDate',v);}} />
         </FLabel>
       )}
-      <FLabel label={t.fpay} hint={t.hintPayDay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
+      <FLabel label={t.fpay}><FInput type="number" value={form.payDay} onChange={function(v){set('payDay',v);}} placeholder="1" /></FLabel>
       <FLabel label={t.fnotes}>
         <textarea value={form.notes||''} onChange={function(e){set('notes',e.target.value);}} placeholder={t.fnotesPh} className="ta" style={{height:80}} />
       </FLabel>
@@ -2476,7 +2506,7 @@ function StaffModal({lang,onClose,onSave,existing}){
           <FLabel label={t.vaadhaar} hint={t.vaadhaarH}><FInput type="number" value={form.aadhaar} onChange={function(v){set('aadhaar',v);}} placeholder="12-digit number" maxLength={12} /></FLabel>
           <FLabel label={t.vbank}><FInput value={form.bankName} onChange={function(v){set('bankName',v);}} placeholder={t.vbankPh} /></FLabel>
           <FLabel label={t.vaccount}><FInput value={form.accountNo} onChange={function(v){set('accountNo',v);}} placeholder="Account number" /></FLabel>
-          <FLabel label={t.vifsc} hint={t.hintIFSC}><FInput value={form.ifsc} onChange={function(v){set('ifsc',v);}} placeholder="e.g. SBIN0001234" /></FLabel>
+          <FLabel label={t.vifsc}><FInput value={form.ifsc} onChange={function(v){set('ifsc',v);}} placeholder="e.g. SBIN0001234" /></FLabel>
         </div>
       )}
 
@@ -2633,7 +2663,7 @@ function StaleNotice({paidRec,calc,t}){
   );
 }
 
-/* Reopens a settled month. Two-step by design — reversing a payment moves loan
+/* Reopens a settled month. Two-step by design - reversing a payment moves loan
    instalments as well as the payment itself, so it should not be one stray tap
    on a phone. Refuses outright when a later month is already settled, naming
    the month that has to be undone first. */
@@ -2876,7 +2906,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
 
   /* One list per person, drawn from both books: the ledger holds advances,
      loans and the rest, while salary payments live separately. Shown together
-     because from the staff member's side there is no such distinction — it is
+     because from the staff member's side there is no such distinction - it is
      all money that changed hands. */
   var txns=useMemo(function(){
     var from='', to='9999-99';
@@ -3013,7 +3043,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
                 {paidRec?t.profAlreadyPaid:t.rNet}
               </p>
               {/* Once paid, this tile is a record of what was handed over, so it
-                  must show the recorded figure — not a live recalculation that
+                  must show the recorded figure - not a live recalculation that
                   later entries would quietly change underneath the label. */}
               <p style={{fontSize:fsr(22),fontWeight:800,color:paidRec?'var(--ok)':'#fff',margin:0}}>{fmt(paidRec?paidRec.amount:calc.netPayable)}</p>
             </div>
@@ -3082,7 +3112,7 @@ function StaffProfile({staff,lang,homeId,homes,workingDays,onBack,onStaffChange}
         {/* ③ This person's own record of money.
             Everything here was previously only visible in the household-wide
             Records list, mixed in with everyone else's and filtered by type
-            rather than by person — so answering "what has Kamala had this
+            rather than by person - so answering "what has Kamala had this
             year" meant scrolling past everybody. */}
         <div className="card fade-in">
           <CardTitle icon="records">{t.profTxns}</CardTitle>
@@ -3207,14 +3237,14 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
   var curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var curYear=now.getFullYear(),curMonth=now.getMonth()+1,todayDate=now.getDate();
 
-  /* attendance — only people still working; a former staff member is neither
+  /* attendance - only people still working; a former staff member is neither
      present nor absent today. */
   var [attTick,setAttTick]=useState(0);
   var onStaff=staff.filter(function(s){return !hasLeft(s);});
   var presentCount=0,absentCount=0,holidayCount=0;
   onStaff.forEach(function(s){
     /* A day outside this staff member's own schedule is neither presence nor
-       absence — there was nothing for them to show up to, so it belongs in
+       absence - there was nothing for them to show up to, so it belongs in
        none of the three counts. */
     if(!isScheduledDay(s,now)) return;
     var st=getLeaves(s.id,curYM)[today];
@@ -3230,7 +3260,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
     setAttTick(function(n){return n+1;});
   }
 
-  /* upcoming pay days sorted by closeness — nobody who has left is still due.
+  /* upcoming pay days sorted by closeness - nobody who has left is still due.
      A flat 30 undercounted every 31-day month and overcounted February by up
      to 3, so this now looks up each month's real length instead of assuming
      one. A pay day past the end of a short month (31 chosen, landed in a
@@ -3287,14 +3317,14 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
             var scheduledToday=isScheduledDay(s,now);
             return (
               /* Name above, buttons below at full width. Squeezing all three
-                 onto one row truncated the very thing being identified — on a
+                 onto one row truncated the very thing being identified - on a
                  narrow phone "Kamala B…" beside two buttons helps nobody. */
               <div key={s.id} style={{padding:'12px 0',borderTop:i?'1px solid var(--border)':'none'}}>
                 <div className="flex items-center gap-3 mb-2">
                   <Avatar staff={s} size={42} />
                   <p className="flex-1 truncate" style={{fontSize:fsr(16),fontWeight:800,color:'var(--ink)',margin:0}}>{s.name}</p>
                   {/* Holiday is set in the calendar, so neither button below
-                      would be lit — say so rather than showing a blank pair.
+                      would be lit - say so rather than showing a blank pair.
                       Only on a scheduled day: an off day already says so below,
                       and a stale holiday mark left over from before the
                       schedule existed shouldn't show as a second, redundant
@@ -3304,7 +3334,7 @@ function DashboardTab({lang,homeId,homes,workingDays,onNavigate,syncKey}){
                   )}
                 </div>
                 {/* A day outside this staff member's own schedule has no valid
-                    present/leave state — there is nothing to mark, so the
+                    present/leave state - there is nothing to mark, so the
                     buttons are replaced rather than left clickable with
                     nothing meaningful for them to do. */}
                 {scheduledToday ? (
@@ -3683,12 +3713,12 @@ function SalaryTab({lang,homeId,homes,refreshKey,workingDays,defaultStaffId,sync
               {label:t.rShortHours, val:calc.shortHours, sign:-1, k:'shortHours'},
             /* Only the lines that carry a figure. Six rows of ₹0 were six
                things to read past to reach the one number that mattered, and
-               the salary modal already showed it this way — the two screens
+               the salary modal already showed it this way - the two screens
                now agree. The full salary always stays, even at zero. */
             ].filter(function(row){ return row.sign===0||row.val>0; }).map(function(row){
               var off=row.k&&calc.waived.indexOf(row.k)>=0;
               var color=off?'var(--muted)':row.sign===-1&&row.val>0?'var(--danger)':row.sign===1&&row.val>0?'var(--ok)':'var(--ink)';
-              /* A charge can only be cancelled while the month is still open —
+              /* A charge can only be cancelled while the month is still open -
                  once paid, the figures are a record of what happened. */
               var canWaive=row.k&&row.val>0&&!paidRec;
               /* Whether this line WAS reduced is a fact about the numbers,
@@ -4129,7 +4159,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   function set(k,v){setForm(function(f){return Object.assign({},f,{[k]:v});});}
   /* Extra Help is offered as a choice in the person field rather than as its
      own type button, since it is not really "a kind of transaction" the way
-     the others are — it is simply money with no staff member behind it. The
+     the others are - it is simply money with no staff member behind it. The
      sentinel never touches form.staffId directly; the select's displayed
      value is derived from form.type instead, so what is stored always
      matches what gets saved. */
@@ -4141,7 +4171,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
       setForm(function(f){return Object.assign({},f,{staffId:v,type:f.type==='extra_help'?'advance':f.type});});
     }
   }
-  /* Once a loan has been repaid against — by instalment or by hand — its
+  /* Once a loan has been repaid against - by instalment or by hand - its
      amount and instalment lock, so the principal can't be edited below what
      has already come back and leave the balance impossible to reconcile.
      Date and reason stay editable. */
@@ -4258,9 +4288,9 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   }
 
   function handleSave(){
-    /* extra_help is the one type that isn't necessarily anyone's own —
+    /* extra_help is the one type that isn't necessarily anyone's own -
        a substitute for someone absent, or extra hands beyond the regular
-       staff — so it's the only type that can be saved with no staff picked */
+       staff - so it's the only type that can be saved with no staff picked */
     if(form.type!=='extra_help'&&!form.staffId){setErrMsg(t.errStaff);return;}
     if(!form.date) return;
     if(isTimeBased&&(!form.hours||computedAmount<=0)){setErrMsg(t.errAmount);return;}
@@ -4304,11 +4334,11 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
   var otherTypes=['loan','expense','short_hours','bonus','extra_work','loan_repay'];
   var typeLabels={advance:t.tAdv,loan:t.tLoan,expense:t.tExp,bonus:t.tBonus,loan_repay:t.tLoanRepay,extra_work:t.tExtraWork,short_hours:t.tShortHours,extra_help:t.tExtraHelp};
 
-  /* Loans and repayments are entangled — a repayment mutates the loan it
-     points at — so when editing, the type can move freely among the simple
+  /* Loans and repayments are entangled - a repayment mutates the loan it
+     points at - so when editing, the type can move freely among the simple
      types but never into or out of those two. Extra Help blocks every type
      outright: it is money with no staff member behind it, and none of these
-     types make sense without one — the person field is where it is chosen
+     types make sense without one - the person field is where it is chosen
      back out of Extra Help again. */
   function typeChangeBlocked(key){
     if(form.type==='extra_help') return true;
@@ -4348,7 +4378,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
         <FSelect value={form.type==='extra_help'?EXTRA_HELP_SENTINEL:form.staffId} onChange={onPersonChange}>
           <option value="">{t.selStaffPh}</option>
           {staffList.map(function(s){return <option key={s.id} value={s.id}>{s.name}</option>;})}
-          {/* Not a real person — money with no staff member behind it, kept
+          {/* Not a real person - money with no staff member behind it, kept
               apart from the type grid below since it isn't really "a kind of
               transaction" the way those are. The divider above it is
               disabled and unselectable, existing only so the option below
@@ -4418,7 +4448,7 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
           above, that already answers "who", so asking again here would just
           invite two different names to be saved on the same entry. */}
       {form.type==='extra_help'&&!form.staffId && (
-        <FLabel label={t.fHelperName} hint={t.fHelperNameHint}>
+        <FLabel label={t.fHelperName}>
           <FInput value={form.helperName} onChange={function(v){set('helperName',v);}} placeholder={t.fHelperNamePh} />
         </FLabel>
       )}
@@ -4431,8 +4461,8 @@ function EntryModal({lang,staffList,onClose,onSave,onDelete,ledger,workingDays,p
 
       {form.type==='loan' && (
         <div>
-          <FLabel label={t.ftotinst} hint={t.hintTotInst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" disabled={loanLocked} /></FLabel>
-          <FLabel label={t.finst} hint={t.hintEMI}><FInput type="number" value={form.installment} onChange={function(v){installmentTouched.current=true;set('installment',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
+          <FLabel label={t.ftotinst}><FInput type="number" value={form.totalInstallments} onChange={function(v){set('totalInstallments',v);}} placeholder="e.g. 5" disabled={loanLocked} /></FLabel>
+          <FLabel label={t.finst}><FInput type="number" value={form.installment} onChange={function(v){installmentTouched.current=true;set('installment',v);}} placeholder={t.amountPh} disabled={loanLocked} /></FLabel>
           {loanInstNote && (
             <div className="mb-4 px-3 py-2 rounded-xl" style={{background:'#FDF3DC',marginTop:-8}}>
               <p style={{fontSize:fsr(12.5),color:'#8B5E08',fontWeight:600,lineHeight:1.4}}>
@@ -4521,7 +4551,7 @@ function AdvancesTab({lang,homeId,homes,workingDays,syncKey}){
 
   useEffect(function(){setStaff(getStaff(homeId));setLedger(getLedger(homeId));},[homeId,syncKey]);
 
-  /* A repayment doesn't just sit in the ledger — it moves the loan it points
+  /* A repayment doesn't just sit in the ledger - it moves the loan it points
      at. So any time one is added, changed or removed, the loan it targets has
      to be adjusted by the same delta, and its closed/active state recomputed.
      Without this, deleting a repayment left the loan permanently looking more
@@ -4753,7 +4783,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     return {id:s.id,name:s.name,role:s.role,tSal:paid||estYear,tAdv:tAdv,tExp:tExp,tBon:tBon,lBal:lBal,tExtra:tExtra,tShort:tShort};
   });
 
-  /* Extra Help never gets a per-staff card above — it is never tied to a
+  /* Extra Help never gets a per-staff card above - it is never tied to a
      staff member's own pay, so a per-staff total for it would only ever read
      zero. One combined card covers all of it instead, broken down by name
      when more than one has been used. A handful of entries from the brief
@@ -4796,7 +4826,7 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
     buckets.none={uid:'none',salary:0,records:0,total:0};
     /* External payers are grouped by name, case/space-insensitively, so
        "Rita" and "rita" land in one bucket even without perfectly consistent
-       typing — the autocomplete on the input is the first line of defence,
+       typing - the autocomplete on the input is the first line of defence,
        this is the safety net. The first-seen casing is kept for display. */
     function bucket(rec){
       var paidBy=rec.paidBy;
@@ -5368,7 +5398,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
       setNewHomeName('');
       return;
     }
-    /* Signed in, so the household has to be created in Firestore too —
+    /* Signed in, so the household has to be created in Firestore too -
        a local-only one would have no invite code, would never sync, and
        the rules would reject every write into it. */
     setHomeBusy(true); setHomeErr('');
@@ -5399,7 +5429,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
     var st=getStaff(id);
     st.forEach(function(s){lsKeys().filter(function(k){return k.startsWith('gs_lv_'+s.id+'_');}).forEach(lsDel);});
     lsDel(SK.staff(id)); lsDel(SK.ledger(id)); lsDel(SK.payments(id));
-    /* For a cloud household this means "leave", not "destroy" — drop it from
+    /* For a cloud household this means "leave", not "destroy" - drop it from
        your own list so it stops coming back on the next sign-in. The
        household itself and everyone else's access are untouched, and your
        name stays in its members map so past entries still say who paid. */
@@ -5660,7 +5690,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
               what stops "why is my data gone" six months from now: the phone
               or email above is a contact detail, this line is the login. */}
           <p style={{fontSize:fsr(12),color:'var(--muted)',margin:'14px 0 0',textAlign:'center'}}>
-            {t.mpSignedInWith}: {user.email||user.phoneNumber||user.displayName||'—'}
+            {t.mpSignedInWith}: {user.email||user.phoneNumber||user.displayName||'-'}
           </p>
         </div>
       )}
@@ -5679,7 +5709,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
 
 /* ── FEEDBACK TAB ───────────────────────────────────────────────
    Feedback is about the app, not about one household, so it lives in a
-   top-level /feedback collection rather than under /homes — the first thing
+   top-level /feedback collection rather than under /homes - the first thing
    in the app that crosses the household boundary.
 
    Sending needs a signed-in account. An open write path on a global
@@ -6014,7 +6044,7 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
     return function(){ mo.disconnect(); clearInterval(iv); };
   },[step]);
 
-  /* Steps completed by switching tab — read straight off the prop. */
+  /* Steps completed by switching tab - read straight off the prop. */
   useEffect(function(){
     if(cur.doneTab&&tab===cur.doneTab) setStep(function(s){return s+1;});
   },[tab,step]);
@@ -6026,7 +6056,7 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
   var dim='rgba(26,46,42,0.62)';
   var vh=typeof window!=='undefined'?window.innerHeight:800;
 
-  /* Sit the card directly beside the highlighted control — below it when
+  /* Sit the card directly beside the highlighted control - below it when
      there is room, otherwise above. Keeping it adjacent (rather than pinned
      to the far edge) puts the words next to the button they describe and
      leaves the rest of the screen visible, so the card never hides the
@@ -6189,7 +6219,7 @@ function ReportsTab({lang,homeId,workingDays,syncKey}){
 
    It opens a sheet rather than switching tabs: whoever taps it is in the
    middle of something, and a tab change would lose their place. The sheet
-   holds the same VoiceTab the menu opens, not a second copy of it — two
+   holds the same VoiceTab the menu opens, not a second copy of it - two
    implementations of the same flow would drift apart within a month.
 
    It does not start listening on tap. A microphone that opens already
@@ -6853,7 +6883,7 @@ function App(){
     return function(){ un(); };
   },[homeId]);
 
-  /* declared with the other hooks — the auth gating below returns early */
+  /* declared with the other hooks - the auth gating below returns early */
   var memberCtx=useMemo(function(){
     return {uid:(user&&user.uid)||'',members:members};
   },[user,members]);
@@ -6913,7 +6943,7 @@ function App(){
     if(h.length>0&&!h.find(function(x){return x.id===homeId;})) changeHome(h[0].id);
   }
   /* A household created or joined from Settings: append it and switch to it.
-     Joining one already in the list is not an error — just go there. */
+     Joining one already in the list is not an error - just go there. */
   function cloudHomeAdded(entry){
     var known=homes.find(function(x){return x.id===entry.id;});
     var next=known?homes:homes.concat([{id:entry.id,name:entry.name}]);
@@ -6930,7 +6960,7 @@ function App(){
          switcher right away; on later sign-ins they come back from the
          user's homeIds like any other */
       if(created&&created.length) setHomes(homes.concat(created));
-      /* Clear the local household list either way once the user has answered —
+      /* Clear the local household list either way once the user has answered -
          otherwise this same leftover data trips the check on every future
          load and the prompt never stops reappearing. */
       saveHomes([]); setMigrating(false);
@@ -7054,7 +7084,7 @@ function App(){
       {/* Only on the screens where speaking an entry makes sense. Settings,
           feedback and the voice screen itself have nothing to add by voice, and
           the tutorial owns the screen while it runs. Hidden outright where the
-          browser has no speech recognition — a button that can never work is
+          browser has no speech recognition - a button that can never work is
           worse than no button at all. */}
       <BottomNav tab={tab} setTab={setTab} lang={lang}
         fab={voiceFabOn&&micSupported&&!showTutorial&&['home','staff','money','reports','leaves'].indexOf(tab)>-1
