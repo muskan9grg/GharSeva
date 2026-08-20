@@ -110,20 +110,20 @@
 
 <!-- Shown while Babel/React initialise; React replaces it -->
 <div id="root">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;">
+  <div id="bootScreen" style="position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#D6B78C;">
     <video id="bootVideo" autoplay muted playsinline
-      poster="icons/icon-512.png"
-      style="width:min(80vw,360px);border-radius:20px;box-shadow:0 12px 32px rgba(26,46,42,.18);display:block;"
+      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
       onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
       <source src="icons/logo-loading.mp4" type="video/mp4">
     </video>
-    <!-- Fallback if the video can't load: same mark as the Logo component,
-         written out by hand because this screen is shown before React has
-         parsed anything - it was last updated when the mark had four shapes
-         and no stick, so it had drifted out of sync with the real component
-         for two revisions running. -->
-    <div id="bootFallback" style="display:none;flex-direction:column;align-items:center;gap:12px;">
-      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+    <!-- Fallback if the video can't load, or the boot has already run today
+         and is being skipped: same mark as the Logo component, written out
+         by hand because this screen is shown before React has parsed
+         anything - it was last updated when the mark had four shapes and no
+         stick, so it had drifted out of sync with the real component for
+         two revisions running. -->
+    <div id="bootFallback" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#1A6E5E;">
+      <svg width="96" height="96" viewBox="0 0 64 64" aria-hidden="true">
         <rect x="1.5" y="1.5" width="61" height="61" rx="17" fill="#1A6E5E"/>
         <path d="M11 30 32 14.5l21 15.5" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M17 33V49.5h30V33" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -131,12 +131,18 @@
         <path d="M23.6 49.5c0-3.9 2.4-6.1 5.4-6.1s5.4 2.2 5.4 6.1" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
         <path d="M41 34V49.5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
       </svg>
-      <div style="font-size:1.4rem;font-weight:800;color:#1A2E2A;font-family:'Nunito',sans-serif;">GharSeva</div>
+      <div style="font-size:1.6rem;font-weight:800;color:#fff;font-family:'Nunito',sans-serif;">GharSeva</div>
     </div>
-    <div style="width:40px;height:4px;background:#C4D4C6;border-radius:4px;overflow:hidden;">
-      <div style="width:40%;height:100%;background:#1A6E5E;border-radius:4px;animation:lb 1s ease-in-out infinite alternate;"></div>
+    <!-- Bottom overlay: a scrim keeps this legible over the video regardless
+         of whether its background is currently the warm cream open or the
+         settled teal, without needing to track the video's own color. -->
+    <div style="position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(to top, rgba(0,0,0,.32), rgba(0,0,0,0));pointer-events:none;"></div>
+    <div style="position:absolute;left:0;right:0;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <div style="width:44px;height:4px;background:rgba(255,255,255,.3);border-radius:4px;overflow:hidden;">
+        <div style="width:40%;height:100%;background:#fff;border-radius:4px;animation:lb 1s ease-in-out infinite alternate;"></div>
+      </div>
+      <div style="font-size:.8rem;color:#fff;font-family:'Nunito',sans-serif;letter-spacing:.02em;">Loading…</div>
     </div>
-    <div style="font-size:.78rem;color:#7A998C;font-family:'Nunito',sans-serif;">Loading… / लोड हो रहा है…</div>
     <style>@keyframes lb{from{transform:translateX(0)}to{transform:translateX(150%)}}</style>
   </div>
 </div>
