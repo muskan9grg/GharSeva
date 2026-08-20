@@ -623,8 +623,6 @@ en:{
   fbThanks:'Thank you, this has been received.',
   fbQueued:'Saved. It will send as soon as you are back online.',
   fbError:'Could not send. Please try again.',
-  fbYours:'WHAT YOU HAVE SENT',
-  fbWithdraw:'Withdraw',
   fbNeedAccount:'Sign in to send feedback',
   fbNeedAccountWhy:'Only feedback needs an account. Everything else works without one.',
   paidBy:'Paid by',
@@ -851,8 +849,6 @@ hi:{
   fbThanks:'धन्यवाद, आपका संदेश मिल गया।',
   fbQueued:'सहेज लिया। इंटरनेट आते ही भेज दिया जाएगा।',
   fbError:'भेजा नहीं जा सका। फिर कोशिश करें।',
-  fbYours:'आपके भेजे संदेश',
-  fbWithdraw:'वापस लें',
   fbNeedAccount:'भेजने के लिए साइन इन करें',
   fbNeedAccountWhy:'सिर्फ़ सुझाव के लिए खाता चाहिए। बाकी सब बिना खाते के चलता है।',
   paidBy:'किसने दिया',
@@ -5727,22 +5723,8 @@ function FeedbackTab({lang,user}){
   var [sending,setSending]=useState(false);
   var [sent,setSent]=useState('');          /* '' | 'ok' | 'queued' */
   var [err,setErr]=useState('');
-  var [mine,setMine]=useState(null);        /* null while loading */
-  var [confirmDel,setConfirmDel]=useState(null);
 
   var canSend=!!(FIREBASE_ENABLED&&fbDb&&user);
-
-  function loadMine(){
-    if(!canSend){ setMine([]); return; }
-    fbDb.collection('feedback').where('authorId','==',user.uid).get()
-      .then(function(snap){
-        var rows=snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
-        rows.sort(function(a,b){ return (b.createdAtMs||0)-(a.createdAtMs||0); });
-        setMine(rows);
-      })
-      .catch(function(){ setMine([]); });
-  }
-  useEffect(loadMine,[canSend]);
 
   function send(){
     if(!msg.trim()||sending) return;
@@ -5769,7 +5751,7 @@ function FeedbackTab({lang,user}){
       .then(function(){
         if(settled) return;
         settled=true; clearTimeout(timer);
-        setSending(false); setSent('ok'); setMsg(''); loadMine();
+        setSending(false); setSent('ok'); setMsg('');
       })
       .catch(function(e){
         if(settled) return;
@@ -5777,17 +5759,6 @@ function FeedbackTab({lang,user}){
         setSending(false); setErr((e&&e.message)||t.fbError);
       });
   }
-
-  function del(id){
-    fbDb.collection('feedback').doc(id).delete()
-      .then(function(){
-        setMine(function(r){ return (r||[]).filter(function(x){ return x.id!==id; }); });
-        setConfirmDel(null);
-      })
-      .catch(function(){ setConfirmDel(null); });
-  }
-
-  function typeOf(k){ return TYPES.find(function(x){return x.key===k;})||TYPES[2]; }
 
   return (
     <div className="p-4 scroll-area flex-1">
@@ -5843,39 +5814,6 @@ function FeedbackTab({lang,user}){
           <PrimaryBtn onClick={send} full={true} disabled={!msg.trim()||sending}>
             {sending?t.fbSending:t.fbSend}
           </PrimaryBtn>
-        </div>
-      )}
-
-      {canSend&&mine&&mine.length>0&&(
-        <div>
-          <p style={{fontSize:fsr(13),fontWeight:800,color:'var(--ink)',marginBottom:12}}>{t.fbYours}</p>
-          {mine.map(function(f){
-            var ty=typeOf(f.type);
-            return (
-              <div key={f.id} className="card mb-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <span className="pill pill-accent inline-flex items-center gap-1"><Icon name={ty.icon} size={13} />{ty.label}</span>
-                  <span style={{fontSize:fsr(12),color:'var(--muted)',fontWeight:700,whiteSpace:'nowrap'}}>
-                    {f.createdAtMs?fmtD(toISODate(new Date(f.createdAtMs))):''}
-                  </span>
-                </div>
-                <p style={{fontSize:fsr(14),color:'var(--ink)',lineHeight:1.55,whiteSpace:'pre-wrap'}}>{f.message}</p>
-                {confirmDel===f.id ? (
-                  <div className="flex gap-2 mt-3">
-                    <PrimaryBtn onClick={function(){setConfirmDel(null);}} color="gray" small={true} full={true}>{t.cancel}</PrimaryBtn>
-                    <PrimaryBtn onClick={function(){del(f.id);}} color="red" small={true} full={true}>{t.del}</PrimaryBtn>
-                  </div>
-                ) : (
-                  <button onClick={function(){setConfirmDel(f.id);}}
-                    style={{marginTop:10,fontSize:fsr(12),color:'var(--danger)',border:'1px solid #F5C6C6',
-                      borderRadius:8,padding:'4px 10px',fontWeight:700,background:'transparent',
-                      cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-                    {t.fbWithdraw}
-                  </button>
-                )}
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
