@@ -1613,51 +1613,6 @@ function migrateFromLocalStorage(targetHomeId, user, lang){
     .catch(function(e){ console.warn('Migration error:',e); return created; });
 }
 
-/* ── SEED / DEMO DATA ──────────────────────────────────────────
-   buildDemoData(lang) returns the same {staff,ledger,leaves} shape
-   for both the guest-mode seed and a freshly-created cloud household.
-   Ids are fixed (st1/st2, l1-l4) so re-running is idempotent. */
-const SH1='hm_nagpur';
-function buildDemoData(lang){
-  var hi = lang==='hi';
-  var now=new Date();
-  var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  var d=now.getDate();
-  var staff=[
-    {id:'st1',
-     name:hi?'कमला बाई':'Kamala Bai', nickname:hi?'कमला':'Kamala',
-     role:'maid',salary:8000,phone:'9876543210',
-     joiningDate:'2023-01-15',payDay:'5',photo:'',
-     notes:hi?'सुबह सभी कमरे साफ करती हैं, बर्तन धोती हैं।':'Cleans all rooms every morning and washes dishes.',
-     aadhaar:'234567893456',bankName:'State Bank of India',accountNo:'11223344551234',ifsc:'SBIN0001234'},
-    {id:'st2',
-     name:hi?'रामू प्रसाद':'Ramu Prasad', nickname:hi?'रामू':'Ramu',
-     role:'cook',salary:12000,phone:'9765432109',
-     joiningDate:'2022-06-01',payDay:'1',photo:'',
-     notes:hi?'दोपहर और रात का खाना बनाते हैं। महाराष्ट्रीयन खाने में माहिर।':'Cooks lunch and dinner. Specializes in Maharashtrian food.',
-     aadhaar:'987654321099',bankName:'Bank of Baroda',accountNo:'44556677889900',ifsc:'BARB0NAGPUR'},
-  ];
-  var ledger=[
-    {id:'l1',staffId:'st1',type:'advance',amount:1000,date:ym+'-10',reason:hi?'बेटी की स्कूल फीस':"Daughter's school fee"},
-    {id:'l2',staffId:'st2',type:'loan',amount:5000,installment:1000,totalInstallments:5,paidInstallments:0,date:ym+'-05',reason:hi?'चिकित्सा आपात स्थिति':'Medical emergency',status:'active'},
-    {id:'l3',staffId:'st1',type:'bonus',amount:500,date:ym+'-01',reason:hi?'दीवाली बोनस':'Diwali bonus'},
-    {id:'l4',staffId:'st2',type:'expense',amount:250,date:ym+'-08',reason:hi?'खाने का तेल खरीदा':'Bought cooking oil'},
-  ];
-  var lv={};
-  if(d>6) lv[ym+'-06']='leave';
-  if(d>12) lv[ym+'-12']='leave';
-  var homes=[{id:SH1,name:hi?'नागपुर, मुख्य घर':'Nagpur, Main House'},
-             {id:'hm_mumbai',name:hi?'मुंबई, ससुराल':'Mumbai, In-laws'}];
-  return {homes:homes, staff:staff, ledger:ledger, leaves:{staffId:'st1', ym:ym, dates:lv}};
-}
-
-function seedDemoDataCloud(homeId, lang){
-  var demo=buildDemoData(lang);
-  fbSaveStaff(homeId,demo.staff);
-  fbSaveLedger(homeId,demo.ledger);
-  fbSaveLeaves(homeId,demo.leaves.staffId,demo.leaves.ym,demo.leaves.dates);
-}
-
 /* ── CLOUD HOUSEHOLD CREATE / JOIN ─────────────────────────────
    The Firestore half only — resolving to the new {id,name,workingDays}.
    Saving to localStorage and switching the active household is left to
@@ -6614,7 +6569,6 @@ function HomeSetupScreen({lang,user,onHomeReady}){
       .then(function(entry){
         saveHomes([entry]);
         saveSettings({lang:lang,lastHomeId:entry.id,workingDays:entry.workingDays});
-        seedDemoDataCloud(entry.id,lang);
         onHomeReady([entry],entry.id,true);
       })
       .catch(function(e){setError(e.message);setLoading(false);});
