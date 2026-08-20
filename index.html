@@ -110,22 +110,30 @@
 
 <!-- Shown while Babel/React initialise; React replaces it -->
 <div id="root">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:12px;">
-    <!-- Same mark as the Logo component, written out by hand because this
-         screen is shown before React has parsed anything - it was last
-         updated when the mark had four shapes and no stick, so it had drifted
-         out of sync with the real component for two revisions running. -->
-    <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
-      <rect x="1.5" y="1.5" width="61" height="61" rx="17" fill="#1A6E5E"/>
-      <path d="M11 30 32 14.5l21 15.5" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M17 33V49.5h30V33" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="29" cy="36.6" r="3.5" fill="none" stroke="#fff" stroke-width="3.4"/>
-      <path d="M23.6 49.5c0-3.9 2.4-6.1 5.4-6.1s5.4 2.2 5.4 6.1" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M41 34V49.5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-    </svg>
-    <div style="font-size:1.4rem;font-weight:800;color:#1A2E2A;font-family:'Nunito',sans-serif;">GharSeva</div>
-    <div style="font-size:.95rem;color:#7A998C;font-family:'Nunito',sans-serif;">Loading… / लोड हो रहा है…</div>
-    <div style="width:40px;height:4px;background:#C4D4C6;border-radius:4px;overflow:hidden;margin-top:8px;">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;">
+    <video autoplay muted playsinline
+      poster="icons/icon-512.png"
+      style="width:min(80vw,360px);border-radius:20px;box-shadow:0 12px 32px rgba(26,46,42,.18);display:block;"
+      onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
+      <source src="icons/logo-loading.mp4" type="video/mp4">
+    </video>
+    <!-- Fallback if the video can't load: same mark as the Logo component,
+         written out by hand because this screen is shown before React has
+         parsed anything - it was last updated when the mark had four shapes
+         and no stick, so it had drifted out of sync with the real component
+         for two revisions running. -->
+    <div id="bootFallback" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="61" height="61" rx="17" fill="#1A6E5E"/>
+        <path d="M11 30 32 14.5l21 15.5" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M17 33V49.5h30V33" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="29" cy="36.6" r="3.5" fill="none" stroke="#fff" stroke-width="3.4"/>
+        <path d="M23.6 49.5c0-3.9 2.4-6.1 5.4-6.1s5.4 2.2 5.4 6.1" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <path d="M41 34V49.5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div style="font-size:1.4rem;font-weight:800;color:#1A2E2A;font-family:'Nunito',sans-serif;">GharSeva</div>
+    </div>
+    <div style="width:40px;height:4px;background:#C4D4C6;border-radius:4px;overflow:hidden;">
       <div style="width:40%;height:100%;background:#1A6E5E;border-radius:4px;animation:lb 1s ease-in-out infinite alternate;"></div>
     </div>
     <style>@keyframes lb{from{transform:translateX(0)}to{transform:translateX(150%)}}</style>
