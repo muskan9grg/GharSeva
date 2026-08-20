@@ -580,6 +580,7 @@ en:{
   exportKeyFigures:'AT A GLANCE',exportTotal:'TOTAL',
   exportSalaryLine:'Salary (paid or still due)',
   exportNone:'Nothing recorded for this period',exportWorking:'Preparing…',
+  exportConfirmMonth:'Download this month\'s Excel report?',exportConfirmYear:'Download the full year\'s Excel report?',exportDownload:'Download',
   exportSheetPayments:'Salary Payments',exportSheetEntries:'Records',
   hmRestoreConfirm:'This will overwrite ALL current data. Continue?',hmRestoreOk:'Restored. Reloading…',hmRestoreErr:'Invalid backup file.',
   addStaff:'Add staff',editStaff:'Edit Staff',noStaff:'No staff yet.\nTap "+ Add Staff" to begin.',
@@ -816,6 +817,7 @@ hi:{
   exportKeyFigures:'एक नज़र में',exportTotal:'कुल',
   exportSalaryLine:'वेतन (दिया या बाकी)',
   exportNone:'इस अवधि में कुछ दर्ज नहीं',exportWorking:'तैयार हो रहा है…',
+  exportConfirmMonth:'इस महीने की Excel रिपोर्ट डाउनलोड करें?',exportConfirmYear:'पूरे साल की Excel रिपोर्ट डाउनलोड करें?',exportDownload:'डाउनलोड करें',
   exportSheetPayments:'वेतन भुगतान',exportSheetEntries:'रिकॉर्ड',
   hmRestoreConfirm:'इससे सारा मौजूदा डेटा बदल जाएगा। जारी रखें?',hmRestoreOk:'रिस्टोर हो गया। लोड हो रहा है…',hmRestoreErr:'अमान्य बैकअप फ़ाइल।',
   addStaff:'स्टाफ जोड़ें',editStaff:'संपादित करें',noStaff:'कोई स्टाफ नहीं।\n"+ स्टाफ जोड़ें" दबाएं।',
@@ -1119,7 +1121,13 @@ function buildReportData(homeId,period,lang,members,workingDays){
   var periodPayments=payments.filter(function(p){
     return period==='year' ? p.year===year : (p.year===year&&p.month===month);
   });
-  var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
+  /* Bonus and extra-work are never a separate cash event - they're added
+     straight into that month's salary payment (calcSalary's netPayable), so
+     counting them again here on top of periodPayments would pay them twice
+     on paper. Advance/loan/expense are different: that cash leaves the
+     house immediately when logged, and only gets subtracted back out of a
+     later salary payment - so they still need to be counted here. */
+  var CASH_OUT=['advance','loan','expense','extra_help'];
   var totalSpend=periodPayments.reduce(function(a,p){return a+(p.amount||0);},0)
     +periodLedger.filter(function(e){return CASH_OUT.indexOf(e.type)>-1;}).reduce(function(a,e){return a+(e.amount||0);},0);
 
@@ -1159,10 +1167,9 @@ function buildReportData(homeId,period,lang,members,workingDays){
     });
     var sLed=ledger.filter(function(e){return e.staffId===s.id&&inPeriod(e.date);});
     function sum(type){return sLed.filter(function(e){return e.type===type;}).reduce(function(a,e){return a+(e.amount||0);},0);}
-    var spend=paidSum+sum('advance')+sum('expense')+sum('bonus')+sum('extra_work');
     return {name:s.name,role:roleLabel(s.role,lang),salary:paidSum,advances:sum('advance'),
       expenses:sum('expense'),bonuses:sum('bonus'),overtime:sum('extra_work'),halfDays:sum('short_hours'),
-      loanBal:getLoanBal(s.id,ledger),present:present,leave:leave,holiday:holiday,spend:spend};
+      loanBal:getLoanBal(s.id,ledger),present:present,leave:leave,holiday:holiday};
   });
 
   var payRows=periodPayments.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');})
@@ -2142,7 +2149,11 @@ function waTemplate(type,staff,amount,date,homeName,lang,waLang){
     extra_help: 'Extra help of '+amt+(n?' by '+n:'')+' recorded on '+d+'.'
   };
   if(!hi[type]&&!en[type]) return '';
-  var mode=waLang||getSettings().waLang||'both';
+  /* Until the owner explicitly picks a WhatsApp language, default to
+     whichever single language the app itself is set to - closer to what
+     staff actually speak than a combined Hindi+English message nobody asked
+     for. 'both' stays available as an explicit choice in Settings. */
+  var mode=waLang||getSettings().waLang||lang||'both';
   var lines=[];
   if(mode!=='en') lines.push('नमस्ते! 🙏\n'+hi[type]);
   if(mode!=='hi') lines.push((mode==='en'?'Hello! 🙏\n':'')+en[type]);
@@ -4899,7 +4910,11 @@ function AnnualTab({lang,homeId,workingDays,syncKey}){
   var showMembers=memberIds.length>0;
   var spendSummary=useMemo(function(){
     if(!showMembers) return null;
-    var CASH_OUT=['advance','loan','expense','bonus','extra_work','extra_help'];
+    /* Bonus and extra-work ride inside the salary payment itself (see
+       calcSalary's netPayable) rather than leaving the house as their own
+       event, so they must not also be summed here - that would pay them
+       twice on paper. */
+    var CASH_OUT=['advance','loan','expense','extra_help'];
     var yPfx=selYear+'-';
     var buckets={};
     memberIds.forEach(function(id){ buckets[id]={uid:id,salary:0,records:0,total:0}; });
@@ -5375,7 +5390,7 @@ function SettingsTab({lang,setLang,homes,onHomesChange,workingDays,onWorkingDays
   var [wdSaved,setWdSaved]=useState(false);
   var [rateInput,setRateInput]=useState(String(getSettings().standardHourlyRate||''));
   var [rateSaved,setRateSaved]=useState(false);
-  var [waLangSel,setWaLangSel]=useState(getSettings().waLang||'both');
+  var [waLangSel,setWaLangSel]=useState(getSettings().waLang||lang||'both');
   var [restoreConfirm,setRestoreConfirm]=useState(null);
   var [restoreMsg,setRestoreMsg]=useState('');
   var restoreRef=useRef(null);
@@ -6216,27 +6231,41 @@ function ReportsTab({lang,homeId,workingDays,syncKey}){
   var t=T[lang];
   var mc=React.useContext(MembersCtx);
   var [busy,setBusy]=useState('');
+  var [confirmExport,setConfirmExport]=useState(null);
   function run(period){
+    setConfirmExport(null);
     setBusy(period);
     exportReport(homeId,period,lang,mc.members,workingDays,function(){setBusy('');});
   }
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="px-4 pt-3 shrink-0">
-        <div className="flex gap-2">
-          <button disabled={!!busy} onClick={function(){run('month');}}
-            style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',
-              color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
-              opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
-            {busy==='month'?t.exportWorking:<span className="flex items-center justify-center gap-2"><Icon name="upload" size={17} />{t.hmExportMonth}</span>}
-          </button>
-          <button disabled={!!busy} onClick={function(){run('year');}}
-            style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',
-              color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
-              opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
-            {busy==='year'?t.exportWorking:<span className="flex items-center justify-center gap-2"><Icon name="upload" size={17} />{t.hmExportYear}</span>}
-          </button>
-        </div>
+        {confirmExport ? (
+          <div className="rounded-2xl p-4" style={{background:'var(--surface)',border:'1px solid var(--border)'}}>
+            <p style={{fontSize:fsr(14),fontWeight:700,color:'var(--ink)',marginBottom:12}}>
+              {confirmExport==='month'?t.exportConfirmMonth:t.exportConfirmYear}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={function(){setConfirmExport(null);}} style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--border)',background:'none',color:'var(--ink2)',fontWeight:800,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.cancel}</button>
+              <button onClick={function(){run(confirmExport);}} style={{flex:1,padding:'11px',borderRadius:12,border:'none',background:'var(--accent)',color:'#fff',fontWeight:800,fontSize:fsr(14),cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>{t.exportDownload}</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button disabled={!!busy} onClick={function(){setConfirmExport('month');}}
+              style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--accent)',background:'var(--surface)',
+                color:'var(--accent)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
+                opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
+              {busy==='month'?t.exportWorking:<span className="flex items-center justify-center gap-2"><Icon name="upload" size={17} />{t.hmExportMonth}</span>}
+            </button>
+            <button disabled={!!busy} onClick={function(){setConfirmExport('year');}}
+              style={{flex:1,padding:'11px',borderRadius:12,border:'2px solid var(--border)',background:'var(--surface)',
+                color:'var(--ink2)',fontWeight:800,fontSize:fsr(13),cursor:busy?'wait':'pointer',
+                opacity:busy?.6:1,fontFamily:'Nunito,sans-serif'}}>
+              {busy==='year'?t.exportWorking:<span className="flex items-center justify-center gap-2"><Icon name="upload" size={17} />{t.hmExportYear}</span>}
+            </button>
+          </div>
+        )}
       </div>
       <AnnualTab key={homeId} lang={lang} homeId={homeId} workingDays={workingDays} syncKey={syncKey} />
     </div>
