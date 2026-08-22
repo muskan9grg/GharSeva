@@ -127,11 +127,14 @@
          specific call surfaces as an uncaught promise rejection in the
          console even though the explicit v.play() below is fully handled.
          The script below is solely responsible for starting playback. -->
-    <video id="bootVideo" muted playsinline
-      style="width:min(78vw,480px);max-height:62vh;height:auto;object-fit:contain;display:block;position:relative;z-index:1;"
-      onerror="this.style.display='none';document.getElementById('bootFallback').style.display='flex';">
-      <source src="icons/logo-loading.mp4" type="video/mp4">
-    </video>
+    <div id="bootVideoWrap" style="position:relative;width:min(78vw,480px);max-height:62vh;aspect-ratio:960/540;z-index:1;">
+      <video id="bootVideo" muted playsinline
+        style="width:100%;height:100%;object-fit:contain;display:block;"
+        onerror="this.parentNode.style.display='none';document.getElementById('bootFallback').style.display='flex';">
+        <source src="icons/logo-loading.mp4" type="video/mp4">
+      </video>
+      <div id="bootVideoFade" style="position:absolute;inset:0;pointer-events:none;"></div>
+    </div>
     <!-- Fallback if the video can't load, or the boot has already run today
          and is being skipped: same mark as the Logo component, written out
          by hand because this screen is shown before React has parsed
@@ -161,6 +164,31 @@
     </div>
     <style>
       @keyframes lb{from{transform:translateX(0)}to{transform:translateX(150%)}}
+      /* However closely the background color animation tracks the video's
+         own frames, a compressed MP4 never renders as a truly flat color
+         the way a CSS background does - codec noise means there is always
+         some pixel-level mismatch right at the video's edge, and a hard
+         rectangle boundary is exactly where a mismatch like that reads as
+         "a video in a box" rather than "the page". Feathering just the
+         outer edge (mark and wordmark both sit well inside the 82% inner
+         zone, so nothing real gets clipped) turns that hard seam into a
+         soft dissolve, which hides the residual mismatch instead of
+         chasing it to zero.
+         This was first tried as mask-image (an actual alpha mask on the
+         video element), which is the technically "correct" tool, but it
+         silently failed to render in testing - CSS.supports() reported it
+         as valid and getComputedStyle() echoed the value back, yet the edge
+         stayed a hard line with zero fade. A plain painted radial-gradient
+         overlay, confirmed to render correctly, sidesteps that: it needs to
+         know the live edge color (impossible for a true mask, which only
+         needs opacity), so --boot-edge below is animated in lockstep with
+         background-color for exactly that reason. Note the gradient uses
+         the `closest-side` keyword rather than an explicit `100% 100%` size
+         - the two are meant to be equivalent, but only the keyword form
+         actually rendered a visible fade in testing. */
+      #bootVideoFade{
+        background:radial-gradient(ellipse closest-side at center, transparent 82%, var(--boot-edge, #D3B589) 100%);
+      }
       /* Pre-baked to match the video's own color arc, sampled directly from
          its actual frames at close intervals (not read from the video in
          real time - a canvas-sampling loop on a timer turned out to depend
@@ -170,14 +198,17 @@
          every tenth of a second through it live, then checked against an
          actual screenshot during that exact window, which is what caught
          the first version's stops being too spread out and visibly
-         mismatched against the real video for part of the transition. */
+         mismatched against the real video for part of the transition.
+         --boot-edge mirrors background-color at every stop so the fade
+         overlay's outer edge is always the same color the page is
+         currently sitting on, not just at start and end. */
       @keyframes gsBootBg{
-        0%,61.34%{background-color:#D3B589;}
-        62.45%{background-color:#B4A982;}
-        63.57%{background-color:#899978;}
-        64.68%{background-color:#5E886E;}
-        65.80%{background-color:#347864;}
-        66.91%,100%{background-color:#1A6E5E;}
+        0%,61.34%{background-color:#D3B589;--boot-edge:#D3B589;}
+        62.45%{background-color:#B4A982;--boot-edge:#B4A982;}
+        63.57%{background-color:#899978;--boot-edge:#899978;}
+        64.68%{background-color:#5E886E;--boot-edge:#5E886E;}
+        65.80%{background-color:#347864;--boot-edge:#347864;}
+        66.91%,100%{background-color:#1A6E5E;--boot-edge:#1A6E5E;}
       }
       .gs-bg-sync{animation:gsBootBg 8.966667s linear 1 forwards;}
     </style>
