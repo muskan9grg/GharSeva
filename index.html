@@ -6035,6 +6035,13 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
   var t=T[lang];
   var [step,setStep]=useState(0);
   var [rect,setRect]=useState(null);
+  /* Whether the current step was reached by pressing Back, rather than by
+     completing the previous one. A domDone/doneTab step's "done" condition
+     is often still true from before (the staff form is still open, the tab
+     never changed) - without this, landing back on that step re-fires the
+     auto-advance the instant it mounts, so Back visibly does nothing at
+     all. See the two effects below for how it's used. */
+  var [cameFromBack,setCameFromBack]=useState(false);
 
   function q(name){ return document.querySelector('[data-tut="'+name+'"]'); }
 
@@ -6109,13 +6116,20 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
 
   /* Steps completed by opening/closing the staff form. MutationObserver
      fires off the DOM change itself, so this stays responsive even when
-     timer throttling would delay a poll. */
+     timer throttling would delay a poll.
+     `seenFalse` requires the condition to actually flip from not-done to
+     done before advancing - arriving via Back with the form still open
+     starts already "done" and must not immediately fire from that alone,
+     or the step would never actually be visible to go back to. */
   useEffect(function(){
     if(!cur.domDone) return;
+    var seenFalse=!cur.domDone();
     var fired=false;
     function check(){
-      if(fired||!cur.domDone()) return;
-      fired=true; setStep(function(s){return s+1;});
+      if(fired) return;
+      if(!cur.domDone()){ seenFalse=true; return; }
+      if(!seenFalse) return;
+      fired=true; advance();
     }
     check();
     var mo=new MutationObserver(check);
@@ -6124,13 +6138,20 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
     return function(){ mo.disconnect(); clearInterval(iv); };
   },[step]);
 
-  /* Steps completed by switching tab - read straight off the prop. */
+  /* Steps completed by switching tab - read straight off the prop. Same
+     stale-true problem as above: landing back on a step whose target tab
+     equals the tab you're already on must not instantly complete it, so
+     this only fires once the tab has been seen to actually change away
+     from whatever it was when this step was entered. */
+  var entryTabRef=useRef(null);
+  useEffect(function(){ entryTabRef.current=tab; },[step]);
   useEffect(function(){
-    if(cur.doneTab&&tab===cur.doneTab) setStep(function(s){return s+1;});
+    if(cur.doneTab&&tab===cur.doneTab&&entryTabRef.current!==cur.doneTab) advance();
   },[tab,step]);
 
-  function back(){ if(step>0) setStep(step-1); }
-  function next(){ if(last) onDone(); else setStep(step+1); }
+  function advance(){ setCameFromBack(false); setStep(function(s){return s+1;}); }
+  function back(){ if(step>0){ setCameFromBack(true); setStep(step-1); } }
+  function next(){ setCameFromBack(false); if(last) onDone(); else setStep(step+1); }
 
   var pad=6;
   var dim='rgba(26,46,42,0.62)';
@@ -6209,7 +6230,13 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
 
         <div className="flex gap-3" style={{alignItems:'center'}}>
           {step>0 && <button onClick={back} className="btn btn-ghost" style={{flex:1}}>{t.tutBack}</button>}
-          {!cur.action && <button onClick={next} className="btn btn-accent" style={{flex:2}}>{last?t.tutDone:t.tutNext}</button>}
+          {/* An action step normally has no Next button - completing the
+              action is what advances it. But a step revisited via Back can
+              have that action already sitting done from before (the form
+              never closed, the tab never changed), with nothing left to
+              genuinely re-trigger it - so this step alone gets an explicit
+              way forward instead of a dead end. */}
+          {(!cur.action||cameFromBack) && <button onClick={next} className="btn btn-accent" style={{flex:2}}>{last?t.tutDone:t.tutNext}</button>}
         </div>
 
         <button onClick={onDone} style={{width:'100%',marginTop:6,padding:'6px',background:'none',border:'none',
@@ -6771,6 +6798,30 @@ function SignInMethodsCard({lang,user}){
    Google, typing a phone number here does not link phone sign-in - so the
    callout on the contact block says exactly that, because asking for both
    otherwise implies a merge that this particular form does not perform. */
+/* ── LANGUAGE CHOOSER ───────────────────────────────────────────
+   The one screen that has to work before a `lang` exists to pick strings
+   from T, so its own text is written out bilingually rather than looked up.
+   Shown once, gated on the same profileVersion marker that gates the
+   profile/home setup screens right after it - so it only ever interrupts
+   someone who has never been through setup, never a returning user, and
+   the choice made here is already in effect by the time those screens (and
+   the tutorial after them) render. */
+function LanguageChooserScreen({onChoose}){
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)',padding:20,display:'flex',flexDirection:'column',justifyContent:'center'}}>
+      <div style={{textAlign:'center',marginBottom:28}}>
+        <div style={{display:'flex',justifyContent:'center',marginBottom:12}}><Logo size={64} /></div>
+        <h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',margin:'0 0 6px'}}>Choose your language</h2>
+        <h2 style={{fontSize:fsr(22),fontWeight:800,color:'var(--ink)',margin:0}}>अपनी भाषा चुनें</h2>
+      </div>
+      <div className="card" style={{display:'flex',flexDirection:'column',gap:12}}>
+        <button onClick={function(){onChoose('en');}} className="btn btn-accent btn-full" style={{minHeight:56,fontSize:fsr(17)}}>English</button>
+        <button onClick={function(){onChoose('hi');}} className="btn btn-accent btn-full" style={{minHeight:56,fontSize:fsr(17)}}>हिंदी</button>
+      </div>
+    </div>
+  );
+}
+
 function ProfileSetupScreen({lang,user,onSaved}){
   var t=T[lang];
   var providerEmail=(user&&user.email)||'';
@@ -7042,6 +7093,7 @@ function App(){
   var [syncKey,setSyncKey]=useState(0);
   var [needsHome,setNeedsHome]=useState(false);
   var [needsProfile,setNeedsProfile]=useState(false);
+  var [needsLangChoice,setNeedsLangChoice]=useState(false);
   var [migrating,setMigrating]=useState(false);
   var [members,setMembers]=useState({});
 
@@ -7075,6 +7127,10 @@ function App(){
              is written for every user by household create/join, so its
              presence proves nothing about whether a human ever saw a form. */
           setNeedsProfile(!(ud&&ud.profileVersion));
+          /* Same marker, same reasoning: whoever hasn't been through profile
+             setup hasn't been asked their language either, and whoever has
+             is never asked again. */
+          setNeedsLangChoice(!(ud&&ud.profileVersion));
           setNeedsHome(true); setReady(true); return;
         }
         Promise.all((ud.homeIds||[]).map(function(id){ return fbDb.collection('homes').doc(id).get(); }))
@@ -7233,8 +7289,18 @@ function App(){
     return <AuthScreen lang={lang}
       onAuth={function(){ window.location.reload(); }} />;
   }
-  /* Who you are, then where you live: both only ever for someone who has no
-     household yet, so neither can interrupt an existing user. */
+  /* Language, then who you are, then where you live: all three only ever
+     for someone who has no household yet, so none of them can interrupt an
+     existing user. Language comes first so the profile and home-setup
+     forms right after it, and the tutorial that follows those, are already
+     in the language just chosen rather than defaulting to English first. */
+  if(needsLangChoice){
+    return <LanguageChooserScreen onChoose={function(l){
+      setLang(l);
+      saveSettings(Object.assign({},getSettings(),{lang:l}));
+      setNeedsLangChoice(false);
+    }} />;
+  }
   if(needsProfile){
     return <ProfileSetupScreen lang={lang} user={user}
       onSaved={function(){ setNeedsProfile(false); }} />;
