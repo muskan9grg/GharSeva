@@ -74,6 +74,7 @@
     @keyframes pulse-ring{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.35);opacity:0}}
     @keyframes tutPulse{0%,100%{box-shadow:0 0 0 3px rgba(62,160,138,.35)}50%{box-shadow:0 0 0 9px rgba(62,160,138,.12)}}
     @keyframes tutNudge{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+    @keyframes tutNudgeUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
     .cal-btn{min-height:44px;min-width:44px;}
     ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
     /* Chip rows scroll sideways. The bar under them was being read as part of
@@ -6149,12 +6150,13 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
     }
   });
   var m=12, cardY;
+  var targetAbove=true; /* whether the target sits above the card, i.e. the hint arrow should point up */
   if(!rect) cardY=Math.max(m,vh-cardH-m);
   else {
     var below=rect.t+rect.h+pad+m;
     var above=rect.t-pad-m-cardH;
-    if(below+cardH+m<=vh) cardY=below;
-    else if(above>=m) cardY=above;
+    if(below+cardH+m<=vh){ cardY=below; targetAbove=true; }
+    else if(above>=m){ cardY=above; targetAbove=false; }
     else cardY=Math.max(m,vh-cardH-m);
   }
 
@@ -6200,7 +6202,7 @@ function TutorialOverlay({lang,tab,onNavigate,onDone}){
         {cur.action && (
           <div style={{display:'flex',alignItems:'center',gap:9,background:'var(--surface2)',borderRadius:12,
             padding:'9px 11px',marginBottom:11}}>
-            <span style={{animation:'tutNudge 1.1s ease-in-out infinite',display:'flex'}}><Icon name="chevronDown" size={19} strokeWidth={2.6} /></span>
+            <span style={{animation:(targetAbove?'tutNudgeUp':'tutNudge')+' 1.1s ease-in-out infinite',display:'flex'}}><Icon name={targetAbove?'chevronUp':'chevronDown'} size={19} strokeWidth={2.6} /></span>
             <span style={{fontSize:fsr(14),fontWeight:700,color:'var(--accent)',lineHeight:1.35}}>{cur.hint||t.tutActionHint}</span>
           </div>
         )}
