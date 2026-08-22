@@ -240,9 +240,10 @@ window.__bootAutoplayBlocked = false;
   try{ seen = (localStorage.getItem(seenKey) === today); }catch(e){}
   window.__bootVideoSkip = seen;
   var v = document.getElementById('bootVideo');
+  var vWrap = document.getElementById('bootVideoWrap');
   var fb = document.getElementById('bootFallback');
   if(seen){
-    if(v) v.style.display = 'none';
+    if(vWrap) vWrap.style.display = 'none';
     if(fb) fb.style.display = 'flex';
   } else {
     try{ localStorage.setItem(seenKey, today); }catch(e){}
@@ -257,7 +258,7 @@ window.__bootAutoplayBlocked = false;
       if(p && p.catch){
         p.catch(function(){
           window.__bootAutoplayBlocked = true;
-          v.style.display = 'none';
+          if(vWrap) vWrap.style.display = 'none';
           if(fb) fb.style.display = 'flex';
         });
       }
@@ -7384,7 +7385,8 @@ if(window.__bootVideoSkip || window.__bootAutoplayBlocked){
      yet by this point - paused here means autoplay never actually took,
      so there's nothing to wait on. */
   if(__bv && __bv.paused){
-    __bv.style.display = 'none';
+    var __bvWrap = document.getElementById('bootVideoWrap');
+    if(__bvWrap) __bvWrap.style.display = 'none';
     var __fb = document.getElementById('bootFallback');
     if(__fb) __fb.style.display = 'flex';
     setTimeout(__go, 20);
